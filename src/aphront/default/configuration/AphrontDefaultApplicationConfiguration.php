@@ -348,9 +348,9 @@ class AphrontDefaultApplicationConfiguration
       '/audit/' => array(
         '$' => 'PhabricatorAuditListController',
         'view/(?P<filter>[^/]+)/$' => 'PhabricatorAuditListController',
-
         'edit/$' => 'PhabricatorAuditEditController',
         'addcomment/$' => 'PhabricatorAuditAddCommentController',
+        'preview/(?P<id>\d+)/$' => 'PhabricatorAuditPreviewController',
       ),
 
       '/xhpast/' => array(

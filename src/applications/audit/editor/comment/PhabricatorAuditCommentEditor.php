@@ -36,6 +36,10 @@ final class PhabricatorAuditCommentEditor {
     $commit = $this->commit;
     $user = $this->user;
 
+    $other_comments = id(new PhabricatorAuditComment())->loadAllWhere(
+      'targetPHID = %s',
+      $commit->getPHID());
+
     $comment
       ->setActorPHID($user->getPHID())
       ->setTargetPHID($commit->getPHID())
@@ -61,19 +65,35 @@ final class PhabricatorAuditCommentEditor {
 
     // Status may be empty for updates which don't affect status, like
     // "comment".
-    if ($status) {
-      foreach ($relationships as $relationship) {
-        if (empty($audit_phids[$relationship->getPackagePHID()])) {
-          continue;
-        }
+    $have_any_relationship = false;
+    foreach ($relationships as $relationship) {
+      if (empty($audit_phids[$relationship->getPackagePHID()])) {
+        continue;
+      }
+      $have_any_relationship = true;
+      if ($status) {
         $relationship->setAuditStatus($status);
         $relationship->save();
       }
     }
 
-    // TODO: News feed.
-    // TODO: Search index.
-    // TODO: Email.
+    if (!$have_any_relationship) {
+      // If the user has no current authority over any audit trigger, make a
+      // new one to represent their audit state.
+      $relationship = id(new PhabricatorOwnersPackageCommitRelationship())
+        ->setCommitPHID($commit->getPHID())
+        ->setPackagePHID($user->getPHID())
+        ->setAuditStatus(
+            $status
+              ? $status
+              : PhabricatorAuditStatusConstants::AUDIT_NOT_REQUIRED)
+        ->setAuditReasons(array("Voluntary Participant"))
+        ->save();
+    }
+
+    $this->publishFeedStory($comment, array_keys($audit_phids));
+    PhabricatorSearchCommitIndexer::indexCommit($commit);
+    $this->sendMail($comment, $other_comments);
   }
 
 
@@ -103,13 +123,139 @@ final class PhabricatorAuditCommentEditor {
 
     // The user can audit on behalf of all projects they are a member of.
     $query = new PhabricatorProjectQuery();
-    $query->setMembers(array($user->getPHID));
+    $query->setMembers(array($user->getPHID()));
     $projects = $query->execute();
     foreach ($projects as $project) {
       $phids[$project->getPHID()] = true;
     }
 
     return array_keys($phids);
+  }
+
+  private function publishFeedStory(
+    PhabricatorAuditComment $comment,
+    array $more_phids) {
+
+    $commit = $this->commit;
+    $user = $this->user;
+
+    $related_phids = array_merge(
+      array(
+        $user->getPHID(),
+        $commit->getPHID(),
+      ),
+      $more_phids);
+
+    id(new PhabricatorFeedStoryPublisher())
+      ->setRelatedPHIDs($related_phids)
+      ->setStoryAuthorPHID($user->getPHID())
+      ->setStoryTime(time())
+      ->setStoryType(PhabricatorFeedStoryTypeConstants::STORY_AUDIT)
+      ->setStoryData(
+        array(
+          'commitPHID'    => $commit->getPHID(),
+          'action'        => $comment->getAction(),
+          'content'       => $comment->getContent(),
+        ))
+      ->publish();
+  }
+
+  private function sendMail(
+    PhabricatorAuditComment $comment,
+    array $other_comments) {
+    $commit = $this->commit;
+
+    $data = $commit->loadCommitData();
+    $summary = $data->getSummary();
+
+    $commit_phid = $commit->getPHID();
+    $phids = array($commit_phid);
+    $handles = id(new PhabricatorObjectHandleData($phids))->loadHandles();
+    $handle = $handles[$commit_phid];
+
+    $name = $handle->getName();
+
+    $map = array(
+      PhabricatorAuditActionConstants::CONCERN  => 'Raised Concern',
+      PhabricatorAuditActionConstants::ACCEPT   => 'Accepted',
+    );
+    $verb = idx($map, $comment->getAction(), 'Commented On');
+
+    $prefix = PhabricatorEnv::getEnvConfig('metamta.diffusion.subject-prefix');
+    $subject = "{$prefix} [{$verb}] {$name}: {$summary}";
+    $thread_id  = '<diffusion-audit-'.$commit->getPHID().'>';
+    $is_new     = !count($other_comments);
+    $body       = $this->renderMailBody(
+      $comment,
+      "{$name}: {$summary}",
+      $handle);
+
+    $email_to = array();
+
+    $author_phid = $data->getCommitDetail('authorPHID');
+    if ($author_phid) {
+      $email_to[] = $author_phid;
+    }
+
+    $email_cc = array();
+    foreach ($other_comments as $comment) {
+      $email_cc[] = $comment->getActorPHID();
+    }
+
+    $phids = array_merge($email_to, $email_cc);
+    $handles = id(new PhabricatorObjectHandleData($phids))->loadHandles();
+
+    $template = id(new PhabricatorMetaMTAMail())
+      ->setSubject($subject)
+      ->setFrom($comment->getActorPHID())
+      ->addHeader('Thread-Topic', 'Diffusion Audit '.$commit->getPHID())
+      ->setThreadID($thread_id, $is_new)
+      ->setRelatedPHID($commit->getPHID())
+      ->setIsBulk(true)
+      ->setBody($body);
+
+    $reply_handler = self::newReplyHandlerForCommit($commit);
+
+    $mails = $reply_handler->multiplexMail(
+      $template,
+      array_select_keys($handles, $email_to),
+      array_select_keys($handles, $email_cc));
+
+    foreach ($mails as $mail) {
+      $mail->saveAndSend();
+    }
+  }
+
+  public static function newReplyHandlerForCommit($commit) {
+    $handler_class = PhabricatorEnv::getEnvConfig(
+      'metamta.diffusion.reply-handler');
+    $reply_handler = newv($handler_class, array());
+    $reply_handler->setMailReceiver($commit);
+    return $reply_handler;
+  }
+
+  private function renderMailBody(
+    PhabricatorAuditComment $comment,
+    $cname,
+    PhabricatorObjectHandle $handle) {
+
+    $commit = $this->commit;
+    $user = $this->user;
+    $name = $user->getUsername();
+
+    $verb = PhabricatorAuditActionConstants::getActionPastTenseVerb(
+      $comment->getAction());
+
+    $body = array();
+    $body[] = "{$name} {$verb} commit {$cname}.";
+
+    if ($comment->getContent()) {
+      $body[] = $comment->getContent();
+    }
+
+    $body[] = "COMMIT\n  ".PhabricatorEnv::getProductionURI($handle->getURI());
+
+    return implode("\n\n", $body)."\n";
   }
 
 }
