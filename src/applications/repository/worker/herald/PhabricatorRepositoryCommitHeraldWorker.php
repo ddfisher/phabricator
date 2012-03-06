@@ -106,6 +106,18 @@ class PhabricatorRepositoryCommitHeraldWorker
     $why_uri = PhabricatorEnv::getProductionURI(
       '/herald/transcript/'.$xscript_id.'/');
 
+    $reply_handler = PhabricatorAuditCommentEditor::newReplyHandlerForCommit(
+      $commit);
+
+    $reply_instructions = $reply_handler->getReplyHandlerInstructions();
+    if ($reply_instructions) {
+      $reply_instructions =
+        "\n".
+        "REPLY HANDLER ACTIONS\n".
+        "  ".$reply_instructions."\n";
+    }
+
+
     $body = <<<EOBODY
 DESCRIPTION
 {$description}
@@ -118,7 +130,7 @@ DIFFERENTIAL REVISION
 
 AFFECTED FILES
   {$files}
-
+{$reply_instructions}
 MANAGE HERALD COMMIT RULES
   {$manage_uri}
 
@@ -129,19 +141,31 @@ EOBODY;
 
     $subject = "[Herald/Commit] {$commit_name} ({$who}){$name}";
 
-    $mailer = new PhabricatorMetaMTAMail();
-    $mailer->setRelatedPHID($commit->getPHID());
-    $mailer->addTos($email_phids);
-    $mailer->setSubject($subject);
-    $mailer->setBody($body);
-    $mailer->setIsBulk(true);
+    $threading = PhabricatorAuditCommentEditor::getMailThreading(
+      $commit->getPHID());
+    list($thread_id, $thread_topic) = $threading;
 
-    $mailer->addHeader('X-Herald-Rules', $xscript->getXHeraldRulesHeader());
+    $template = new PhabricatorMetaMTAMail();
+    $template->setRelatedPHID($commit->getPHID());
+    $template->setSubject($subject);
+    $template->setBody($body);
+    $template->setThreadID($thread_id, $is_new = true);
+    $template->addHeader('Thread-Topic', $thread_topic);
+    $template->setIsBulk(true);
+
+    $template->addHeader('X-Herald-Rules', $xscript->getXHeraldRulesHeader());
     if ($author_phid) {
-      $mailer->setFrom($author_phid);
+      $template->setFrom($author_phid);
     }
 
-    $mailer->saveAndSend();
+    $mails = $reply_handler->multiplexMail(
+      $template,
+      id(new PhabricatorObjectHandleData($email_phids))->loadHandles(),
+      array());
+
+    foreach ($mails as $mail) {
+      $mail->saveAndSend();
+    }
   }
 
   private function createAudits(
@@ -149,16 +173,16 @@ EOBODY;
     array $map,
     array $rules) {
 
-    $table = new PhabricatorOwnersPackageCommitRelationship();
-    $rships = $table->loadAllWhere(
+    $table = new PhabricatorRepositoryAuditRequest();
+    $requests = $table->loadAllWhere(
       'commitPHID = %s',
       $commit->getPHID());
-    $rships = mpull($rships, null, 'getPackagePHID');
+    $requests = mpull($requests, null, 'getAuditorPHID');
 
     $rules = mpull($rules, null, 'getID');
     foreach ($map as $phid => $rule_ids) {
-      $rship = idx($rships, $phid);
-      if ($rship) {
+      $request = idx($requests, $phid);
+      if ($request) {
         continue;
       }
       $reasons = array();
@@ -170,15 +194,15 @@ EOBODY;
         $reasons[] = 'Herald Rule #'.$id.' "'.$rule_name.'" Triggered Audit';
       }
 
-      $rship = new PhabricatorOwnersPackageCommitRelationship();
-      $rship->setCommitPHID($commit->getPHID());
-      $rship->setPackagePHID($phid);
-      $rship->setAuditStatus(PhabricatorAuditStatusConstants::AUDIT_REQUIRED);
-      $rship->setAuditReasons($reasons);
-      $rship->save();
+      $request = new PhabricatorRepositoryAuditRequest();
+      $request->setCommitPHID($commit->getPHID());
+      $request->setAuditorPHID($phid);
+      $request->setAuditStatus(PhabricatorAuditStatusConstants::AUDIT_REQUIRED);
+      $request->setAuditReasons($reasons);
+      $request->save();
     }
 
-    $commit->updateAuditStatus($rships);
+    $commit->updateAuditStatus($requests);
     $commit->save();
   }
 }
