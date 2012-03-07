@@ -4,6 +4,7 @@
  *           javelin-aphlict
  *           javelin-util
  *           javelin-stratcom
+ *           notifications-humane
  */
 
 JX.behavior('aphlict-listen', function(config) {
@@ -17,6 +18,14 @@ JX.behavior('aphlict-listen', function(config) {
           JX.log(message);
         } else {
           JX.log("Got aphlict event '" + type + "'.");
+        }
+        if (type == "receive") {
+            humane.timeout = 0;
+            humane.clickToClose = true;
+            humane.on('hide', function(type, message) {
+                location.reload(true);
+            });
+            humane.info("Page Updated, Please Refresh");
         }
       })
       .start();

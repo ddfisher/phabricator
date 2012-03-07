@@ -344,7 +344,7 @@ celerity_register_resource_map(array(
   ),
   'javelin-behavior-aphlict-listen' =>
   array(
-    'uri' => '/res/6388e057/rsrc/js/application/aphlict/behavior-aphlict-listen.js',
+    'uri' => '/res/78f391bc/rsrc/js/application/aphlict/behavior-aphlict-listen.js',
     'type' => 'js',
     'requires' =>
     array(
@@ -352,6 +352,7 @@ celerity_register_resource_map(array(
       1 => 'javelin-aphlict',
       2 => 'javelin-util',
       3 => 'javelin-stratcom',
+      4 => 'notifications-humane',
     ),
     'disk' => '/rsrc/js/application/aphlict/behavior-aphlict-listen.js',
   ),
@@ -1403,6 +1404,24 @@ celerity_register_resource_map(array(
       3 => 'javelin-util',
     ),
     'disk' => '/rsrc/js/application/core/MultirowRowManager.js',
+  ),
+  'notification-theme' =>
+  array(
+    'uri' => '/res/ccacfac4/rsrc/css/aphlict/notification.css',
+    'type' => 'css',
+    'requires' =>
+    array(
+    ),
+    'disk' => '/rsrc/css/aphlict/notification.css',
+  ),
+  'notifications-humane' =>
+  array(
+    'uri' => '/res/bd35b18a/rsrc/js/application/aphlict/humane.js',
+    'type' => 'js',
+    'requires' =>
+    array(
+    ),
+    'disk' => '/rsrc/js/application/aphlict/humane.js',
   ),
   'owners-path-editor' =>
   array(

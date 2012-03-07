@@ -1,6 +1,7 @@
 {
   "project_id" : "phabricator",
-  "conduit_uri" : "https://secure.phabricator.com/api/",
+  "conduit_uri" : "http://theoryphabricator.com/",
+  "__conduit_uri" : "https://secure.phabricator.com/api/",
   "lint_engine" : "PhabricatorLintEngine",
   "unit_engine" : "PhutilUnitTestEngine",
   "copyright_holder" : "Facebook, Inc.",

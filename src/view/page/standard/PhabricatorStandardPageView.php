@@ -142,6 +142,7 @@ class PhabricatorStandardPageView extends AphrontPageView {
     require_celerity_resource('phabricator-core-css');
     require_celerity_resource('phabricator-core-buttons-css');
     require_celerity_resource('phabricator-standard-page-view');
+    require_celerity_resource('notification-theme');
 
     $current_token = null;
     $request = $this->getRequest();
@@ -348,6 +349,29 @@ class PhabricatorStandardPageView extends AphrontPageView {
       $admin_class = 'phabricator-admin-page-view';
     }
 
+    // -------------------- EXPERIMENTAL NOTIFICATIONS STUFF --------------------
+    $aphlict_object_id = 'aphlictswfobject';
+
+    $aphlict_content = phutil_render_tag(
+      'object',
+      array(
+        'classid' => 'clsid:d27cdb6e-ae6d-11cf-96b8-444553540000',
+      ),
+      '<param name="movie" value="/rsrc/swf/aphlict.swf" />'.
+      '<param name="allowScriptAccess" value="always" />'.
+      '<param name="wmode" value="opaque" />'.
+      '<embed src="/rsrc/swf/aphlict.swf" wmode="opaque" id="'.$aphlict_object_id.'"></embed>');
+
+    Javelin::initBehavior(
+      'aphlict-listen',
+      array(
+        'id'      => $aphlict_object_id,
+        'server'  => '127.0.0.1',
+        'port'    => 2600,
+      ));
+
+    // --------------------                                  --------------------
+
     $header_chrome = null;
     $footer_chrome = null;
     if ($this->getShowChrome()) {
@@ -373,6 +397,12 @@ class PhabricatorStandardPageView extends AphrontPageView {
             '</td>'.
             '<td class="phabricator-login-details">'.
               $login_stuff.
+            '</td>'.
+            '<td>'.
+                /* '<div style="display: none; visibility: hidden;">'. */
+                '<div style="height:1px; width:1px;">'.
+                  $aphlict_content.
+              '</div>'.
             '</td>'.
           '</tr>'.
         '</table>';
