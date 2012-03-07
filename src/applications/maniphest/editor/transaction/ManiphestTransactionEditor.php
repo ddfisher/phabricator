@@ -190,45 +190,29 @@ class ManiphestTransactionEditor {
       $task->getCCPHIDs());
 
     $this->publishFeedStory($task, $transactions);
+    
 
     // TODO: Do this offline via timeline
-    $actor_phid = head($transactions)->getAuthorPHID();
     PhabricatorSearchManiphestIndexer::indexTask($task);
-    $url = 'http://127.0.0.1:22281/'.$actor_phid;
-    //$url = $url.strval($actor_phid);
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 5);  
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);  
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);  
-    $data = curl_exec($ch);  
-    $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);  
-    curl_close($ch);  
-
+    
+    $this->sendNotification($task, $transactions);
     $this->sendEmail($task, $transactions, $email_to, $email_cc);
-    //$this->sendNotifcation($task, $transactions);
   }
 
-private function urlExists($url=NULL) {  
-    if($url == NULL) return false;  
-    $ch = curl_init($url);  
-    curl_setopt($ch, CURLOPT_TIMEOUT, 5);  
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);  
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);  
-    $data = curl_exec($ch);  
-    $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);  
-    curl_close($ch);  
-    if($httpcode>=200 && $httpcode<300){  
-      return true;  
-    } else {  
-      return false;  
-    }  
-  }
+
 
   protected function getSubjectPrefix() {
     return PhabricatorEnv::getEnvConfig('metamta.maniphest.subject-prefix');
   }
 
-  
+  private function sendNotification($task, $transactions) {
+    $task_id = $task->getID();
+    $actor_phid = head($transactions)->getAuthorPHID();
+    $notification = new AphlictNotification($task_id, $actor_phid);
+    $notification->post();
+  }
+
+
   private function sendEmail($task, $transactions, $email_to, $email_cc) {
     $email_to = array_filter(array_unique($email_to));
     $email_cc = array_filter(array_unique($email_cc));

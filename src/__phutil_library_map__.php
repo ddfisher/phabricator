@@ -8,6 +8,7 @@
 phutil_register_library_map(array(
   'class' =>
   array(
+    'AphlictNotification' => 'applications/notifications/aphlict',
     'Aphront304Response' => 'aphront/response/304',
     'Aphront400Response' => 'aphront/response/400',
     'Aphront403Response' => 'aphront/response/403',

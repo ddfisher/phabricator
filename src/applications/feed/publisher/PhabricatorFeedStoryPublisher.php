@@ -49,6 +49,10 @@ final class PhabricatorFeedStoryPublisher {
     return $this;
   }
 
+  public function sendNotification() {
+    
+  }
+
   public function publish() {
     if (!$this->relatedPHIDs) {
       throw new Exception("There are no PHIDs related to this story!");
@@ -84,7 +88,8 @@ final class PhabricatorFeedStoryPublisher {
       'INSERT INTO %T (objectPHID, chronologicalKey) VALUES %Q',
       $ref->getTableName(),
       implode(', ', $sql));
-
+    
+    //story->sendNotifcation();
     return $story;
   }
 

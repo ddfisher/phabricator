@@ -24,6 +24,7 @@ var page_updated = false;
 var obj_id = null;
 
 var flash_socket = null;
+var num_connections = 0;
 
 function json_write(socket, data) {
     var serial = JSON.stringify(data);
@@ -36,28 +37,29 @@ function json_write(socket, data) {
     console.log('write : ' + length + serial);
 }
 
+
+
 var sp_server = net.createServer(function(socket) {
     flash_socket = socket;
+    console.log(socket.address());
     socket.on('connect', function() {
-	json_write(socket, {hi: 'hello'});
+    	console.log(socket.remoteport);
     });
 }).listen(2600);
 
 var status_server = http.createServer(function(request, response) {
-    response.writeHead(200, {'Content-Type' : 'text/html'});
-    
+    response.writeHead(200, {'Content-Type' : 'text/plain'});
+
     if (request.method == 'GET') {
+	response.end("Sweet");
 	var output = request.url;
-	response.end(output.substring(1));
-	console.log(output.substring(1));
-	page_updated = true;
 	obj_id = output.substring(1);
-	json_write(flash_socket, {phid: obj_id});
+	if(flash_socket) {
+	    json_write(flash_socket, {phid: obj_id});
+	}
     } else if (request.method == 'POST') {
 	response.end('POST');
     } else {
 	response.end('Really Bitch, a delete request?!?');
     }
-    
-    
 }).listen(22281, '127.0.0.1');

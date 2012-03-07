@@ -228,6 +228,8 @@ final class PhabricatorProjectEditor {
       ->publish();
   }
 
+  
+
   private function transactionHasEffect(
     PhabricatorProjectTransaction $xaction) {
     return ($xaction->getOldValue() !== $xaction->getNewValue());
