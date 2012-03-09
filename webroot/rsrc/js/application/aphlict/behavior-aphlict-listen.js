@@ -16,16 +16,20 @@ JX.behavior('aphlict-listen', function(config) {
         if (message) {
           JX.log("Got aphlict event '" + type + "':");
           JX.log(message);
+          if (type == "receive") {
+            if(message.type == "refresh") {
+              if(message.pathname == window.location.pathname) {
+                 humane.timeout = 0;
+                 humane.clickToClose = true;
+                 humane.on('hide', function(type, message) {
+                   location.reload(true);
+              });
+              humane.info(message.info);
+              }
+            }
+          }
         } else {
           JX.log("Got aphlict event '" + type + "'.");
-        }
-        if (type == "receive") {
-            humane.timeout = 0;
-            humane.clickToClose = true;
-            humane.on('hide', function(type, message) {
-                location.reload(true);
-            });
-            humane.info("Page Updated, Please Refresh");
         }
       })
       .start();

@@ -8,7 +8,7 @@
 phutil_register_library_map(array(
   'class' =>
   array(
-    'AphlictNotification' => 'applications/notifications/aphlict',
+    'AphlictNotification' => 'applications/notifications/aphlict/base',
     'Aphront304Response' => 'aphront/response/304',
     'Aphront400Response' => 'aphront/response/400',
     'Aphront403Response' => 'aphront/response/403',
@@ -445,6 +445,8 @@ phutil_register_library_map(array(
     'ManiphestView' => 'applications/maniphest/view/base',
     'MetaMTAConstants' => 'applications/metamta/constants/base',
     'MetaMTANotificationType' => 'applications/metamta/constants/notificationtype',
+    'NotificationMessage' => 'applications/notifications/constants',
+    'NotificationType' => 'applications/notifications/constants',
     'Phabricator404Controller' => 'applications/base/controller/404',
     'PhabricatorAphlictTestPageController' => 'applications/notifications/controller/test',
     'PhabricatorAuditActionConstants' => 'applications/audit/constants/action',
@@ -879,6 +881,7 @@ phutil_register_library_map(array(
     'PhrictionHistoryController' => 'applications/phriction/controller/history',
     'PhrictionListController' => 'applications/phriction/controller/list',
     'QueryFormattingTestCase' => 'storage/qsprintf/__tests__',
+    'RefreshNotification' => 'applications/notifications/aphlict/refresh',
   ),
   'function' =>
   array(
@@ -1618,6 +1621,7 @@ phutil_register_library_map(array(
     'PhrictionHistoryController' => 'PhrictionController',
     'PhrictionListController' => 'PhrictionController',
     'QueryFormattingTestCase' => 'PhabricatorTestCase',
+    'RefreshNotification' => 'AphlictNotification',
   ),
   'requires_interface' =>
   array(

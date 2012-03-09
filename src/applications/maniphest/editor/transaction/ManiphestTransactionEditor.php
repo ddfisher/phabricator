@@ -190,11 +190,11 @@ class ManiphestTransactionEditor {
       $task->getCCPHIDs());
 
     $this->publishFeedStory($task, $transactions);
-    
+
 
     // TODO: Do this offline via timeline
     PhabricatorSearchManiphestIndexer::indexTask($task);
-    
+
     $this->sendNotification($task, $transactions);
     $this->sendEmail($task, $transactions, $email_to, $email_cc);
   }
@@ -208,10 +208,9 @@ class ManiphestTransactionEditor {
   private function sendNotification($task, $transactions) {
     $task_id = $task->getID();
     $actor_phid = head($transactions)->getAuthorPHID();
-    $notification = new AphlictNotification($task_id, $actor_phid);
-    $notification->post();
+    $notification = new RefreshNotification($actor_phid,'/T'.$task_id);
+    $notification->push();
   }
-
 
   private function sendEmail($task, $transactions, $email_to, $email_cc) {
     $email_to = array_filter(array_unique($email_to));
