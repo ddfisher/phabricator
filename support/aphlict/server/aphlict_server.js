@@ -2,8 +2,19 @@ var net = require('net');
 var http  = require('http');
 var url = require('url');
 var querystring = require('querystring');
+var fs = require('fs');
 
+// set up log file
+logfile = fs.createWriteStream('/var/log/aphlict.log',
+        { flags: 'a',
+          encoding: null,
+          mode: 0666 });
+logfile.write('----- ' + (new Date()).toLocaleString() + ' -----\n');
 
+function log(str) {
+    console.log(str);
+    logfile.write(str + '\n');
+}
 
 
 function getFlashPolicy() {
@@ -14,7 +25,7 @@ function getFlashPolicy() {
     '<cross-domain-policy>',
     '<allow-access-from domain="*" to-ports="2600"/>',
     '</cross-domain-policy>'
-  ].join("\n");
+  ].join('\n');
 }
 
 net.createServer(function(socket) {
@@ -25,25 +36,21 @@ net.createServer(function(socket) {
 
 
 
-function write_json(client, data) {
-  if(client.status == 'connected') {
-    var serial = JSON.stringify(data);
-    var length = Buffer.byteLength(serial, 'utf8');
-    length = length.toString();
-    while (length.length < 8) {
-      length = "0" + length;
-    }
-    client.socket.write(length + serial);
+function write_json(socket, data) {
+  var serial = JSON.stringify(data);
+  var length = Buffer.byteLength(serial, 'utf8');
+  length = length.toString();
+  while (length.length < 8) {
+    length = '0' + length;
   }
+  socket.write(length + serial);
 }
 
 
 var clients = {};
-var num_connections = 0;
-var current_id = 0;
 // According to the internet up to 2^53 can
 // be stored in javascript, this is less than that
-var BIG_NUMBER = 9007199254740991;//2^53 -1
+var MAX_ID = 9007199254740991;//2^53 -1
 
 // If we get one connections per millisecond this will
 // be fine as long as someone doesn't maintain a
@@ -51,28 +58,24 @@ var BIG_NUMBER = 9007199254740991;//2^53 -1
 // you want to write something pretty be my guest
 
 function generate_id() {
-  if(current_id > BIG_NUMBER ) {
-    current_id = 0;
+  if (typeof generate_id.current_id == 'undefined'
+      || generate_id.current_id > MAX_ID) {
+    generate_id.current_id = 0;
   }
-  return current_id++;
+  return generate_id.current_id++;
 }
 
 var send_server = net.createServer(function(socket) {
   client_id = generate_id();
-  clients[client_id] = {
-    id: client_id,
-    socket: socket,
-    status: 'init'
-  };
+
   socket.on('connect', function() {
-    clients[client_id].status = 'connected';
-    num_connections++;
-    console.log(client_id + ": send_server connect");
+    clients[client_id] = socket;
+    log(client_id + ': connected');
   });
 
   socket.on('close', function() {
     delete clients[client_id];
-    num_connections--;
+    log(client_id + ': closed');
   });
 }).listen(2600);
 
@@ -81,35 +84,39 @@ var send_server = net.createServer(function(socket) {
 var receive_server = http.createServer(function(request, response) {
   response.writeHead(200, {'Content-Type' : 'text/plain'});
 
-  if (request.method == 'POST') {
+  if (request.method == 'POST') { // Only pay attention to POST requests
     var body = '';
+
     request.on('data', function (data) {
       body += data;
     });
+
     request.on('end', function () {
       var data = querystring.parse(body);
+      // I think this should be done on the PHP side...
       data.pathname = data.pathname.replace(/^\s+|\s+$/g, '');
       broadcast(data);
-      console.log(data);
+      log('notification: ' + JSON.stringify(data));
       response.end();
     });
   }
 }).listen(22281, '127.0.0.1');
+
+function broadcast(data) {
+  for(var client_id in clients) {
+    write_json(clients[client_id], data);
+  }
+}
+
 
 
 // TODO Add admin interface to view server stats
 // var status_server = http.createServer(function(request, response) {
 //   response.writeHead(200, {'Content-Type' : 'text/plain'});
 //   var stats = [];
-//   stats.push("Number of Clients Connected: " + num_connections);
-//   stats.push("Next ID: " + current_id);
+//   stats.push('Number of Clients Connected: ' + num_connections);
+//   stats.push('Next ID: ' + current_id);
 
-//   response.end(stats.join("\n"));
+//   response.end(stats.join('\n'));
 // }).listen(22282, '127.0.0.1');
-
-function broadcast(data) {
-  for(var k in clients) {
-    write_json(clients[k], data);
-  }
-}
 

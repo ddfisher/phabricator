@@ -11,25 +11,24 @@ JX.behavior('aphlict-listen', function(config) {
   function onready() {
     JX.log("The flash component is ready!");
 
+    humane.timeout = 0;
+    humane.clickToClose = true;
+    humane.on('hide', function(type, message) {
+      location.reload(true);
+    });
+
     var client = new JX.Aphlict(config.id, config.server, config.port)
       .setHandler(function(type, message) {
         if (message) {
           JX.log("Got aphlict event '" + type + "':");
           JX.log(message);
+
           if (type == "receive") {
-            if(message.type == "refresh") {
-              if(message.pathname == window.location.pathname) {
-                 humane.timeout = 0;
-                 humane.clickToClose = true;
-                 humane.on('hide', function(type, message) {
-                   location.reload(true);
-              });
-              humane.info(message.info);
-              }
+            if (message.type == "refresh"
+              && message.pathname == window.location.pathname) {
+                humane.info(message.info);
             }
           }
-        } else {
-          JX.log("Got aphlict event '" + type + "'.");
         }
       })
       .start();

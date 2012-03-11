@@ -33,7 +33,7 @@ final class RefreshNotification extends AphlictNotification {
       'phid = %s',
       $this->updaterPhid);
     $username = $user->getUserName();
-    $message = sprintf("Page updated by %s, Please Refresh", $username);
+    $message = sprintf("Page updated by %s", $username);
     $this->setData(array(NotificationType::KEY => NotificationType::REFRESH,
       //NotificationMessage::KEY => NotificationMessage::REFRESH,
       NotificationMessage::KEY => $message,

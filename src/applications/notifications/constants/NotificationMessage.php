@@ -18,5 +18,5 @@
 
 final class NotificationMessage {
   const KEY = 'info';
-  const REFRESH = 'Page Updated, Please Refresh';
+  const REFRESH = 'Page Updated';
 }
