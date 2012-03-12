@@ -366,7 +366,8 @@ class PhabricatorStandardPageView extends AphrontPageView {
       'aphlict-listen',
       array(
         'id'      => $aphlict_object_id,
-        'server'  => '127.0.0.1',
+        /* 'server'  => PhabricatorEnv::getURI(''), */
+        'server'  => '184.169.135.158', //TODO: temporary test
         'port'    => 2600,
       ));
 

@@ -10,6 +10,7 @@
 JX.behavior('aphlict-listen', function(config) {
   function onready() {
     JX.log("The flash component is ready!");
+    JX.log("Trying to connect to " + config.server + " port " + config.port);
 
     humane.timeout = 0;
     humane.clickToClose = true;
@@ -19,8 +20,8 @@ JX.behavior('aphlict-listen', function(config) {
 
     var client = new JX.Aphlict(config.id, config.server, config.port)
       .setHandler(function(type, message) {
+        JX.log("Got aphlict event '" + type + "':");
         if (message) {
-          JX.log("Got aphlict event '" + type + "':");
           JX.log(message);
 
           if (type == "receive") {

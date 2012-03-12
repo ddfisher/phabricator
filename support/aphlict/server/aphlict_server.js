@@ -48,6 +48,7 @@ function write_json(socket, data) {
 
 
 var clients = {};
+var current_connections = 0;
 // According to the internet up to 2^53 can
 // be stored in javascript, this is less than that
 var MAX_ID = 9007199254740991;//2^53 -1
@@ -70,12 +71,22 @@ var send_server = net.createServer(function(socket) {
 
   socket.on('connect', function() {
     clients[client_id] = socket;
-    log(client_id + ': connected');
+    current_connections++;
+    log(client_id + ': connected\t\t(' + current_connections + ' current connections)');
   });
 
   socket.on('close', function() {
     delete clients[client_id];
-    log(client_id + ': closed');
+    current_connections--;
+    log(client_id + ': closed\t\t(' + current_connections + ' current connections)');
+  });
+
+  socket.on('timeout', function() {
+    log(client_id + ': timed out!');
+  });
+
+  socket.on('end', function() {
+    log(client_id + ': ended the connection');
   });
 }).listen(2600);
 
@@ -104,7 +115,12 @@ var receive_server = http.createServer(function(request, response) {
 
 function broadcast(data) {
   for(var client_id in clients) {
-    write_json(clients[client_id], data);
+    try {
+      write_json(clients[client_id], data);
+    } catch (error) {
+      log('ERROR: could not write to client ' + client_id);
+      delete clients[client_id];
+    }
   }
 }
 
