@@ -362,12 +362,16 @@ class PhabricatorStandardPageView extends AphrontPageView {
       '<param name="wmode" value="opaque" />'.
       '<embed src="/rsrc/swf/aphlict.swf" wmode="opaque" id="'.$aphlict_object_id.'"></embed>');
 
+    $server_uri = PhabricatorEnv::getURI('');
+    $matches = null;
+    preg_match('@^(?:http://|https://)?([^/]+)@i', $server_uri, $matches);
+    $server_domain = $matches[1];
+
     Javelin::initBehavior(
       'aphlict-listen',
       array(
         'id'      => $aphlict_object_id,
-        /* 'server'  => PhabricatorEnv::getURI(''), */
-        'server'  => '184.169.135.158', //TODO: temporary test
+        'server'  => $server_domain,
         'port'    => 2600,
       ));
 

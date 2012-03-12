@@ -67,7 +67,7 @@ function generate_id() {
 }
 
 var send_server = net.createServer(function(socket) {
-  client_id = generate_id();
+  var client_id = generate_id();
 
   socket.on('connect', function() {
     clients[client_id] = socket;
@@ -117,9 +117,11 @@ function broadcast(data) {
   for(var client_id in clients) {
     try {
       write_json(clients[client_id], data);
+      log(' wrote to client ' + client_id);
     } catch (error) {
-      log('ERROR: could not write to client ' + client_id);
       delete clients[client_id];
+      current_connections--;
+      log(' ERROR: could not write to client ' + client_id);
     }
   }
 }

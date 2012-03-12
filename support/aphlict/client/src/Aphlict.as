@@ -55,6 +55,10 @@ package {
 
       this.recv = new LocalConnection();
       this.recv.client = this.receiver;
+
+      this.connectToServer();
+      return;
+
       for (var ii:Number = 0; ii < 32; ii++) {
         try {
           this.recv.connect('aphlict_subject_' + ii);
@@ -99,7 +103,7 @@ package {
           this.remainLoyal();
         }
       }
-      setTimeout(this.usurp, this.frequency);
+      // setTimeout(this.usurp, this.frequency);
     }
 
     public function connectToServer():void {
@@ -156,9 +160,10 @@ package {
           t.writeBytes(b, msg_len + 8);
           this.readBuffer = t;
 
-          for (var ii:Number = 0; ii < this.subjects.length; ii++) {
-            this.send.send(this.subjects[ii], 'receiveMessage', data);
-          }
+          this.receiveMessage(data);
+          /* for (var ii:Number = 0; ii < this.subjects.length; ii++) { */
+          /*   this.send.send(this.subjects[ii], 'receiveMessage', data); */
+          /* } */
         } else {
           break;
         }
