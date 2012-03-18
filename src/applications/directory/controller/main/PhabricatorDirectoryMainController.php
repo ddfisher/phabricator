@@ -149,12 +149,15 @@ class PhabricatorDirectoryMainController
       case 'subscribed':
         $request = $this->getRequest();
         $user = $request->getUser();
-        $query = new ManiphestTaskQuery();
-        $query->withSubscribers(array($user->getPHID()));
-        $phids = mpull($query->execute(), 'getPHID');
-        $query = new DifferentialRevisionQuery();
-        $query->withSubscribers(array($user->getPHID()));
-        array_merge($phids, mpull($query->execute(), 'getPHID'));
+        $user_phid = $user->getPHID();
+        $task_query = id(new ManiphestTaskQuery())
+          ->withSubscribers(array($user_phid));
+        $diff_query = id(new DifferentialRevisionQuery())
+          ->withSubscribers(array($user_phid));
+
+        $phids = mpull(
+          array_merge($task_query->execute(), $diff_query->execute()),
+          'getPHID');
         break;
     }
 
