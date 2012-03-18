@@ -135,6 +135,7 @@ class PhabricatorDirectoryMainController
 
     $subnav->addFilter('all',       'All Activity', '/feed/');
     $subnav->addFilter('projects',  'My Projects');
+    $subnav->addFilter('subscribed', 'Subscribed');
 
     $filter = $subnav->selectFilter($this->subfilter, 'all');
 
@@ -144,6 +145,16 @@ class PhabricatorDirectoryMainController
         break;
       case 'projects':
         $phids = mpull($projects, 'getPHID');
+        break;
+      case 'subscribed':
+        $request = $this->getRequest();
+        $user = $request->getUser();
+        $query = new ManiphestTaskQuery();
+        $query->withSubscribers(array($user->getPHID()));
+        $phids = mpull($query->execute(), 'getPHID');
+        $query = new DifferentialRevisionQuery();
+        $query->withSubscribers(array($user->getPHID()));
+        array_merge($phids, mpull($query->execute(), 'getPHID'));
         break;
     }
 
