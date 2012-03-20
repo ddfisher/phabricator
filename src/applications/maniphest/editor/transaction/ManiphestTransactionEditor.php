@@ -210,6 +210,8 @@ class ManiphestTransactionEditor {
     $actor_phid = head($transactions)->getAuthorPHID();
     $notification = new RefreshNotification($actor_phid,'/T'.$task_id);
     $notification->push();
+    $notification = new ManiphestNotification($task, head($transactions), '/T'.$task_id);
+    $notification->push();
   }
 
   private function sendEmail($task, $transactions, $email_to, $email_cc) {

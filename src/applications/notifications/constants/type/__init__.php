@@ -6,4 +6,7 @@
 
 
 
+phutil_require_module('phabricator', 'applications/notifications/constants/base');
 
+
+phutil_require_source('NotificationType.php');

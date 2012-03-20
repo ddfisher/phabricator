@@ -9,9 +9,6 @@
 phutil_require_module('phabricator', 'applications/notifications/aphlict/base');
 phutil_require_module('phabricator', 'applications/notifications/constants/message');
 phutil_require_module('phabricator', 'applications/notifications/constants/type');
-phutil_require_module('phabricator', 'applications/people/storage/user');
-
-phutil_require_module('phutil', 'utils');
 
 
-phutil_require_source('RefreshNotification.php');
+phutil_require_source('ManiphestNotification.php');

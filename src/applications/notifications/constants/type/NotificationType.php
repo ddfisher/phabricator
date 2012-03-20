@@ -16,7 +16,10 @@
  * limitations under the License.
  */
 
-final class NotificationMessage {
-  const KEY = 'info';
-  const REFRESH = 'Page Updated';
+final class NotificationType 
+  extends NotificationConstants{
+  
+  const KEY = 'type';
+  const REFRESH = 'page-refresh';
+  const GENERIC = 'generic';
 }
