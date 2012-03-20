@@ -20,6 +20,6 @@ final class NotificationType
   extends NotificationConstants{
   
   const KEY = 'type';
-  const REFRESH = 'page-refresh';
+  const REFRESH = 'refresh';
   const GENERIC = 'generic';
 }

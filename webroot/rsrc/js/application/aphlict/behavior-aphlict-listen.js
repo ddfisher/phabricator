@@ -12,10 +12,13 @@ JX.behavior('aphlict-listen', function(config) {
     JX.log("The flash component is ready!");
     JX.log("Trying to connect to " + config.server + " port " + config.port);
 
-    humane.timeout = 0;
-    humane.clickToClose = true;
+    humane.timeout = 2500;
+    humane.success.timeout = 0;
+    humane.success.clickToClose = true;
     humane.on('hide', function(type, message) {
-      location.reload(true);
+      if (type == "success") {
+        location.reload(true);
+      }
     });
 
     var client = new JX.Aphlict(config.id, config.server, config.port)
@@ -26,8 +29,10 @@ JX.behavior('aphlict-listen', function(config) {
 
           if (type == "receive") {
             if (message.type == "refresh"
-              && message.pathname == window.location.pathname) {
-                humane.info(message.info);
+                && message.pathname == window.location.pathname) {
+              humane.success(message.info);
+            } else if (message.type == "generic") {
+              humane.log(message.info);
             }
           }
         }
