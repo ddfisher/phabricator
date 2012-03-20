@@ -344,7 +344,7 @@ celerity_register_resource_map(array(
   ),
   'javelin-behavior-aphlict-listen' =>
   array(
-    'uri' => '/res/0d2e0b6c/rsrc/js/application/aphlict/behavior-aphlict-listen.js',
+    'uri' => '/res/c534c9b4/rsrc/js/application/aphlict/behavior-aphlict-listen.js',
     'type' => 'js',
     'requires' =>
     array(
@@ -1407,7 +1407,7 @@ celerity_register_resource_map(array(
   ),
   'notification-theme' =>
   array(
-    'uri' => '/res/ccacfac4/rsrc/css/aphlict/notification.css',
+    'uri' => '/res/942a3962/rsrc/css/aphlict/notification.css',
     'type' => 'css',
     'requires' =>
     array(
