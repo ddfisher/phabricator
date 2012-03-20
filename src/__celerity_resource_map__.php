@@ -906,6 +906,20 @@ celerity_register_resource_map(array(
     ),
     'disk' => '/rsrc/js/application/repository/repository-crossreference.js',
   ),
+  'javelin-behavior-socket.io-listen' =>
+  array(
+    'uri' => '/res/bdebd6ed/rsrc/js/application/aphlict/behavior-socket.io-listen.js',
+    'type' => 'js',
+    'requires' =>
+    array(
+      0 => 'javelin-behavior',
+      1 => 'javelin-util',
+      2 => 'javelin-stratcom',
+      3 => 'notifications-humane',
+      4 => 'socket.io',
+    ),
+    'disk' => '/rsrc/js/application/aphlict/behavior-socket.io-listen.js',
+  ),
   'javelin-behavior-view-placeholder' =>
   array(
     'uri' => '/res/5b89bdf5/rsrc/js/javelin/ext/view/ViewPlaceholder.js',
@@ -1701,17 +1715,6 @@ celerity_register_resource_map(array(
     ),
     'disk' => '/rsrc/css/application/slowvote/slowvote.css',
   ),
-  0 =>
-  array(
-    'uri' => '/res/5aa87210/rsrc/js/javelin/core/__tests__/stratcom.js',
-    'type' => 'js',
-    'requires' =>
-    array(
-      0 => 'javelin-stratcom',
-      1 => 'javelin-dom',
-    ),
-    'disk' => '/rsrc/js/javelin/core/__tests__/stratcom.js',
-  ),
   'phabricator-standard-page-view' =>
   array(
     'uri' => '/res/7e09bbfc/rsrc/css/application/base/standard-page-view.css',
@@ -1779,6 +1782,17 @@ celerity_register_resource_map(array(
       4 => 'javelin-reactor-dom',
     ),
     'disk' => '/rsrc/js/application/uiexample/ReactorCheckboxExample.js',
+  ),
+  0 =>
+  array(
+    'uri' => '/res/5aa87210/rsrc/js/javelin/core/__tests__/stratcom.js',
+    'type' => 'js',
+    'requires' =>
+    array(
+      0 => 'javelin-stratcom',
+      1 => 'javelin-dom',
+    ),
+    'disk' => '/rsrc/js/javelin/core/__tests__/stratcom.js',
   ),
   'phabricator-uiexample-reactor-focus' =>
   array(
@@ -1925,6 +1939,15 @@ celerity_register_resource_map(array(
     array(
     ),
     'disk' => '/rsrc/js/raphael/g.raphael.line.js',
+  ),
+  'socket.io' =>
+  array(
+    'uri' => '/res/2c613b75/rsrc/js/socket.io/socket.io.js',
+    'type' => 'js',
+    'requires' =>
+    array(
+    ),
+    'disk' => '/rsrc/js/socket.io/socket.io.js',
   ),
   'syntax-highlighting-css' =>
   array(

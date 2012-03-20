@@ -12,29 +12,29 @@ logfile = fs.createWriteStream('/var/log/aphlict.log',
 logfile.write('----- ' + (new Date()).toLocaleString() + ' -----\n');
 
 function log(str) {
-    console.log(str);
-    logfile.write(str + '\n');
+  //console.log(str);
+  logfile.write(str + '\n');
 }
 
 
-function getFlashPolicy() {
-  return [
-    '<?xml version="1.0"?>',
-    '<!DOCTYPE cross-domain-policy SYSTEM ' +
-      '"http://www.macromedia.com/xml/dtds/cross-domain-policy.dtd">',
-    '<cross-domain-policy>',
-    '<allow-access-from domain="*" to-ports="2600"/>',
-    '</cross-domain-policy>'
-  ].join('\n');
-}
+var io = require('socket.io').listen(8080);
 
-net.createServer(function(socket) {
-  socket.on('data', function() {
-    socket.write(getFlashPolicy() + '\0');
+io.sockets.on('connection', function (socket) {
+  //first connection
+  var client_id = generate_id();
+  clients[client_id] = socket;
+  current_connections++;
+  log(client_id + ': connected\t\t(' + current_connections + ' current connections)');
+  socket.emit('connected');
+
+  socket.on('disconnect', function() {
+    delete clients[client_id];
+    current_connections--;
+    log(client_id + ': closed\t\t(' + current_connections + ' current connections)');
   });
-}).listen(843);
-
-
+  
+  
+});
 
 function write_json(socket, data) {
   var serial = JSON.stringify(data);
@@ -116,25 +116,13 @@ var receive_server = http.createServer(function(request, response) {
 function broadcast(data) {
   for(var client_id in clients) {
     try {
-      write_json(clients[client_id], data);
-      log(' wrote to client ' + client_id);
+      clients[client_id].emit('notification', data)
+      log('wrote to ' + JSON.stringify(data) + ' to ' + client_id);
     } catch (error) {
       delete clients[client_id];
       current_connections--;
+      console.log("FUCKIN UUUP");
       log(' ERROR: could not write to client ' + client_id);
     }
   }
 }
-
-
-
-// TODO Add admin interface to view server stats
-// var status_server = http.createServer(function(request, response) {
-//   response.writeHead(200, {'Content-Type' : 'text/plain'});
-//   var stats = [];
-//   stats.push('Number of Clients Connected: ' + num_connections);
-//   stats.push('Next ID: ' + current_id);
-
-//   response.end(stats.join('\n'));
-// }).listen(22282, '127.0.0.1');
-

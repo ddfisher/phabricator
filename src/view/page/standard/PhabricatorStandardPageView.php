@@ -350,17 +350,6 @@ class PhabricatorStandardPageView extends AphrontPageView {
     }
 
     // -------------------- EXPERIMENTAL NOTIFICATIONS STUFF --------------------
-    $aphlict_object_id = 'aphlictswfobject';
-
-    $aphlict_content = phutil_render_tag(
-      'object',
-      array(
-        'classid' => 'clsid:d27cdb6e-ae6d-11cf-96b8-444553540000',
-      ),
-      '<param name="movie" value="/rsrc/swf/aphlict.swf" />'.
-      '<param name="allowScriptAccess" value="always" />'.
-      '<param name="wmode" value="opaque" />'.
-      '<embed src="/rsrc/swf/aphlict.swf" wmode="opaque" id="'.$aphlict_object_id.'"></embed>');
 
     $server_uri = PhabricatorEnv::getURI('');
     $matches = null;
@@ -368,13 +357,11 @@ class PhabricatorStandardPageView extends AphrontPageView {
     $server_domain = $matches[1];
 
     Javelin::initBehavior(
-      'aphlict-listen',
+      'socket.io-listen',
       array(
-        'id'      => $aphlict_object_id,
-        'server'  => $server_domain,
-        'port'    => 2600,
-      ));
-
+	'server' => $server_domain,
+	'port' => 8080,
+    ));
     // --------------------                                  --------------------
 
     $header_chrome = null;
@@ -402,12 +389,6 @@ class PhabricatorStandardPageView extends AphrontPageView {
             '</td>'.
             '<td class="phabricator-login-details">'.
               $login_stuff.
-            '</td>'.
-            '<td>'.
-                /* '<div style="display: none; visibility: hidden;">'. */
-                '<div style="height:1px; width:1px;">'.
-                  $aphlict_content.
-              '</div>'.
             '</td>'.
           '</tr>'.
         '</table>';
