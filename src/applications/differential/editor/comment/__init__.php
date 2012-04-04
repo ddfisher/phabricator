@@ -19,6 +19,7 @@ phutil_require_module('phabricator', 'applications/feed/constants/story');
 phutil_require_module('phabricator', 'applications/feed/publisher');
 phutil_require_module('phabricator', 'applications/herald/storage/transcript/base');
 phutil_require_module('phabricator', 'applications/markup/engine');
+phutil_require_module('phabricator', 'applications/notifications/aphlict/differential');
 phutil_require_module('phabricator', 'applications/people/storage/user');
 phutil_require_module('phabricator', 'applications/phid/handle/data');
 phutil_require_module('phabricator', 'applications/search/index/indexer/differential');

@@ -513,7 +513,9 @@ class DifferentialCommentEditor {
           $revision->getAuthorPHID(),
         ))
       ->publish();
-
+    
+    id(new DifferentialNotification($revision, $action, $actor_phid))
+      ->push();
     // TODO: Move to a daemon?
     PhabricatorSearchDifferentialIndexer::indexRevision($revision);
 

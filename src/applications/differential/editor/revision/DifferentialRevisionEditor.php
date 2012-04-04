@@ -430,6 +430,9 @@ class DifferentialRevisionEditor {
         ))
       ->publish();
 
+    $action = $is_new ? DifferentialAction::ACTION_CREATE : DifferentialAction::ACTION_UPDATE;
+    id(new DifferentialNotification($revision, $action, $revision->getAuthorPHID()))
+      ->push();
 //  TODO: Move this into a worker task thing.
     PhabricatorSearchDifferentialIndexer::indexRevision($revision);
 
