@@ -16,10 +16,30 @@
  * limitations under the License.
  */
 
-final class NotificationType
-  extends PhabricatorNotificationsConstants{
+abstract class PhabricatorNotificationsStory {
 
-  const KEY = 'type';
-  const REFRESH = 'refresh';
-  const GENERIC = 'generic';
+  private $data;
+  private $handles;
+  private $objects;
+  private $framed;
+
+
+  final public function __construct(PhabricatorNotificationsStoryData
+    $data) {
+    $this->data = $data;
+  }
+
+  abstract public function renderView();
+
+  final public function getStoryData() {
+    return $this->data;
+  }
+
+  final public function getEpoch() {
+    return $this->getStoryData()->getEpoch();
+  }
+
+  final public function getChronologicalKey() {
+    return $this->getStoryData()->getChronologicalKey();
+  }
 }

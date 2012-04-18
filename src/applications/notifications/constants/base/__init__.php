@@ -8,3 +8,4 @@
 
 
 phutil_require_source('NotificationConstants.php');
+phutil_require_source('PhabricatorNotificationsConstants.php');

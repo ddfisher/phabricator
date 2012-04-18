@@ -194,12 +194,25 @@ class ManiphestTransactionEditor {
 
     // TODO: Do this offline via timeline
     PhabricatorSearchManiphestIndexer::indexTask($task);
-
+    // set up event data and send out notification
+    $event_data = array(
+        'taskPHID'        => $task->getPHID(),
+        'taskID'          => $task->getID(),
+        'transactionIDs'  => mpull($transactions, 'getID'),
+        'ownerPHID'       => $task->getOwnerPHID(),
+        'description'     => $task->getDescription());
+    id(new PhabricatorNotificationsPublisher())
+      ->setStoryType(
+        PhabricatorNotificationsStoryTypeConstants::STORY_MANIPHEST)
+      ->setStoryData($event_data)
+      ->setStoryTime(time())
+      ->setStoryAuthorPHID(head($transactions)->getAuthorPHID())
+      ->setObjectPHID($task->getPHID())
+      ->publish();
+    // move this into publisher?
     $this->sendNotification($task, $transactions);
     $this->sendEmail($task, $transactions, $email_to, $email_cc);
   }
-
-
 
   protected function getSubjectPrefix() {
     return PhabricatorEnv::getEnvConfig('metamta.maniphest.subject-prefix');

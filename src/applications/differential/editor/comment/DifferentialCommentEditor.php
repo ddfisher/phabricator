@@ -514,6 +514,15 @@ class DifferentialCommentEditor {
         ))
       ->publish();
 
+    id(new PhabricatorNotificationsPublisher())
+      ->setStoryType(
+        PhabricatorNotificationsStoryTypeConstants::STORY_DIFFERENTIAL)
+      ->setStoryData($event_data)
+      ->setStoryTime(time())
+      ->setStoryAuthorPHID($this->actorPHID)
+      ->setObjectPHID($revision->getPHID())
+      ->publish();
+
     // TODO: Move to a daemon?
     PhabricatorSearchDifferentialIndexer::indexRevision($revision);
 

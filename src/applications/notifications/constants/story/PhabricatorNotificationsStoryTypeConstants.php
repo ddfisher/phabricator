@@ -16,13 +16,16 @@
  * limitations under the License.
  */
 
-/*
- * Messages templates to be posted
- */
-final class NotificationMessage
+final class PhabricatorNotificationsStoryTypeConstants
   extends PhabricatorNotificationsConstants {
 
-  const KEY = 'info';
-  const REFRESH = 'Page Updated by %s';
+  const STORY_UNKNOWN       = 'PhabricatorNotificationsStoryUnknown';
+  // Not sure when STORY_STATUS gets used
+  const STORY_STATUS        = 'PhabricatorNotificationsStoryStatus';
+  const STORY_DIFFERENTIAL  = 'PhabricatorNotificationsStoryDifferential';
+  const STORY_PHRICTION     = 'PhabricatorNotificationsStoryPhriction';
+  const STORY_MANIPHEST     = 'PhabricatorNotificationsStoryManiphest';
+  const STORY_PROJECT       = 'PhabricatorNotificationsStoryProject';
+  const STORY_AUDIT         = 'PhabricatorNotificationsStoryAudit';
 
 }

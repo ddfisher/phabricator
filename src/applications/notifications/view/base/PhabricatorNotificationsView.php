@@ -16,10 +16,6 @@
  * limitations under the License.
  */
 
-final class NotificationType
-  extends PhabricatorNotificationsConstants{
+abstract class PhabricatorNotificationsView extends AphrontView {
 
-  const KEY = 'type';
-  const REFRESH = 'refresh';
-  const GENERIC = 'generic';
 }

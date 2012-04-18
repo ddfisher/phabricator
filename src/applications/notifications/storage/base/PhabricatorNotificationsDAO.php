@@ -16,10 +16,8 @@
  * limitations under the License.
  */
 
-final class NotificationType
-  extends PhabricatorNotificationsConstants{
-
-  const KEY = 'type';
-  const REFRESH = 'refresh';
-  const GENERIC = 'generic';
+abstract class PhabricatorNotificationsDAO extends PhabricatorLiskDAO {
+  public function getApplicationName() {
+    return 'notifications';
+  }
 }

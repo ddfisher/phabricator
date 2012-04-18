@@ -16,10 +16,25 @@
  * limitations under the License.
  */
 
-final class NotificationType
-  extends PhabricatorNotificationsConstants{
+final class PhabricatorNotificationsStoryUnknown
+ extends PhabricatorNotificationsStory {
 
-  const KEY = 'type';
-  const REFRESH = 'refresh';
-  const GENERIC = 'generic';
+  public function renderView() {
+    $data = $this->getStoryData();
+
+    $view = new PhabricatorNotificationsStoryView();
+
+    $view->setTitle('Unknown Story');
+    $view->setEpoch($data->getEpoch());
+    $view->setOneLineStory($data->getStoryType()." unknown story type :(");
+
+    $view->appendChild(
+      'This is an notification feed story of type '.
+      '"'.phutil_escape_html($data->getStoryType()).'".');
+
+
+    return $view;
+
+  }
+
 }

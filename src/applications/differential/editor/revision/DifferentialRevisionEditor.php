@@ -430,6 +430,14 @@ class DifferentialRevisionEditor {
         ))
       ->publish();
 
+    id(new PhabricatorNotificationsPublisher())
+      ->setStoryType(
+        PhabricatorNotificationsStoryTypeConstants::STORY_DIFFERENTIAL)
+      ->setStoryData($event_data)
+      ->setStoryTime(time())
+      ->setStoryAuthorPHID($revision->getAuthorPHID())
+      ->setObjectPHID($revision->getPHID())
+      ->publish();
 //  TODO: Move this into a worker task thing.
     PhabricatorSearchDifferentialIndexer::indexRevision($revision);
 

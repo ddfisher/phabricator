@@ -16,10 +16,35 @@
  * limitations under the License.
  */
 
-final class NotificationType
-  extends PhabricatorNotificationsConstants{
+final class PhabricatorNotificationsStoryView
+extends PhabricatorNotificationsView {
+  private $title;
+  private $phid;
+  private $epoch;
+  private $oneLine;
 
-  const KEY = 'type';
-  const REFRESH = 'refresh';
-  const GENERIC = 'generic';
+  public function setViewer(PhabricatorUser $viewer) {
+    $this->viewer = $viewer;
+    return $this;
+  }
+
+  public function setTitle($title) {
+    $this->title = $title;
+    return $this;
+  }
+
+  public function setEpoch($epoch) {
+    $this->epoch = $epoch;
+    return $this;
+  }
+
+  public function setOneLineStory($one_line) {
+    $this->oneLine = $one_line;
+    return $this;
+  }
+
+  public function render() {
+    return $this->oneLine;
+  }
+
 }

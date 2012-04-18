@@ -16,10 +16,6 @@
  * limitations under the License.
  */
 
-final class NotificationType
-  extends PhabricatorNotificationsConstants{
+abstract class PhabricatorNotificationsConstants{
 
-  const KEY = 'type';
-  const REFRESH = 'refresh';
-  const GENERIC = 'generic';
 }

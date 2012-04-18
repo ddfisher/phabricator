@@ -16,10 +16,17 @@
  * limitations under the License.
  */
 
-final class NotificationType
-  extends PhabricatorNotificationsConstants{
+final class PhabricatorNotificationsSubscribed
+  extends PhabricatorNotificationsDAO {
 
-  const KEY = 'type';
-  const REFRESH = 'refresh';
-  const GENERIC = 'generic';
+  protected $userPHID;
+  protected $objectPHID;
+  protected $lastViewed;
+
+  public function getConfiguration() {
+    return array(
+      self::CONFIG_IDS          => self::IDS_MANUAL,
+      self::CONFIG_TIMESTAMPS   => false,
+    ) + parent::getConfiguration();
+  }
 }
