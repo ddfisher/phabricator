@@ -32,6 +32,10 @@ net.createServer(function(socket) {
   socket.on('data', function() {
     socket.write(getFlashPolicy() + '\0');
   });
+
+  socket.on('error', function (e) {
+    console.log('Error in policy server: ' + e);
+  });
 }).listen(843);
 
 
@@ -87,6 +91,10 @@ var send_server = net.createServer(function(socket) {
 
   socket.on('end', function() {
     log(client_id + ': ended the connection');
+  });
+
+  socket.on('error', function (e) {
+    console.log('Uncaught error in send server: ' + e);
   });
 }).listen(2600);
 
