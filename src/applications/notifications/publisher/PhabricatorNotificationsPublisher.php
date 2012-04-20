@@ -120,9 +120,10 @@ final class PhabricatorNotificationsPublisher {
       case PhabricatorNotificationsStoryTypeConstants::STORY_MANIPHEST:
         $task = id(new ManiphestTask)->load($event_data['taskID']);
         $transaction = id(new ManiphestTransaction)
-          ->load(head($event_data['transactionIDs']));
+          ->load($event_data['transactionID']);
         $pathname = '/T'.$event_data['taskID'];
         id(new ManiphestNotification($task, $transaction, $pathname))->push();
+        id(new RefreshNotification($this->storyAuthorPHID, $pathname))->push();
         break;
       case PhabricatorNotificationsStoryTypeConstants::STORY_PROJECT:
         break;

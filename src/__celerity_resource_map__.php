@@ -344,7 +344,7 @@ celerity_register_resource_map(array(
   ),
   'javelin-behavior-aphlict-listen' =>
   array(
-    'uri' => '/res/c534c9b4/rsrc/js/application/aphlict/behavior-aphlict-listen.js',
+    'uri' => '/res/5abfdabd/rsrc/js/application/aphlict/behavior-aphlict-listen.js',
     'type' => 'js',
     'requires' =>
     array(
@@ -1055,6 +1055,15 @@ celerity_register_resource_map(array(
     ),
     'disk' => '/rsrc/js/javelin/lib/Mask.js',
   ),
+  0 =>
+  array(
+    'uri' => '/res/936e8e81/rsrc/js/javelin/docs/onload.js',
+    'type' => 'js',
+    'requires' =>
+    array(
+    ),
+    'disk' => '/rsrc/js/javelin/docs/onload.js',
+  ),
   'javelin-reactor' =>
   array(
     'uri' => '/res/dfd87f3c/rsrc/js/javelin/ext/reactor/core/Reactor.js',
@@ -1700,17 +1709,6 @@ celerity_register_resource_map(array(
     array(
     ),
     'disk' => '/rsrc/css/application/slowvote/slowvote.css',
-  ),
-  0 =>
-  array(
-    'uri' => '/res/5aa87210/rsrc/js/javelin/core/__tests__/stratcom.js',
-    'type' => 'js',
-    'requires' =>
-    array(
-      0 => 'javelin-stratcom',
-      1 => 'javelin-dom',
-    ),
-    'disk' => '/rsrc/js/javelin/core/__tests__/stratcom.js',
   ),
   'phabricator-standard-page-view' =>
   array(

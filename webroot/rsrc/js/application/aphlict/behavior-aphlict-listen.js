@@ -31,7 +31,8 @@ JX.behavior('aphlict-listen', function(config) {
             if (message.type == "refresh"
                 && message.pathname == window.location.pathname) {
               humane.success(message.info);
-            } else if (message.type == "generic") {
+            } else if (message.type == "generic"
+                && message.pathname != window.location.pathname) {
               humane.log(message.info);
             }
           }

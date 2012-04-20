@@ -182,6 +182,26 @@ class ManiphestTransactionEditor {
     foreach ($transactions as $transaction) {
       $transaction->setTaskID($task->getID());
       $transaction->save();
+
+      // -------------------- Notification Start -------------------------
+      $event_data = array(
+          'taskPHID'        => $task->getPHID(),
+          'taskID'          => $task->getID(),
+          'type'            => $type,
+          'transactionID'   => $transaction->getID(),
+          'ownerPHID'       => $task->getOwnerPHID(),
+          'description'     => $task->getDescription());
+          
+      id(new PhabricatorNotificationsPublisher())
+        ->setStoryType(
+          PhabricatorNotificationsStoryTypeConstants::STORY_MANIPHEST)
+        ->setStoryData($event_data)
+        ->setStoryTime(time())
+        ->setStoryAuthorPHID($transaction->getAuthorPHID())
+        ->setObjectPHID($task->getPHID())
+        ->publish();
+      // -------------------- Notification End   -------------------------
+
     }
 
     $email_to[] = $task->getOwnerPHID();
@@ -195,22 +215,6 @@ class ManiphestTransactionEditor {
     // TODO: Do this offline via timeline
     PhabricatorSearchManiphestIndexer::indexTask($task);
     // set up event data and send out notification
-    $event_data = array(
-        'taskPHID'        => $task->getPHID(),
-        'taskID'          => $task->getID(),
-        'transactionIDs'  => mpull($transactions, 'getID'),
-        'ownerPHID'       => $task->getOwnerPHID(),
-        'description'     => $task->getDescription());
-    id(new PhabricatorNotificationsPublisher())
-      ->setStoryType(
-        PhabricatorNotificationsStoryTypeConstants::STORY_MANIPHEST)
-      ->setStoryData($event_data)
-      ->setStoryTime(time())
-      ->setStoryAuthorPHID(head($transactions)->getAuthorPHID())
-      ->setObjectPHID($task->getPHID())
-      ->publish();
-    // move this into publisher?
-    $this->sendNotification($task, $transactions);
     $this->sendEmail($task, $transactions, $email_to, $email_cc);
   }
 
@@ -218,14 +222,6 @@ class ManiphestTransactionEditor {
     return PhabricatorEnv::getEnvConfig('metamta.maniphest.subject-prefix');
   }
 
-  private function sendNotification($task, $transactions) {
-    $task_id = $task->getID();
-    $actor_phid = head($transactions)->getAuthorPHID();
-    $notification = new RefreshNotification($actor_phid,'/T'.$task_id);
-    $notification->push();
-    $notification = new ManiphestNotification($task, head($transactions), '/T'.$task_id);
-    $notification->push();
-  }
 
   private function sendEmail($task, $transactions, $email_to, $email_cc) {
     $email_to = array_filter(array_unique($email_to));
