@@ -4,6 +4,7 @@
  *           javelin-aphlict
  *           javelin-util
  *           javelin-stratcom
+ *           javelin-behavior-aphlict-dropdown
  *           notifications-humane
  */
 
@@ -34,6 +35,7 @@ JX.behavior('aphlict-listen', function(config) {
             } else if (message.type == "generic"
                 && message.pathname != window.location.pathname) {
               humane.log(message.info);
+              JS.Stratcom.invoke('notification-update', null, {});
             }
           }
         }
