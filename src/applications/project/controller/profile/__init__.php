@@ -7,11 +7,13 @@
 
 
 phutil_require_module('phabricator', 'aphront/response/404');
+phutil_require_module('phabricator', 'aphront/writeguard');
 phutil_require_module('phabricator', 'applications/feed/builder/feed');
 phutil_require_module('phabricator', 'applications/feed/query');
 phutil_require_module('phabricator', 'applications/files/storage/file');
 phutil_require_module('phabricator', 'applications/maniphest/query');
 phutil_require_module('phabricator', 'applications/maniphest/view/tasksummary');
+phutil_require_module('phabricator', 'applications/notifications/storage/subscribed');
 phutil_require_module('phabricator', 'applications/phid/handle/data');
 phutil_require_module('phabricator', 'applications/phriction/storage/document');
 phutil_require_module('phabricator', 'applications/project/controller/base');
@@ -19,6 +21,8 @@ phutil_require_module('phabricator', 'applications/project/storage/profile');
 phutil_require_module('phabricator', 'applications/project/storage/project');
 phutil_require_module('phabricator', 'infrastructure/celerity/api');
 phutil_require_module('phabricator', 'infrastructure/javelin/markup');
+phutil_require_module('phabricator', 'storage/qsprintf');
+phutil_require_module('phabricator', 'storage/queryfx');
 phutil_require_module('phabricator', 'view/control/table');
 phutil_require_module('phabricator', 'view/layout/profileheader');
 phutil_require_module('phabricator', 'view/layout/sidenavfilter');
