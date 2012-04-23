@@ -26,12 +26,7 @@ final class PhabricatorNotificationsStoryUnknown
 
     $view->setTitle('Unknown Story');
     $view->setEpoch($data->getEpoch());
-    $view->setOneLineStory($data->getStoryType()." unknown story type :(");
-
-    $view->appendChild(
-      'This is an notification feed story of type '.
-      '"'.phutil_escape_html($data->getStoryType()).'".');
-
+    $view->setOneLineStory(true);
 
     return $view;
 
