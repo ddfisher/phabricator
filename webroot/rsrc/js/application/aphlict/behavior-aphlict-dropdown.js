@@ -14,14 +14,23 @@ JX.behavior('aphlict-dropdown', function(config) {
   var request = null;
  
   function refresh() {
-    console.log("updating...");
     if (request) { //already fetching
+        console.log("update in progress...");
       return;
     }
 
+    console.log("updating...");
     request = new JX.Request('/notifications/', function(response) {
       indicator.textContent = '' + response.number;
+      if (response.number == 0) {
+          // indicator.style.color = "#ffffff";
+          indicator.style.fontWeight = "";
+      } else {
+          // indicator.style.color = "#D10000";
+          indicator.style.fontWeight = "bold";
+      }
       JX.DOM.setContent(dropdown, JX.$H(response.content));
+      request = null;
     });
     request.send();
   }
@@ -32,7 +41,7 @@ JX.behavior('aphlict-dropdown', function(config) {
     if (open) {
       dropdown.style.height = "0px";
     } else {
-      dropdown.style.height = "400px";
+      dropdown.style.height = "300px";
     }
     open = !open;
   };
