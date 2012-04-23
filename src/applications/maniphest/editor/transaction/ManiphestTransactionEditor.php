@@ -203,14 +203,20 @@ class ManiphestTransactionEditor {
   }
 
   private function publishNotifications($task, $transactions) {
+    $comments = null;
+      
     foreach ($transactions as $transaction) {
+      if ($transaction->hasComments()) {
+        $comments = $transaction->getComments();
+      }
       $event_data = array(
           'taskPHID'        => $task->getPHID(),
           'transactionID'   => $transaction->getID(),
           'ownerPHID'       => $task->getOwnerPHID(),
           'taskID'          => $task->getID(),
           'type'            => $transaction->getTransactionType(),
-          'description'     => $task->getDescription());
+          'description'     => $task->getDescription(),
+	  'comments'        => $comments);
 
       id(new PhabricatorNotificationsPublisher())
         ->setStoryType(

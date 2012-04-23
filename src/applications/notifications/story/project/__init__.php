@@ -10,4 +10,4 @@ phutil_require_module('phabricator', 'applications/notifications/story/base');
 phutil_require_module('phabricator', 'applications/notifications/view/story');
 
 
-phutil_require_source('PhabricatorNotificationsStoryManiphest.php');
+phutil_require_source('PhabricatorNotificationsStoryProject.php');

@@ -40,18 +40,9 @@ final class PhabricatorNotificationsStoryManiphest
 
     $view = new PhabricatorNotificationsStoryView();
 
-
-
     $view->setEpoch($data->getEpoch());
     $view->setOneLineStory(true);
 
-    $verb = ManiphestAction::getActionPastTenseVerb($action);
-
-    /* $title =  */
-    /*   $this->linkTo($author_phid). */
-    /*   " {$verb} task ". */
-    /*   $this->linkTo($task_phid); */
-    /* $title .= '.'; */
 
     $view->setTitle($this->one_line_for_data($data));
     return $view;
@@ -63,14 +54,14 @@ final class PhabricatorNotificationsStoryManiphest
     $task_phid = $data->getValue('taskPHID');
     $action = $data->getValue('type');
     $description = $data->getValue('description');
-
-
+    $comments = $data->getValue('comments');
+    //todo, cut the length of comment off
     $actor_link = $this->linkTo($actor_phid);
     $task_link = $this->linkTo($task_phid);
-
+    
     switch ($action) {
     case 'comment':
-      return "{$actor_link} commented on {$task_link}";
+      return  "{$actor_link} commented on {$task_link} \"{$comments}\"";
     case 'ccs':
       return "{$actor_link} added cc's to {$task_link}";
     case 'priority':
