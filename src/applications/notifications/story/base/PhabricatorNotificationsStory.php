@@ -29,6 +29,10 @@ abstract class PhabricatorNotificationsStory {
     $this->data = $data;
   }
 
+  public function getRequiredHandlePHIDs() {
+    return array();
+  }
+
   abstract public function renderView();
 
   final public function getStoryData() {
@@ -41,5 +45,36 @@ abstract class PhabricatorNotificationsStory {
 
   final public function getChronologicalKey() {
     return $this->getStoryData()->getChronologicalKey();
+  }
+
+  final protected function linkTo($phid) {
+    $handle = $this->getHandle($phid);
+
+    return phutil_render_tag(
+      'a',
+      array(
+        'href'    => $handle->getURI(),
+      ),
+      phutil_escape_html($handle->getLinkName()));
+  }
+
+
+  final public function setHandles(array $handles) {
+    $this->handles = $handles;
+    return $this;
+  }
+
+  final protected function getHandle($phid) {
+    if (isset($this->handles[$phid])) {
+      if ($this->handles[$phid] instanceof PhabricatorObjectHandle) {
+        return $this->handles[$phid];
+      }
+    }
+
+    $handle = new PhabricatorObjectHandle();
+    $handle->setPHID($phid);
+    $handle->setName("Unloaded Object '{$phid}'");
+
+    return $handle;
   }
 }

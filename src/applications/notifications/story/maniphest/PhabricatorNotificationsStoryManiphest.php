@@ -19,45 +19,64 @@
 final class PhabricatorNotificationsStoryManiphest
  extends PhabricatorNotificationsStory {
 
+
+  public function getRequiredHandlePHIDs() {
+    $data = $this->getStoryData();
+    return array_filter(
+        array(
+        $this->getStoryData()->getAuthorPHID(),
+        $data->getValue('taskPHID'),
+        $data->getValue('ownerPHID'),
+      ));
+  }
+
   public function renderView() {
     $data = $this->getStoryData();
-
+    $author_phid = $data->getAuthorPHID();
+    $owner_phid = $data->getValue('ownerPHID');
+    $task_phid = $data->getValue('taskPHID');
+    $action = $data->getValue('type');
+    $description = $data->getValue('description');
+    
     $view = new PhabricatorNotificationsStoryView();
 
-    $view->setTitle('Maniphest Story');
+    
+    
     $view->setEpoch($data->getEpoch());
+    $view->setOneLineStory(true);
 
-    $view->setOneLineStory($this->message_for_data($data));
+    $verb = ManiphestAction::getActionPastTenseVerb($action);
 
-    $view->appendChild(
-      'This is an notification feed story of type '.
-      '"'.phutil_escape_html($data->getStoryType()).'".');
+    /* $title =  */
+    /*   $this->linkTo($author_phid). */
+    /*   " {$verb} task ". */
+    /*   $this->linkTo($task_phid); */
+    /* $title .= '.'; */
 
+    $view->setTitle($this->one_line_for_data($data));
     return $view;
   }
 
-  function message_for_data($data) {
+  function one_line_for_data($data) {
     $actor_phid = $data->getAuthorPHID();
     $owner_phid = $data->getValue('ownerPHID');
     $task_phid = $data->getValue('taskPHID');
     $action = $data->getValue('type');
     $description = $data->getValue('description');
 
-    $user = id(new PhabricatorUser())->loadOneWhere(
-      'phid = %s',
-      $actor_phid);
-    $username = $user->getUserName();
-
-    $task = id(new ManiphestTask())->loadOneWhere(
-      'phid = %s',
-      $task_phid);
+    
+    $actor_link = $this->linkTo($actor_phid);
+    $task_link = $this->linkTo($task_phid);
 
     switch ($action) {
     case 'comment':
-      return sprintf('%s commented "%s" on Task:%s',
-	$username,
-	$description,
-	$task->getTitle());
+      return "{$actor_link} commented on {$task_link}";
+    case 'ccs':
+      return "{$actor_link} added cc's to {$task_link}";
+    case 'priority':
+      return "{$actor_link} changed the priority of {$task_link}";
+    case 'projects':
+      return "{$actor_link} added projects to {$task_link}";
 
     default:
       return '['.

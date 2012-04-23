@@ -631,6 +631,7 @@ phutil_register_library_map(array(
     'PhabricatorMetaMTAViewController' => 'applications/metamta/controller/view',
     'PhabricatorMetaMTAWorker' => 'applications/metamta/worker',
     'PhabricatorMySQLFileStorageEngine' => 'applications/files/engine/mysql',
+    'PhabricatorNotificationsBuilder' => 'applications/notifications/builder/notifications',
     'PhabricatorNotificationsConstants' => 'applications/notifications/constants/base',
     'PhabricatorNotificationsController' => 'applications/notifications/controller/base',
     'PhabricatorNotificationsDAO' => 'applications/notifications/storage/base',

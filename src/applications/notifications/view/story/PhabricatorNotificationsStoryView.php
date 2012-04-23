@@ -18,10 +18,12 @@
 
 final class PhabricatorNotificationsStoryView
 extends PhabricatorNotificationsView {
+
   private $title;
   private $phid;
   private $epoch;
   private $oneLine;
+  private $viewer;
 
   public function setViewer(PhabricatorUser $viewer) {
     $this->viewer = $viewer;
@@ -44,7 +46,20 @@ extends PhabricatorNotificationsView {
   }
 
   public function render() {
-    return $this->oneLine;
+    $head = phutil_render_tag(
+      'div',
+      array(
+	'class' => 'phabricator-notifications-story-head',
+      ),
+      nonempty($this->title, 'Untitled Story'));
+    
+    return phutil_render_tag(
+      'div',
+      array(
+	'class' => 
+	'phabricator-notifications '.
+	'phabricator-notifications-story-one-line'),
+      $head);
   }
 
 }

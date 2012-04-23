@@ -30,13 +30,12 @@ final class PhabricatorNotificationsTestPageController
     $stories = $query->execute();
     $display_data = array();
 
-    foreach ($stories as $story) {
-      $display_data[] = $story->renderView();
-      $display_data[] = '<br>';
-    }
+    $builder = new PhabricatorNotificationsBuilder($stories);
+    $builder->setUser($user);
+    $notifications_view = $builder->buildView();
 
     return $this->buildStandardPageResponse(
-      $display_data,
+      $notifications_view,
       array(
         'title' => 'Notifications Test Page',
       ));

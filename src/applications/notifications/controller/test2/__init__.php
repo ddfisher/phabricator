@@ -6,6 +6,7 @@
 
 
 
+phutil_require_module('phabricator', 'applications/notifications/builder/notifications');
 phutil_require_module('phabricator', 'applications/notifications/controller/base');
 phutil_require_module('phabricator', 'applications/notifications/query');
 
