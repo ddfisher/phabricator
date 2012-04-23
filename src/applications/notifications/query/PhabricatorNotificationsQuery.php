@@ -20,6 +20,7 @@ final class PhabricatorNotificationsQuery {
 
   private $limit = 100;
   private $userPHID;
+  
 
   public function setLimit($limit) {
     $this->limit = $limit;
@@ -45,7 +46,7 @@ final class PhabricatorNotificationsQuery {
 
     $data = queryfx_all(
       $conn,
-      "SELECT story.*, sub.lastViewed FROM %T sub
+      "SELECT story.* FROM %T sub
          JOIN %T story ON sub.objectPHID = story.objectPHID
          WHERE sub.userPHID = '%Q'
          ORDER BY story.chronologicalKey desc

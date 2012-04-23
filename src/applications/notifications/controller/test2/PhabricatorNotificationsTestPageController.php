@@ -28,7 +28,6 @@ final class PhabricatorNotificationsTestPageController
     $query->setUserPHID($user->getPHID());
 
     $stories = $query->execute();
-    $display_data = array();
 
     $builder = new PhabricatorNotificationsBuilder($stories);
     $builder->setUser($user);

@@ -20,8 +20,9 @@ abstract class PhabricatorNotificationsStory {
 
   private $data;
   private $handles;
-  private $objects;
   private $framed;
+  private $consumed;
+  private $viewer;
 
 
   final public function __construct(PhabricatorNotificationsStoryData
@@ -71,10 +72,39 @@ abstract class PhabricatorNotificationsStory {
       }
     }
 
+
     $handle = new PhabricatorObjectHandle();
     $handle->setPHID($phid);
     $handle->setName("Unloaded Object '{$phid}'");
 
     return $handle;
   }
+
+  final public function getConsumed() {
+    return $this->consumed;
+  }
+
+  final public function setViewer(PhabricatorUser $user) {
+    $this->viewer = $user;
+  }
+  
+  final public function loadConsumed() {
+    if(!$this->viewer) {
+      throw new Exception('You must call setViewer first!');
+    }
+
+    $objects = id(new PhabricatorNotificationsSubscribed())->loadAllWhere(
+      "userPHID = %s AND objectPHID = %s",
+      $this->viewer->getPHID(),
+      $this->data->getObjectPHID()
+      );
+
+    
+    $newest_subscription = last(msort($objects, 'getLastViewed'));
+    $this->consumed = $newest_subscription->getConsumed();
+    
+    
+  }
+
+
 }

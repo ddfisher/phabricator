@@ -27,6 +27,9 @@ final class PhabricatorNotificationsStoryData
   protected $objectPHID;
   protected $chronologicalKey;
 
+  //note, this comes from diff table but stored in results of query
+  
+
   public function getConfiguration() {
     return array(
       self::CONFIG_AUX_PHID       => true,

@@ -14,6 +14,8 @@ class PhabricatorNotificationsStoryProject extends PhabricatorNotificationsStory
       $view = new PhabricatorNotificationsStoryView();
       $view->setTitle($this->one_line_for_data($data));
       $view->setOneLineStory(true);
+      $view->setConsumed($this->getConsumed());
+
 
       return $view;
     }

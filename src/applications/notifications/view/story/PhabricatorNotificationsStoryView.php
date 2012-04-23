@@ -24,6 +24,7 @@ extends PhabricatorNotificationsView {
   private $epoch;
   private $oneLine;
   private $viewer;
+  private $consumed;
 
   public function setViewer(PhabricatorUser $viewer) {
     $this->viewer = $viewer;
@@ -44,14 +45,27 @@ extends PhabricatorNotificationsView {
     $this->oneLine = $one_line;
     return $this;
   }
+  
+  public function setConsumed($is_consumed) {
+    $this->consumed = $is_consumed;
+  }
+
+  
 
   public function render() {
+
+    $title = $this->title;
+    if(!$this->consumed) {
+      $title = '<b>'.$title.'</b>';
+    }
+
     $head = phutil_render_tag(
       'div',
       array(
 	'class' => 'phabricator-notifications-story-head',
       ),
-      nonempty($this->title, 'Untitled Story'));
+      nonempty($title, 'Untitled Story'));
+      
 
     return phutil_render_tag(
       'div',

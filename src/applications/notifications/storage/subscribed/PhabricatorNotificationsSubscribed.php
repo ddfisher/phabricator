@@ -22,6 +22,7 @@ final class PhabricatorNotificationsSubscribed
   protected $userPHID;
   protected $objectPHID;
   protected $lastViewed;
+  protected $consumed;
 
   public function getConfiguration() {
     return array(

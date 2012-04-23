@@ -9,5 +9,4 @@
 phutil_require_module('phabricator', 'applications/base/storage/lisk');
 
 
-phutil_require_source('NotificationDAO.php');
 phutil_require_source('PhabricatorNotificationsDAO.php');

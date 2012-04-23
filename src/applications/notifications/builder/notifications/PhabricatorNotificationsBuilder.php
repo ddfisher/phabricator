@@ -36,6 +36,8 @@ final class PhabricatorNotificationsBuilder {
 
     foreach ($stories as $story) {
       $story->setHandles($handles);
+      $story->setViewer($user);
+      $story->loadConsumed();
       $date = phabricator_date($story->getEpoch(), $user);
       $view = $story->renderView();
       $view->setViewer($user);

@@ -32,17 +32,12 @@ final class PhabricatorNotificationsStoryManiphest
 
   public function renderView() {
     $data = $this->getStoryData();
-    $author_phid = $data->getAuthorPHID();
-    $owner_phid = $data->getValue('ownerPHID');
-    $task_phid = $data->getValue('taskPHID');
-    $action = $data->getValue('type');
-    $description = $data->getValue('description');
-
+    
     $view = new PhabricatorNotificationsStoryView();
 
     $view->setEpoch($data->getEpoch());
     $view->setOneLineStory(true);
-
+    $view->setConsumed($this->getConsumed());
 
     $view->setTitle($this->one_line_for_data($data));
     return $view;
@@ -57,6 +52,7 @@ final class PhabricatorNotificationsStoryManiphest
     $comments = $data->getValue('comments');
     //todo, cut the length of comment off
     $actor_link = $this->linkTo($actor_phid);
+    
     $task_link = $this->linkTo($task_phid);
     
     switch ($action) {

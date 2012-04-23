@@ -16,6 +16,7 @@ extends PhabricatorNotificationsStory {
     $view = new PhabricatorNotificationsStoryView();
     $view->setEpoch($data->getEpoch());
     $view->setOneLineStory(true);
+    $view->setConsumed($this->getConsumed());
     $view->setTitle($this->one_line_for_data($data));
 
     return $view;
