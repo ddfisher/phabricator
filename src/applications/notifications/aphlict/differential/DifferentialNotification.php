@@ -51,3 +51,4 @@ final class DifferentialNotification extends AphlictNotification{
     return $this;
   }
 }
+

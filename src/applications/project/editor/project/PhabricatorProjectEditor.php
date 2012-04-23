@@ -85,6 +85,7 @@ final class PhabricatorProjectEditor {
 
       foreach ($transactions as $xaction) {
         $this->publishTransactionStory($project, $xaction);
+        $this->publishNotifications($project, $xaction);
       }
 
     } catch (AphrontQueryDuplicateKeyException $ex) {
@@ -99,6 +100,25 @@ final class PhabricatorProjectEditor {
     // that once Phriction supports document moves.
 
     return $this;
+  }
+
+  private function publishNotifications($project, $xaction) {
+    $event_data = array(
+      'projectPHID'   => $project->getPHID(),
+      'transactionID' => $xaction->getID(),
+      'type'          => $xaction->getTransactionType(),
+      'old'           => $xaction->getOldValue(),
+      'new'           => $xaction->getNewValue(),
+    );
+
+    id(new PhabricatorNotificationsPublisher())
+      ->setStoryType(
+        PhabricatorNotificationsStoryTypeConstants::STORY_PROJECT)
+      ->setStoryData($event_data)
+      ->setStoryTime(time())
+      ->setStoryAuthorPHID($this->user)
+      ->setObjectPHID($project->getPHID())
+      ->publish();
   }
 
   private function validateName(PhabricatorProject $project) {
@@ -228,7 +248,7 @@ final class PhabricatorProjectEditor {
       ->publish();
   }
 
-  
+
 
   private function transactionHasEffect(
     PhabricatorProjectTransaction $xaction) {
