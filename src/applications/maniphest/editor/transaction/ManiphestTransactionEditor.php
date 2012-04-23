@@ -209,7 +209,7 @@ class ManiphestTransactionEditor {
           'transactionID'   => $transaction->getID(),
           'ownerPHID'       => $task->getOwnerPHID(),
           'taskID'          => $task->getID(),
-          'type'            => $transaction->getTransactionType,
+          'type'            => $transaction->getTransactionType(),
           'description'     => $task->getDescription());
 
       id(new PhabricatorNotificationsPublisher())
