@@ -1,0 +1,41 @@
+/**
+ * @provides javelin-behavior-aphlict-dropdown
+ * @requires javelin-behavior
+ *           javelin-aphlict
+ *           javelin-util
+ *           javelin-request
+ *           javelin-stratcom
+ */
+
+JX.behavior('aphlict-dropdown', function(config) {
+  var open = false;
+  var dropdown = JX.$('phabricator-notification-dropdown');
+  var indicator = JX.$('phabricator-notification-indicator');
+  var request = null;
+ 
+  function refresh() {
+    console.log("updating...");
+    if (request) { //already fetching
+      return;
+    }
+
+    request = new JX.Request('/notifications/', function(response) {
+      indicator.textContent = '' + response.number;
+      JX.DOM.setContent(dropdown, JX.$H(response.content));
+    });
+    request.send();
+  }
+
+  refresh();
+
+  indicator.onclick = function() {
+    if (open) {
+      dropdown.style.height = "0px";
+    } else {
+      dropdown.style.height = "400px";
+    }
+    open = !open;
+  };
+  
+  JX.Stratcom.listen('notification-update', null, refresh);
+});

@@ -375,6 +375,10 @@ class PhabricatorStandardPageView extends AphrontPageView {
         'port'    => 2600,
       ));
 
+    Javelin::initBehavior('aphlict-dropdown', array());
+
+    $notification_indicator = '-';
+
     // --------------------                                  --------------------
 
     $header_chrome = null;
@@ -403,6 +407,10 @@ class PhabricatorStandardPageView extends AphrontPageView {
             '<td class="phabricator-login-details">'.
               $login_stuff.
             '</td>'.
+            '</td>'.
+            '<td id="phabricator-notification-indicator">'.
+              $notification_indicator.
+            '</td>'.
             '<td>'.
                 /* '<div style="display: none; visibility: hidden;">'. */
                 '<div style="height:1px; width:1px;">'.
@@ -410,7 +418,9 @@ class PhabricatorStandardPageView extends AphrontPageView {
               '</div>'.
             '</td>'.
           '</tr>'.
-        '</table>';
+          '</table>'.
+          '<div id="phabricator-notification-dropdown"></div>'.
+          '';
       $footer_chrome =
         '<div class="phabricator-page-foot">'.
           $foot_links.

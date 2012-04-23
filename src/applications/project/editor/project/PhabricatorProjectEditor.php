@@ -85,7 +85,7 @@ final class PhabricatorProjectEditor {
 
       foreach ($transactions as $xaction) {
         $this->publishTransactionStory($project, $xaction);
-        $this->publishNotifications($project, $xaction);
+        $this->publishNotification($project, $xaction);
       }
 
     } catch (AphrontQueryDuplicateKeyException $ex) {
@@ -102,7 +102,7 @@ final class PhabricatorProjectEditor {
     return $this;
   }
 
-  private function publishNotifications($project, $xaction) {
+  private function publishNotification($project, $xaction) {
     $event_data = array(
       'projectPHID'   => $project->getPHID(),
       'transactionID' => $xaction->getID(),

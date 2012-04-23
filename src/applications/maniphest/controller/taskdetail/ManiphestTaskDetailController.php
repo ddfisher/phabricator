@@ -496,6 +496,31 @@ class ManiphestTaskDetailController extends ManiphestController {
     $transaction_view->setAuxiliaryFields($aux_fields);
     $transaction_view->setMarkupEngine($engine);
 
+    $ref = new PhabricatorNotificationsSubscribed();
+    $conn = $ref->establishConnection('w');
+    $unguarded = AphrontWriteGuard::beginScopedUnguardedWrites();
+
+    queryfx(
+      $conn,
+      'DELETE FROM %T WHERE userPHID = %s AND objectPHID = %s',
+      $ref->getTableName(),
+      $user->getPHID(),
+      $task->getPHID());
+
+    $sql = qsprintf($conn, '(%s, %s, %s)',
+      $user->getPHID(),
+      $task->getPHID(),
+      $this->generateChronologicalKey()
+      );
+
+    queryfx(
+      $conn,
+      'INSERT INTO %T (userPHID, objectPHID, lastViewed) VALUES %Q',
+      $ref->getTableName(),
+      $sql);
+
+    unset($unguarded);
+
     return $this->buildStandardPageResponse(
       array(
         $context_bar,

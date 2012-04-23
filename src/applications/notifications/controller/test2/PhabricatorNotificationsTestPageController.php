@@ -33,10 +33,12 @@ final class PhabricatorNotificationsTestPageController
     $builder->setUser($user);
     $notifications_view = $builder->buildView();
 
-    return $this->buildStandardPageResponse(
-      $notifications_view,
-      array(
-        'title' => 'Notifications Test Page',
-      ));
+    $json = array(
+      "content" => $notifications_view->render(),
+      "number" => count($stories),
+    );
+
+
+    return id(new AphrontAjaxResponse)->setContent($json);
   }
 }

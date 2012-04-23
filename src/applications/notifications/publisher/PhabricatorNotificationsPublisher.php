@@ -74,8 +74,6 @@ final class PhabricatorNotificationsPublisher {
     $story->save();
 
     $ref = new PhabricatorNotificationsSubscribed();
-
-    $sql = array();
     $conn = $ref->establishConnection('w');
     // Setting lastViewed to current chrono_key
     queryfx(
@@ -135,6 +133,8 @@ final class PhabricatorNotificationsPublisher {
         $transaction_id = $event_data['transactionID'];
         break;
       case PhabricatorNotificationsStoryTypeConstants::STORY_AUDIT:
+        $commit_phid = $event_data['commitPHID'];
+        $action = $event_data['action'];
         break;
       default:
         break;

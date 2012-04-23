@@ -8,6 +8,8 @@
 
 phutil_require_module('phabricator', 'aphront/response/404');
 phutil_require_module('phabricator', 'aphront/response/redirect');
+phutil_require_module('phabricator', 'aphront/writeguard');
+phutil_require_module('phabricator', 'applications/notifications/storage/subscribed');
 phutil_require_module('phabricator', 'applications/phid/handle');
 phutil_require_module('phabricator', 'applications/phid/handle/data');
 phutil_require_module('phabricator', 'applications/phriction/constants/documentstatus');
@@ -16,6 +18,7 @@ phutil_require_module('phabricator', 'applications/phriction/storage/content');
 phutil_require_module('phabricator', 'applications/phriction/storage/document');
 phutil_require_module('phabricator', 'applications/project/storage/project');
 phutil_require_module('phabricator', 'infrastructure/celerity/api');
+phutil_require_module('phabricator', 'storage/qsprintf');
 phutil_require_module('phabricator', 'storage/queryfx');
 phutil_require_module('phabricator', 'view/form/error');
 phutil_require_module('phabricator', 'view/utils');
