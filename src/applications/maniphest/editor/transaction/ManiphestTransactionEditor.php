@@ -182,26 +182,6 @@ class ManiphestTransactionEditor {
     foreach ($transactions as $transaction) {
       $transaction->setTaskID($task->getID());
       $transaction->save();
-
-      // -------------------- Notification Start -------------------------
-      $event_data = array(
-          'taskPHID'        => $task->getPHID(),
-          'taskID'          => $task->getID(),
-          'type'            => $type,
-          'transactionID'   => $transaction->getID(),
-          'ownerPHID'       => $task->getOwnerPHID(),
-          'description'     => $task->getDescription());
-          
-      id(new PhabricatorNotificationsPublisher())
-        ->setStoryType(
-          PhabricatorNotificationsStoryTypeConstants::STORY_MANIPHEST)
-        ->setStoryData($event_data)
-        ->setStoryTime(time())
-        ->setStoryAuthorPHID($transaction->getAuthorPHID())
-        ->setObjectPHID($task->getPHID())
-        ->publish();
-      // -------------------- Notification End   -------------------------
-
     }
 
     $email_to[] = $task->getOwnerPHID();
@@ -210,7 +190,7 @@ class ManiphestTransactionEditor {
       $task->getCCPHIDs());
 
     $this->publishFeedStory($task, $transactions);
-
+    $this->publishNotifications($task, $transactions);
 
     // TODO: Do this offline via timeline
     PhabricatorSearchManiphestIndexer::indexTask($task);
@@ -222,6 +202,26 @@ class ManiphestTransactionEditor {
     return PhabricatorEnv::getEnvConfig('metamta.maniphest.subject-prefix');
   }
 
+  private function publishNotifications($task, $transactions) {
+    foreach ($transactions as $transaction) {
+      $event_data = array(
+          'taskPHID'        => $task->getPHID(),
+          'transactionID'   => $transaction->getID(),
+          'ownerPHID'       => $task->getOwnerPHID(),
+          'taskID'          => $task->getID(),
+          'type'            => $transaction->getTransactionType,
+          'description'     => $task->getDescription());
+
+      id(new PhabricatorNotificationsPublisher())
+        ->setStoryType(
+          PhabricatorNotificationsStoryTypeConstants::STORY_MANIPHEST)
+        ->setStoryData($event_data)
+        ->setStoryTime(time())
+        ->setStoryAuthorPHID($transaction->getAuthorPHID())
+        ->setObjectPHID($task->getPHID())
+        ->publish();
+    }
+  }
 
   private function sendEmail($task, $transactions, $email_to, $email_cc) {
     $email_to = array_filter(array_unique($email_to));

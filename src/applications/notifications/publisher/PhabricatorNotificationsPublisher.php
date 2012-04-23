@@ -55,11 +55,6 @@ final class PhabricatorNotificationsPublisher {
   }
 
   public function publish() {
-    /*
-    if (!$this->relatedPHIDs) {
-      throw new Exception("There are no PHIDs related to this story!");
-    }
-    */
     if (!$this->objectPHID) {
       throw new Exception("There is no object PHID for this story!");
     }
@@ -83,7 +78,14 @@ final class PhabricatorNotificationsPublisher {
     $sql = array();
     $conn = $ref->establishConnection('w');
     // Setting lastViewed to current chrono_key
-    $sql[] = qsprintf($conn, '(%s, %s, %s)',
+    queryfx(
+      $conn,
+      'DELETE FROM %T WHERE userPHID = %s AND objectPHID = %s',
+      $ref->getTableName(),
+      $this->storyAuthorPHID,
+      $this->objectPHID);
+
+    $sql = qsprintf($conn, '(%s, %s, %s)',
       $this->storyAuthorPHID,
       $this->objectPHID,
       $chrono_key);
@@ -92,10 +94,9 @@ final class PhabricatorNotificationsPublisher {
       $conn,
       'INSERT INTO %T (userPHID, objectPHID, lastViewed) VALUES %Q',
       $ref->getTableName(),
-      implode(', ', $sql));
+      $sql);
     // We can make the story or $this send Aphlict notification
     $this->sendAphlictNotification();
-    // story->sendAphlictNotification();
     return $story;
   }
 
@@ -109,13 +110,17 @@ final class PhabricatorNotificationsPublisher {
       case PhabricatorNotificationsStoryTypeConstants::STORY_STATUS:
         break;
       case PhabricatorNotificationsStoryTypeConstants::STORY_DIFFERENTIAL:
+        $revision_id = $event_data['revision_id'];
         $actor_phid = $event_data['actor_phid'];
         $action = $event_data['action'];
-        $revision_id = $event_data['revision_id'];
+        $pathname = '/D'.$event_data['revision_id'];
         id(new DifferentialNotification($revision_id, $action, $actor_phid))
           ->push();
         break;
       case PhabricatorNotificationsStoryTypeConstants::STORY_PHRICTION:
+        $document_phid = $event_data['documentPHID'];
+        $actor_phid = $event_data['actor_phid'];
+        $action = $event_data['action'];
         break;
       case PhabricatorNotificationsStoryTypeConstants::STORY_MANIPHEST:
         $task = id(new ManiphestTask)->load($event_data['taskID']);
@@ -123,15 +128,17 @@ final class PhabricatorNotificationsPublisher {
           ->load($event_data['transactionID']);
         $pathname = '/T'.$event_data['taskID'];
         id(new ManiphestNotification($task, $transaction, $pathname))->push();
-        id(new RefreshNotification($this->storyAuthorPHID, $pathname))->push();
         break;
       case PhabricatorNotificationsStoryTypeConstants::STORY_PROJECT:
+        $project_phid = $event_data['projectPHID'];
+        $transaction_id = $event_data['transactionID'];
         break;
       case PhabricatorNotificationsStoryTypeConstants::STORY_AUDIT:
         break;
       default:
         break;
     }
+    id(new RefreshNotification($this->storyAuthorPHID, $pathname))->push();
   }
 
   /**
@@ -177,3 +184,4 @@ final class PhabricatorNotificationsPublisher {
     }
   }
 }
+

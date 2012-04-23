@@ -8,6 +8,8 @@
 
 phutil_require_module('phabricator', 'applications/feed/constants/story');
 phutil_require_module('phabricator', 'applications/feed/publisher');
+phutil_require_module('phabricator', 'applications/notifications/constants/story');
+phutil_require_module('phabricator', 'applications/notifications/publisher');
 phutil_require_module('phabricator', 'applications/phriction/constants/action');
 phutil_require_module('phabricator', 'applications/phriction/constants/changetype');
 phutil_require_module('phabricator', 'applications/phriction/constants/documentstatus');

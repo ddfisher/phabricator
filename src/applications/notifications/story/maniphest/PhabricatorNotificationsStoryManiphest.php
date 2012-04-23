@@ -37,11 +37,11 @@ final class PhabricatorNotificationsStoryManiphest
     $task_phid = $data->getValue('taskPHID');
     $action = $data->getValue('type');
     $description = $data->getValue('description');
-    
+
     $view = new PhabricatorNotificationsStoryView();
 
-    
-    
+
+
     $view->setEpoch($data->getEpoch());
     $view->setOneLineStory(true);
 
@@ -64,7 +64,7 @@ final class PhabricatorNotificationsStoryManiphest
     $action = $data->getValue('type');
     $description = $data->getValue('description');
 
-    
+
     $actor_link = $this->linkTo($actor_phid);
     $task_link = $this->linkTo($task_phid);
 

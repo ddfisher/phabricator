@@ -22,7 +22,7 @@ final class ManiphestNotification extends AphlictNotification{
   private $message;
   private $pagePathname;
 
-  function __construct($task, $transaction, $pathname) {
+  function __construct($task_phid, $transaction, $pathname) {
     $this->pagePathname = $pathname;
     $this->message = $this->message_for_transaction($transaction);
     return $this;
@@ -49,8 +49,9 @@ final class ManiphestNotification extends AphlictNotification{
   public function push() {
     $this->setData(array(NotificationType::KEY => NotificationType::GENERIC,
       NotificationMessage::KEY => $this->message,
-      self::PATHNAME => $this->pagePathname));			
+	self::PATHNAME => $this->pagePathname));			
     $this->sendPostRequest();
     return $this;
   }
 }
+

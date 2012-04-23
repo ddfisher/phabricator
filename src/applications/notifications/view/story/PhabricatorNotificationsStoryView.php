@@ -52,11 +52,11 @@ extends PhabricatorNotificationsView {
 	'class' => 'phabricator-notifications-story-head',
       ),
       nonempty($this->title, 'Untitled Story'));
-    
+
     return phutil_render_tag(
       'div',
       array(
-	'class' => 
+	'class' =>
 	'phabricator-notifications '.
 	'phabricator-notifications-story-one-line'),
       $head);

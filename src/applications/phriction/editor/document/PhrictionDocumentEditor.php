@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -235,7 +235,23 @@ final class PhrictionDocumentEditor {
         ))
       ->publish();
 
+    id(new PhabricatorNotificationsPublisher())
+      ->setStoryType(
+        PhabricatorNotificationsStoryTypeConstants::STORY_PHRICTION)
+      ->setStoryData(
+        array(
+          'phid'    => $document->getPHID(),
+          'action'  => $feed_action,
+          'content' => phutil_utf8_shorten($new_content->getContent(), 140),
+          'project' => $project_phid,
+        ))
+      ->setStoryTime(time())
+      ->setStoryAuthorPHID($this->user->getPHID())
+      ->setObjectPHID($document->getPHID())
+      ->publish();
+
     return $this;
   }
 
 }
+
