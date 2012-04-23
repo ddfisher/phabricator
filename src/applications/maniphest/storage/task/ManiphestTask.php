@@ -74,6 +74,10 @@ class ManiphestTask extends ManiphestDAO {
     return $this;
   }
 
+  public function getTitle() {
+    return $this->title;
+  }
+
   public function getProjectPHIDs() {
     return array_values(nonempty($this->projectPHIDs, array()));
   }

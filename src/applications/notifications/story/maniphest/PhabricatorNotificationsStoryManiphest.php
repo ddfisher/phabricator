@@ -22,22 +22,52 @@ final class PhabricatorNotificationsStoryManiphest
   public function renderView() {
     $data = $this->getStoryData();
 
-    $author_phid = $data->getAuthorPHID();
-    $owner_phid = $data->getValue('ownerPHID');
-    $task_phid = $data->getValue('taskPHID');
-    $action = $data->getValue('action');
-
     $view = new PhabricatorNotificationsStoryView();
 
     $view->setTitle('Maniphest Story');
     $view->setEpoch($data->getEpoch());
-    $view->setOneLineStory($data->getValue('all'));
+
+    $view->setOneLineStory($this->message_for_data($data));
 
     $view->appendChild(
       'This is an notification feed story of type '.
       '"'.phutil_escape_html($data->getStoryType()).'".');
 
     return $view;
+  }
+
+  function message_for_data($data) {
+    $actor_phid = $data->getAuthorPHID();
+    $owner_phid = $data->getValue('ownerPHID');
+    $task_phid = $data->getValue('taskPHID');
+    $action = $data->getValue('type');
+    $description = $data->getValue('description');
+
+    $user = id(new PhabricatorUser())->loadOneWhere(
+      'phid = %s',
+      $actor_phid);
+    $username = $user->getUserName();
+
+    $task = id(new ManiphestTask())->loadOneWhere(
+      'phid = %s',
+      $task_phid);
+
+    switch ($action) {
+    case 'comment':
+      return sprintf('%s commented "%s" on Task:%s',
+	$username,
+	$description,
+	$task->getTitle());
+
+    default:
+      return '['.
+	'actor: '.$actor_phid.", ".
+	'owner: '.$owner_phid.", ".
+	'task: '.$task_phid.", ".
+	'action: '.$action.", ".
+	'description: '.$description.
+	']';
+    }
   }
 
 }
