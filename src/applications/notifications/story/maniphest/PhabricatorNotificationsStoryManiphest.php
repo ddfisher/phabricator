@@ -64,6 +64,12 @@ final class PhabricatorNotificationsStoryManiphest
       return "{$actor_link} changed the priority of {$task_link}";
     case 'projects':
       return "{$actor_link} added projects to {$task_link}";
+    case 'status':
+      return "{$actor_link} created task {$task_link}";
+    case 'title':
+      return "{$actor_link} updated title of {$task_link}"; 
+    case 'description':
+      return "{$actor_link} updated description of {$task_link} to \"{$description}\"";
 
     default:
       return '['.

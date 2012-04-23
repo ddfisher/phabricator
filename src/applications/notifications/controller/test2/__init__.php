@@ -6,9 +6,12 @@
 
 
 
+phutil_require_module('phabricator', 'aphront/response/ajax');
 phutil_require_module('phabricator', 'applications/notifications/builder/notifications');
 phutil_require_module('phabricator', 'applications/notifications/controller/base');
 phutil_require_module('phabricator', 'applications/notifications/query');
+
+phutil_require_module('phutil', 'utils');
 
 
 phutil_require_source('PhabricatorNotificationsTestPageController.php');
