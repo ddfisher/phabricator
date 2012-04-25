@@ -1433,7 +1433,7 @@ celerity_register_resource_map(array(
   ),
   'notification-theme' =>
   array(
-    'uri' => '/res/942a3962/rsrc/css/aphlict/notification.css',
+    'uri' => '/res/8109093e/rsrc/css/aphlict/notification.css',
     'type' => 'css',
     'requires' =>
     array(
