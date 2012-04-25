@@ -32,10 +32,11 @@ JX.behavior('aphlict-listen', function(config) {
             if (message.type == "refresh"
                 && message.pathname == window.location.pathname) {
               humane.success(message.info);
-            } else if (message.type == "generic"
-                && message.pathname != window.location.pathname) {
-              // humane.log(message.info);
+            } else if (message.type == "generic") {
               JX.Stratcom.invoke('notification-update', null, {});
+              // if (message.pathname != window.location.pathname) {
+              //   humane.log(message.info);
+              // }
             }
           }
         }

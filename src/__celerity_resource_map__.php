@@ -369,7 +369,7 @@ celerity_register_resource_map(array(
   ),
   'javelin-behavior-aphlict-listen' =>
   array(
-    'uri' => '/res/a70dfe71/rsrc/js/application/aphlict/behavior-aphlict-listen.js',
+    'uri' => '/res/231ef869/rsrc/js/application/aphlict/behavior-aphlict-listen.js',
     'type' => 'js',
     'requires' =>
     array(
