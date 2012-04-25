@@ -32,7 +32,7 @@ final class PhabricatorNotificationsStoryManiphest
 
   public function renderView() {
     $data = $this->getStoryData();
-    
+
     $view = new PhabricatorNotificationsStoryView();
 
     $view->setEpoch($data->getEpoch());
@@ -52,9 +52,9 @@ final class PhabricatorNotificationsStoryManiphest
     $comments = $data->getValue('comments');
     //todo, cut the length of comment off
     $actor_link = $this->linkTo($actor_phid);
-    
+
     $task_link = $this->linkTo($task_phid);
-    
+
     switch ($action) {
     case 'comment':
       return  "{$actor_link} commented on {$task_link} \"{$comments}\"";
@@ -67,7 +67,7 @@ final class PhabricatorNotificationsStoryManiphest
     case 'status':
       return "{$actor_link} created task {$task_link}";
     case 'title':
-      return "{$actor_link} updated title of {$task_link}"; 
+      return "{$actor_link} updated title of {$task_link}";
     case 'description':
       return "{$actor_link} updated description of {$task_link} to \"{$description}\"";
 

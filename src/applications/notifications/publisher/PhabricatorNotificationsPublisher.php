@@ -83,15 +83,14 @@ final class PhabricatorNotificationsPublisher {
       $this->storyAuthorPHID,
       $this->objectPHID);
 
-    $sql = qsprintf($conn, '(%s, %s, %s, %s)',
+    $sql = qsprintf($conn, '(%s, %s, %s)',
       $this->storyAuthorPHID,
       $this->objectPHID,
-      $chrono_key,
-      false);
+      $chrono_key);
 
     queryfx(
       $conn,
-      'INSERT INTO %T (userPHID, objectPHID, lastViewed, consumed) VALUES %Q',
+      'INSERT INTO %T (userPHID, objectPHID, lastViewed) VALUES %Q',
       $ref->getTableName(),
       $sql);
     // We can make the story or $this send Aphlict notification

@@ -8,7 +8,6 @@
 
 phutil_require_module('phabricator', 'applications/phid/handle/data');
 phutil_require_module('phabricator', 'view/null');
-phutil_require_module('phabricator', 'view/utils');
 
 phutil_require_module('phutil', 'utils');
 
