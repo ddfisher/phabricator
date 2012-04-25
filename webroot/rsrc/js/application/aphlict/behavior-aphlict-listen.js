@@ -34,7 +34,7 @@ JX.behavior('aphlict-listen', function(config) {
               humane.success(message.info);
             } else if (message.type == "generic"
                 && message.pathname != window.location.pathname) {
-              humane.log(message.info);
+              // humane.log(message.info);
               JX.Stratcom.invoke('notification-update', null, {});
             }
           }

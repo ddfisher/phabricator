@@ -42,6 +42,7 @@ JX.behavior('aphlict-dropdown', function(config) {
       dropdown.style.height = "0px";
     } else {
       dropdown.style.height = "300px";
+      JX.Stratcom.invoke('notification-update', null, {});
     }
     open = !open;
   };

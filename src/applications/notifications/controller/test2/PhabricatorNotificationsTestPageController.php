@@ -33,9 +33,18 @@ final class PhabricatorNotificationsTestPageController
     $builder->setUser($user);
     $notifications_view = $builder->buildView();
 
+    $num_unconsumed = array_sum(
+                        array_map(
+                          function($story) {
+                            return $story->getConsumed() ? 0 : 1;
+                          },
+                          $stories
+                        )
+                      );
+
     $json = array(
       "content" => $notifications_view->render(),
-      "number" => count($stories),
+      "number" => $num_unconsumed,
     );
 
 
