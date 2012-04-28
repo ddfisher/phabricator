@@ -49,10 +49,12 @@ final class PhabricatorNotificationsQuery {
       "SELECT story.* FROM %T sub
          JOIN %T story ON sub.objectPHID = story.objectPHID
          WHERE sub.userPHID = '%Q'
+           AND not story.authorPHID = '%Q'
          ORDER BY story.chronologicalKey desc
          LIMIT %d",
       $sub_table->getTableName(),
       $story_table->getTableName(),
+      $this->userPHID,
       $this->userPHID,
       $this->limit);
 
