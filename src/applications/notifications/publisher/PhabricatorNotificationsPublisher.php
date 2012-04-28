@@ -65,35 +65,31 @@ final class PhabricatorNotificationsPublisher {
 
     $chrono_key = $this->generateChronologicalKey();
 
-    $story = new PhabricatorNotificationsStoryData();
-    $story->setStoryType($this->storyType);
-    $story->setStoryData($this->storyData);
-    $story->setAuthorPHID($this->storyAuthorPHID);
-    $story->setObjectPHID($this->objectPHID);
-    $story->setChronologicalKey($chrono_key);
-    $story->save();
+    $story = id(new PhabricatorNotificationsStoryData())
+      ->setStoryType($this->storyType)
+      ->setStoryData($this->storyData)
+      ->setAuthorPHID($this->storyAuthorPHID)
+      ->setObjectPHID($this->objectPHID)
+      ->setChronologicalKey($chrono_key)
+      ->save();
 
     $ref = new PhabricatorNotificationsSubscribed();
-    $conn = $ref->establishConnection('w');
-    // Setting lastViewed to current chrono_key
-    queryfx(
-      $conn,
-      'DELETE FROM %T WHERE userPHID = %s AND objectPHID = %s',
-      $ref->getTableName(),
-      $this->storyAuthorPHID,
-      $this->objectPHID);
-
-    $sql = qsprintf($conn, '(%s, %s, %s)',
-      $this->storyAuthorPHID,
-      $this->objectPHID,
-      $chrono_key);
-
-    queryfx(
-      $conn,
-      'INSERT INTO %T (userPHID, objectPHID, lastViewed) VALUES %Q',
-      $ref->getTableName(),
-      $sql);
-    // We can make the story or $this send Aphlict notification
+    $subscription = $ref->loadOneWhere("userPHID = %s AND objectpHID = %s",
+		    $this->storyAuthorPHID,
+		    $this->objectPHID);
+    
+    if(!$subscription) {
+      $subscription = id(new PhabricatorNotificationsSubscribed())
+	->setUserPHID($this->storyAuthorPHID)
+	->setObjectPHID($this->objectPHID)
+	->setLastViewed($chrono_key)
+	->insert();
+    } else {
+      $subscription
+	->setLastViewed($chrono_key)
+	->update();
+    }
+    
     $this->sendAphlictNotification();
     return $story;
   }

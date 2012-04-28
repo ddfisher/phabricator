@@ -69,18 +69,6 @@ final class PhabricatorNotificationsStoryData
   }
 
   public function getValue($key, $default = null) {
-    if (!$this->storyData) {
-      return "not nuthin";
-    } else if ($key == 'all') {
-      return 'Type: '.$this->storyType.
-        ', Actor PHID: '.$this->authorPHID.
-        ', On Object: '.$this->objectPHID;
-    } else {
-      return idx($this->storyData, $key, $default);
-    }
-    if ($key == 'all') {
-      return implode(",", $this->data);
-    }
     return idx($this->storyData, $key, $default);
   }
 

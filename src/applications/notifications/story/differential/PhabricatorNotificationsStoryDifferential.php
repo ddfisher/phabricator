@@ -18,26 +18,56 @@
 
 final class PhabricatorNotificationsStoryDifferential
  extends PhabricatorNotificationsStory {
+   
+  public function getRequiredHandlePHIDs() {
+    $data = $this->getStoryData();
+    return array(
+      $this->getStoryData()->getAuthorPHID(),
+      $data->getValue('revision_phid'),
+      $data->getValue('revision_author_phid'),
+    );
+  }
+
 
   public function renderView() {
     $data = $this->getStoryData();
-
-    $author_phid = $data->getAuthorPHID();
-    $owner_phid = $data->getValue('ownerPHID');
-    $task_phid = $data->getValue('taskPHID');
-    $action = $data->getValue('action');
-
     $view = new PhabricatorNotificationsStoryView();
 
-    $view->setTitle('Differential Story');
     $view->setEpoch($data->getEpoch());
-    $view->setOneLineStory($data->getValue('all'));
+    $view->setOneLineStory(true);
+    $view->setConsumed($this->getConsumed());
 
-    $view->appendChild(
-      'This is an notification feed story of type '.
-      '"'.phutil_escape_html($data->getStoryType()).'".');
-
+    $view->setTitle($this->one_line_for_data($data));
     return $view;
   }
 
+  function one_line_for_data($data) {
+    $author_phid = $data->getAuthorPHID();
+    $revision_phid = $data->getValue('revision_phid');
+    $action = $data->getValue('action');
+    //set as summary or comment
+    $feedback_content = $data->getValue('feedback_content');
+
+    $author_link = $this->linkTo($author_phid);
+    $revision_link = $this->linkTo($revision_phid);
+    switch($action) {
+    case 'abandon':
+      return "{$author_link} abandoned {$revision_link}";
+    case 'create':
+      return "{$author_link} created {$revision_link}";
+    case 'none':
+      return "{$author_link} commented on {$revision_link} \"{$feedback_content}\"";
+    case 'rethink':
+      return "{$author_link} planned changes to {$revision_link}";
+    case 'update': 
+      return "{$author_link} updated {$revision_link}";
+    default:
+      return "[ ".
+	"action: {$action}, ".
+	"author: {$author_phid}, ".
+	"revision: {$revision_phid} ".
+	"feedback_content: {$feedback_content}";
+	"]";
+    }
+  }
 }

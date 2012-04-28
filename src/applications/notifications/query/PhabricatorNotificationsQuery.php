@@ -55,7 +55,6 @@ final class PhabricatorNotificationsQuery {
       $story_table->getTableName(),
       $this->userPHID);
 
-
     $data = $story_table->loadAllFromArray($data);
 
     $stories = array();

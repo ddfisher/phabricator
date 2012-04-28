@@ -49,7 +49,7 @@ final class PhabricatorNotificationsStoryManiphest
     $task_phid = $data->getValue('taskPHID');
     $action = $data->getValue('type');
     $description = $data->getValue('description');
-    $comments = $data->getValue('comments');
+    $comments = phutil_utf8_shorten($data->getValue('comments'), 140);
     //todo, cut the length of comment off
     $actor_link = $this->linkTo($actor_phid);
 
