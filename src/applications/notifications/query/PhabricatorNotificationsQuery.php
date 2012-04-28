@@ -50,10 +50,11 @@ final class PhabricatorNotificationsQuery {
          JOIN %T story ON sub.objectPHID = story.objectPHID
          WHERE sub.userPHID = '%Q'
          ORDER BY story.chronologicalKey desc
-         LIMIT 100",
+         LIMIT %d",
       $sub_table->getTableName(),
       $story_table->getTableName(),
-      $this->userPHID);
+      $this->userPHID,
+      $this->limit);
 
     $data = $story_table->loadAllFromArray($data);
 

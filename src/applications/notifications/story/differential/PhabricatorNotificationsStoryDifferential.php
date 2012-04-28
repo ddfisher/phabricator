@@ -46,7 +46,9 @@ final class PhabricatorNotificationsStoryDifferential
     $revision_phid = $data->getValue('revision_phid');
     $action = $data->getValue('action');
     //set as summary or comment
-    $feedback_content = $data->getValue('feedback_content');
+    $feedback_content = phutil_utf8_shorten(
+      $data->getValue('feedback_content'),
+      140);
 
     $author_link = $this->linkTo($author_phid);
     $revision_link = $this->linkTo($revision_phid);
