@@ -117,31 +117,11 @@ class DifferentialDiffViewController extends DifferentialController {
       ->setRenderingReferences($refs)
       ->setUser($request->getUser());
 
-    $ref = new PhabricatorNotificationsSubscribed();
-    $conn = $ref->establishConnection('w');
-    $user = $request->getUser();
-    $unguarded = AphrontWriteGuard::beginScopedUnguardedWrites();
-
-    queryfx(
-      $conn,
-      'DELETE FROM %T WHERE userPHID = %s AND objectPHID = %s',
-      $ref->getTableName(),
-      $user->getPHID(),
-      $diff->getPHID());
-
-    $sql = qsprintf($conn, '(%s, %s, %s)',
-      $user->getPHID(),
-      $diff->getPHID(),
-      $this->generateChronologicalKey()
-      );
-
-    queryfx(
-      $conn,
-      'INSERT INTO %T (userPHID, objectPHID, lastViewed) VALUES %Q',
-      $ref->getTableName(),
-      $sql);
-
-    unset($unguarded);
+    
+    id(new PhabricatorNotificationsSubscribed())
+      ->updateLastViewed($request->getUser->getPHID(), 
+	$diff->getPHID(), 
+	$this->generateChronologicalKey());    
 
     return $this->buildStandardPageResponse(
       id(new DifferentialPrimaryPaneView())

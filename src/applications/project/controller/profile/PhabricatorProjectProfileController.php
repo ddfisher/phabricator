@@ -143,30 +143,10 @@ class PhabricatorProjectProfileController
 
     $header->appendChild($nav_view);
 
-    $ref = new PhabricatorNotificationsSubscribed();
-    $conn = $ref->establishConnection('w');
-    $unguarded = AphrontWriteGuard::beginScopedUnguardedWrites();
-
-    queryfx(
-      $conn,
-      'DELETE FROM %T WHERE userPHID = %s AND objectPHID = %s',
-      $ref->getTableName(),
-      $user->getPHID(),
-      $project->getPHID());
-
-    $sql = qsprintf($conn, '(%s, %s, %s)',
-      $user->getPHID(),
-      $project->getPHID(),
-      $this->generateChronologicalKey()
-      );
-
-    queryfx(
-      $conn,
-      'INSERT INTO %T (userPHID, objectPHID, lastViewed) VALUES %Q',
-      $ref->getTableName(),
-      $sql);
-
-    unset($unguarded);
+    id(new PhabricatorNotificationsSubscribed())
+      ->updateLastViewed($user->getPHID(), 
+	$project->getPHID(), 
+	$this->generateChronologicalKey());    
 
     return $this->buildStandardPageResponse(
       $header,

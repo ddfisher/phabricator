@@ -314,31 +314,11 @@ class DifferentialRevisionViewController extends DifferentialController {
       $page_pane->appendChild($comment_form->render());
     }
 
-    $ref = new PhabricatorNotificationsSubscribed();
-    $conn = $ref->establishConnection('w');
-    $unguarded = AphrontWriteGuard::beginScopedUnguardedWrites();
-
-    queryfx(
-      $conn,
-      'DELETE FROM %T WHERE userPHID = %s AND objectPHID = %s',
-      $ref->getTableName(),
-      $user->getPHID(),
-      $revision->getPHID());
-
-    $sql = qsprintf($conn, '(%s, %s, %s)',
-      $user->getPHID(),
-      $revision->getPHID(),
-      $this->generateChronologicalKey()
-      );
-
-    queryfx(
-      $conn,
-      'INSERT INTO %T (userPHID, objectPHID, lastViewed) VALUES %Q',
-      $ref->getTableName(),
-      $sql);
-
-    unset($unguarded);
-
+    id(new PhabricatorNotificationsSubscribed())
+      ->updateLastViewed($user->getPHID(), 
+	$revision->getPHID(), 
+	$this->generateChronologicalKey());
+    
     return $this->buildStandardPageResponse(
       $page_pane,
       array(

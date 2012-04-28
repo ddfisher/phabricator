@@ -197,30 +197,12 @@ class PhrictionDocumentController
       $page_content.
       $children;
 
-    $ref = new PhabricatorNotificationsSubscribed();
-    $conn = $ref->establishConnection('w');
-    $unguarded = AphrontWriteGuard::beginScopedUnguardedWrites();
 
-    queryfx(
-      $conn,
-      'DELETE FROM %T WHERE userPHID = %s AND objectPHID = %s',
-      $ref->getTableName(),
-      $user->getPHID(),
-      $document->getPHID());
+    id(new PhabricatorNotificationsSubscribed())
+      ->updateLastViewed($user->getPHID(), 
+	$document->getPHID(), 
+	$this->generateChronologicalKey());    
 
-    $sql = qsprintf($conn, '(%s, %s, %s)',
-      $user->getPHID(),
-      $document->getPHID(),
-      $this->generateChronologicalKey()
-      );
-
-    queryfx(
-      $conn,
-      'INSERT INTO %T (userPHID, objectPHID, lastViewed) VALUES %Q',
-      $ref->getTableName(),
-      $sql);
-
-    unset($unguarded);
 
     return $this->buildStandardPageResponse(
       $page,
