@@ -54,6 +54,7 @@ final class PhabricatorNotificationsStoryManiphest
     $actor_link = $this->linkTo($actor_phid);
 
     $task_link = $this->linkTo($task_phid);
+    $owner_link = $this->linkTo($owner_phid);
 
     switch ($action) {
     case 'comment':
@@ -70,6 +71,9 @@ final class PhabricatorNotificationsStoryManiphest
       return "{$actor_link} updated title of {$task_link}";
     case 'description':
       return "{$actor_link} updated description of {$task_link} to \"{$description}\"";
+    case 'reassign':
+      return "{$actor_link} reassigned task {$task_link} to {$owner_link}";
+
 
     default:
       return '['.
