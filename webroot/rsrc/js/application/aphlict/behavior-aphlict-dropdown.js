@@ -40,8 +40,12 @@ JX.behavior('aphlict-dropdown', function(config) {
   indicator.onclick = function() {
     if (open) {
       dropdown.style.height = "0px";
+      dropdown.style.border = "none";
+      dropdown.style.webkitBoxShadow = "none";
     } else {
       dropdown.style.height = "300px";
+      dropdown.style.border = "1px solid #99C4D7";
+      dropdown.style.webkitBoxShadow = "3px 3px #ccc";
       JX.Stratcom.invoke('notification-update', null, {});
     }
     open = !open;
