@@ -12,6 +12,8 @@ phutil_require_module('phabricator', 'applications/audit/storage/auditcomment');
 phutil_require_module('phabricator', 'applications/feed/constants/story');
 phutil_require_module('phabricator', 'applications/feed/publisher');
 phutil_require_module('phabricator', 'applications/metamta/storage/mail');
+phutil_require_module('phabricator', 'applications/notifications/constants/story');
+phutil_require_module('phabricator', 'applications/notifications/publisher');
 phutil_require_module('phabricator', 'applications/owners/storage/owner');
 phutil_require_module('phabricator', 'applications/owners/storage/package');
 phutil_require_module('phabricator', 'applications/phid/handle/data');
