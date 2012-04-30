@@ -96,7 +96,7 @@ final class PhabricatorAuditCommentEditor {
     $commit->save();
 
     $this->publishFeedStory($comment, array_keys($audit_phids));
-    $this->publishNotification($comment);
+    $this->publishNotifications($comment);
     PhabricatorSearchCommitIndexer::indexCommit($commit);
     $this->sendMail($comment, $other_comments);
   }
