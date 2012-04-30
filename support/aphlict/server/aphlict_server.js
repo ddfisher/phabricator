@@ -112,10 +112,10 @@ var receive_server = http.createServer(function(request, response) {
 
     request.on('end', function () {
       var data = querystring.parse(body);
+      log('notification: ' + JSON.stringify(data));
       // I think this should be done on the PHP side...
       data.pathname = data.pathname.replace(/^\s+|\s+$/g, '');
       broadcast(data);
-      log('notification: ' + JSON.stringify(data));
       response.end();
     });
   }
