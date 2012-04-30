@@ -409,6 +409,17 @@ celerity_register_resource_map(array(
     ),
     'disk' => '/rsrc/js/application/core/behavior-drag-and-drop.js',
   ),
+  0 =>
+  array(
+    'uri' => '/res/b6096fdd/rsrc/js/javelin/lib/__tests__/URI.js',
+    'type' => 'js',
+    'requires' =>
+    array(
+      0 => 'javelin-uri',
+      1 => 'javelin-php-serializer',
+    ),
+    'disk' => '/rsrc/js/javelin/lib/__tests__/URI.js',
+  ),
   'javelin-behavior-aphront-drag-and-drop-textarea' =>
   array(
     'uri' => '/res/65980508/rsrc/js/application/core/behavior-drag-and-drop-textarea.js',
@@ -1939,6 +1950,24 @@ celerity_register_resource_map(array(
     ),
     'disk' => '/rsrc/js/raphael/g.raphael.line.js',
   ),
+  'rickshaw' =>
+  array(
+    'uri' => '/res/7941a608/rsrc/js/rickshaw/rickshaw.min.js',
+    'type' => 'js',
+    'requires' =>
+    array(
+    ),
+    'disk' => '/rsrc/js/rickshaw/rickshaw.min.js',
+  ),
+  'rickshaw-css' =>
+  array(
+    'uri' => '/res/94deb563/rsrc/js/rickshaw/rickshaw.min.css',
+    'type' => 'css',
+    'requires' =>
+    array(
+    ),
+    'disk' => '/rsrc/js/rickshaw/rickshaw.min.css',
+  ),
   'syntax-highlighting-css' =>
   array(
     'uri' => '/res/5669beb6/rsrc/css/core/syntax.css',
@@ -1947,17 +1976,6 @@ celerity_register_resource_map(array(
     array(
     ),
     'disk' => '/rsrc/css/core/syntax.css',
-  ),
-  0 =>
-  array(
-    'uri' => '/res/b6096fdd/rsrc/js/javelin/lib/__tests__/URI.js',
-    'type' => 'js',
-    'requires' =>
-    array(
-      0 => 'javelin-uri',
-      1 => 'javelin-php-serializer',
-    ),
-    'disk' => '/rsrc/js/javelin/lib/__tests__/URI.js',
   ),
 ), array(
   'packages' =>
