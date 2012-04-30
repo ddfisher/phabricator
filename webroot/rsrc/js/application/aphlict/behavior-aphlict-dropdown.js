@@ -12,7 +12,7 @@ JX.behavior('aphlict-dropdown', function(config) {
   var dropdown = JX.$('phabricator-notification-dropdown');
   var indicator = JX.$('phabricator-notification-indicator');
   var request = null;
- 
+
   function refresh() {
     if (request) { //already fetching
         console.log("update in progress...");
@@ -46,10 +46,11 @@ JX.behavior('aphlict-dropdown', function(config) {
       dropdown.style.height = "300px";
       dropdown.style.border = "1px solid #99C4D7";
       dropdown.style.webkitBoxShadow = "3px 3px #ccc";
+      dropdown.style.zIndex = "3";
       JX.Stratcom.invoke('notification-update', null, {});
     }
     open = !open;
   };
-  
+
   JX.Stratcom.listen('notification-update', null, refresh);
 });
