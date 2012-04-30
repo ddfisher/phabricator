@@ -54,6 +54,28 @@ final class PhabricatorNotificationsPublisher {
     return $this;
   }
 
+  private function updateSubscribed($user_phid, $chrono_key) {
+    $ref = new PhabricatorNotificationsSubscribed();
+    phlog($user_phid);
+    phlog($this->objectPHID);
+    $subscription = $ref->loadOneWhere(
+      "userPHID = %s AND objectPHID = %s",
+      $user_phid,
+      $this->objectPHID);
+
+    if (!$subscription) {
+      $subscription = id(new PhabricatorNotificationsSubscribed())
+        ->setUserPHID($user_phid)
+        ->setObjectPHID($this->objectPHID)
+        ->setLastViewed($chrono_key)
+        ->insert();
+    } else {
+      $subscription
+        ->setLastViewed($chrono_key)
+        ->update();
+    }
+  }
+
   public function publish() {
     if (!$this->objectPHID) {
       throw new Exception("There is no object PHID for this story!");
@@ -73,23 +95,54 @@ final class PhabricatorNotificationsPublisher {
       ->setChronologicalKey($chrono_key)
       ->save();
 
-    $ref = new PhabricatorNotificationsSubscribed();
-    $subscription = $ref->loadOneWhere("userPHID = %s AND objectpHID = %s",
-		    $this->storyAuthorPHID,
-		    $this->objectPHID);
-    
-    if(!$subscription) {
-      $subscription = id(new PhabricatorNotificationsSubscribed())
-	->setUserPHID($this->storyAuthorPHID)
-	->setObjectPHID($this->objectPHID)
-	->setLastViewed($chrono_key)
-	->insert();
-    } else {
-      $subscription
-	->setLastViewed($chrono_key)
-	->update();
+    switch ($this->storyType) {
+      case PhabricatorNotificationsStoryTypeConstants::STORY_MANIPHEST:
+        if ($this->storyData['type'] == ManiphestTransactionType::TYPE_CCS) {
+          $transaction = id(new ManiphestTransaction())
+            ->load($this->storyData['transactionID']);
+          $subscribed_users = array_diff(
+            $transaction->getNewValue(),
+            $transaction->getOldValue());
+          foreach ($subscribed_users as $user) {
+            $this->updateSubscribed($user, $chrono_key);
+          }
+          // TODO implement removing cc
+        }
+        break;
+      case PhabricatorNotificationsStoryTypeConstants::STORY_DIFFERENTIAL:
+        $action = $this->storyData['action'];
+        $revision = id(new DifferentialRevision)
+          ->load($this->storyData['revision_id']);
+        if ($action == DifferentialAction::ACTION_CREATE) {
+          $cc_phids = $revision->getCCPHIDs();
+          $reviewers = $revision->getReviewers();
+          $subscribed_users = array_merge($cc_phids, $reviewers);
+          $subscribed_users[] = $revision->getAuthorPHID();
+          foreach ($subscribed_users as $user) {
+            $this->updateSubscribed($user, $chrono_key);
+          }
+        } else if ($action == DifferentialAction::ACTION_ADDCCS) {
+          // TODO there is no clear way to figure out who the new cc's are
+          // in Differential
+          $this->updateSubscribed(end($revision->getCCPHIDs()), $chrono_key);
+        } else if ($action == DifferentialAction::ACTION_ADDREVIEWERS) {
+          // TODO there is no clear way to figure out who the new reviewers are
+          $this->updateSubscribed(end($revision->getReviewers()), $chrono_key);
+        }
+        break;
+      case PhabricatorNotificationsStoryTypeConstants::STORY_PHRICTION:
+        // TODO decide how people are notified about documents
+        break;
+      case PhabricatorNotificationsStoryTypeConstants::STORY_PROJECT:
+        // TODO joining project and leaving project updates subscribed table
+        break;
+      case PhabricatorNotificationsStoryTypeConstants::STORY_AUDIT:
+        // TODO audit creation updates subscribed table
+        break;
+      default:
+        break;
     }
-    
+
     $this->sendAphlictNotification();
     return $story;
   }
@@ -115,6 +168,11 @@ final class PhabricatorNotificationsPublisher {
         $document_phid = $event_data['documentPHID'];
         $actor_phid = $event_data['actor_phid'];
         $action = $event_data['action'];
+        $document = id(new PhrictionDocument)->loadOneWhere(
+          'phid = %s',
+          $document_phid);
+        $pathname = PhrictionDocument::getSlugURI($document->getSlug());
+        // TODO send PhrictionNotification
         break;
       case PhabricatorNotificationsStoryTypeConstants::STORY_MANIPHEST:
         $task = id(new ManiphestTask)->load($event_data['taskID']);
@@ -126,10 +184,12 @@ final class PhabricatorNotificationsPublisher {
       case PhabricatorNotificationsStoryTypeConstants::STORY_PROJECT:
         $project_phid = $event_data['projectPHID'];
         $transaction_id = $event_data['transactionID'];
+        // TODO send ProjectNotification
         break;
       case PhabricatorNotificationsStoryTypeConstants::STORY_AUDIT:
         $commit_phid = $event_data['commitPHID'];
         $action = $event_data['action'];
+        // TODO send AuditNotification
         break;
       default:
         break;
