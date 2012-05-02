@@ -344,7 +344,7 @@ celerity_register_resource_map(array(
   ),
   'javelin-behavior-aphlict-dropdown' =>
   array(
-    'uri' => '/res/e8906363/rsrc/js/application/aphlict/behavior-aphlict-dropdown.js',
+    'uri' => '/res/6bdf13aa/rsrc/js/application/aphlict/behavior-aphlict-dropdown.js',
     'type' => 'js',
     'requires' =>
     array(
@@ -1729,7 +1729,7 @@ celerity_register_resource_map(array(
   ),
   'phabricator-standard-page-view' =>
   array(
-    'uri' => '/res/9dcffc79/rsrc/css/application/base/standard-page-view.css',
+    'uri' => '/res/96dfd20c/rsrc/css/application/base/standard-page-view.css',
     'type' => 'css',
     'requires' =>
     array(
@@ -2058,7 +2058,7 @@ celerity_register_resource_map(array(
       'uri' => '/res/pkg/ae7ea233/typeahead.pkg.js',
       'type' => 'js',
     ),
-    'e53140ea' =>
+    'dd48fade' =>
     array(
       'name' => 'core.pkg.css',
       'symbols' =>
@@ -2083,7 +2083,7 @@ celerity_register_resource_map(array(
         17 => 'aphront-pager-view-css',
         18 => 'phabricator-transaction-view-css',
       ),
-      'uri' => '/res/pkg/e53140ea/core.pkg.css',
+      'uri' => '/res/pkg/dd48fade/core.pkg.css',
       'type' => 'css',
     ),
     31583232 =>
@@ -2125,17 +2125,17 @@ celerity_register_resource_map(array(
   'reverse' =>
   array(
     'aphront-attached-file-view-css' => '31583232',
-    'aphront-crumbs-view-css' => 'e53140ea',
-    'aphront-dialog-view-css' => 'e53140ea',
-    'aphront-form-view-css' => 'e53140ea',
+    'aphront-crumbs-view-css' => 'dd48fade',
+    'aphront-dialog-view-css' => 'dd48fade',
+    'aphront-form-view-css' => 'dd48fade',
     'aphront-headsup-action-list-view-css' => '09c86840',
-    'aphront-list-filter-view-css' => 'e53140ea',
-    'aphront-pager-view-css' => 'e53140ea',
-    'aphront-panel-view-css' => 'e53140ea',
-    'aphront-side-nav-view-css' => 'e53140ea',
-    'aphront-table-view-css' => 'e53140ea',
-    'aphront-tokenizer-control-css' => 'e53140ea',
-    'aphront-typeahead-control-css' => 'e53140ea',
+    'aphront-list-filter-view-css' => 'dd48fade',
+    'aphront-pager-view-css' => 'dd48fade',
+    'aphront-panel-view-css' => 'dd48fade',
+    'aphront-side-nav-view-css' => 'dd48fade',
+    'aphront-table-view-css' => 'dd48fade',
+    'aphront-tokenizer-control-css' => 'dd48fade',
+    'aphront-typeahead-control-css' => 'dd48fade',
     'differential-changeset-view-css' => '09c86840',
     'differential-core-view-css' => '09c86840',
     'differential-inline-comment-editor' => '2e291441',
@@ -2193,23 +2193,23 @@ celerity_register_resource_map(array(
     'maniphest-task-detail-css' => '31583232',
     'maniphest-task-summary-css' => '31583232',
     'maniphest-transaction-detail-css' => '31583232',
-    'phabricator-app-buttons-css' => 'e53140ea',
+    'phabricator-app-buttons-css' => 'dd48fade',
     'phabricator-content-source-view-css' => '09c86840',
-    'phabricator-core-buttons-css' => 'e53140ea',
-    'phabricator-core-css' => 'e53140ea',
-    'phabricator-directory-css' => 'e53140ea',
+    'phabricator-core-buttons-css' => 'dd48fade',
+    'phabricator-core-css' => 'dd48fade',
+    'phabricator-directory-css' => 'dd48fade',
     'phabricator-drag-and-drop-file-upload' => '2e291441',
     'phabricator-dropdown-menu' => '95944588',
-    'phabricator-jump-nav' => 'e53140ea',
+    'phabricator-jump-nav' => 'dd48fade',
     'phabricator-keyboard-shortcut' => '95944588',
     'phabricator-keyboard-shortcut-manager' => '95944588',
     'phabricator-menu-item' => '95944588',
     'phabricator-object-selector-css' => '09c86840',
     'phabricator-paste-file-upload' => '95944588',
-    'phabricator-remarkup-css' => 'e53140ea',
+    'phabricator-remarkup-css' => 'dd48fade',
     'phabricator-shaped-request' => '2e291441',
-    'phabricator-standard-page-view' => 'e53140ea',
-    'phabricator-transaction-view-css' => 'e53140ea',
-    'syntax-highlighting-css' => 'e53140ea',
+    'phabricator-standard-page-view' => 'dd48fade',
+    'phabricator-transaction-view-css' => 'dd48fade',
+    'syntax-highlighting-css' => 'dd48fade',
   ),
 ));

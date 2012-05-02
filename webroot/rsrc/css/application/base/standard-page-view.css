@@ -21,13 +21,15 @@
   background-color: #f0f0f0;
   overflow-y: scroll;
   position: absolute;
-  height: 0px;
+  height: 300px;
   right: 0px;
   width: 400px;
-  border: none;
-/*  -moz-box-shadow:    3px 3px 5px 6px #ccc;
-  -webkit-box-shadow: 3px 3px 5px 6px #ccc;
-  box-shadow:         3px 3px 5px 6px #ccc;*/
+  border: 1px solid #99C4D7;
+  visibility: hidden;
+  box-shadow: 3px 3px #ccc;
+  -webkit-box-shadow: 3px 3px #ccc;
+  -moz-box-shadow: 3px 3px #ccc;
+  z-index: 3;
 }
 
 
