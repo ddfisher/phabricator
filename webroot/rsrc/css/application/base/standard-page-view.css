@@ -2,9 +2,20 @@
  * @provides phabricator-standard-page-view
  */
 
+.phabricator-notifications-story-head {
+  border-bottom: 1px solid darkgray;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+
+.phabricator-notifications-frame {
+    padding-left: 5px;
+    padding-right: 10px;
+}
 
 #phabricator-notification-indicator {
-  background: #0069a6;
+  background-color: #0069a6;
   text-align: center;
   font-size: 20px;
   vertical-align: middle;
@@ -18,20 +29,26 @@
 }
 
 #phabricator-notification-dropdown {
-  background-color: #f0f0f0;
+
+  visibility: hidden;
+  
+
   overflow-y: scroll;
   position: absolute;
+  width: 600px;
   height: 300px;
   right: 0px;
-  width: 400px;
-  border: 1px solid #99C4D7;
-  visibility: hidden;
+  
+
+  background-color: #f0f0f0;
+  /* border: 1px solid #99C4D7; */
+  border: 1px solid darkgrey;
   box-shadow: 3px 3px #ccc;
   -webkit-box-shadow: 3px 3px #ccc;
   -moz-box-shadow: 3px 3px #ccc;
+
   z-index: 3;
 }
-
 
 
 .phabricator-standard-page {

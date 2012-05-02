@@ -96,6 +96,7 @@ final class PhabricatorAuditCommentEditor {
     $commit->save();
 
     $this->publishFeedStory($comment, array_keys($audit_phids));
+    $this->publishNotifications($comment);
     PhabricatorSearchCommitIndexer::indexCommit($commit);
     $this->sendMail($comment, $other_comments);
   }
@@ -161,6 +162,25 @@ final class PhabricatorAuditCommentEditor {
           'action'        => $comment->getAction(),
           'content'       => $comment->getContent(),
         ))
+      ->publish();
+  }
+
+  private function publishNotifications($comment) {
+    $commit = $this->commit;
+    $user = $this->user;
+    $event_data = array(
+        'commitPHID'    => $commit->getPHID(),
+        'action'        => $comment->getAction(),
+        'content'       => $comment->getContent(),
+        );
+
+    id(new PhabricatorNotificationsPublisher())
+      ->setStoryType(
+          PhabricatorNotificationsStoryTypeConstants::STORY_AUDIT)
+        ->setStoryData($event_data)
+        ->setStoryTime(time())
+        ->setStoryAuthorPHID($user->getPHID())
+        ->setObjectPHID($commit->getPHID())
       ->publish();
   }
 

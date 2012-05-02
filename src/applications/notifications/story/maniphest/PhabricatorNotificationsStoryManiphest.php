@@ -73,6 +73,8 @@ final class PhabricatorNotificationsStoryManiphest
       return "{$actor_link} updated description of {$task_link} to \"{$description}\"";
     case 'reassign':
       return "{$actor_link} reassigned task {$task_link} to {$owner_link}";
+    case 'attach':
+      return "{$actor_link} attached another task to {$task_link}";
 
 
     default:
