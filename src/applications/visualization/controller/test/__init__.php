@@ -6,8 +6,12 @@
 
 
 
+phutil_require_module('phabricator', 'applications/people/storage/user');
 phutil_require_module('phabricator', 'applications/visualization/controller/base');
 phutil_require_module('phabricator', 'applications/visualization/query/taskcreate');
+phutil_require_module('phabricator', 'view/null');
+
+phutil_require_module('phutil', 'utils');
 
 
 phutil_require_source('PhabricatorVisualizationTestPageController.php');

@@ -6,6 +6,7 @@
 
 
 
+phutil_require_module('phabricator', 'aphront/writeguard');
 phutil_require_module('phabricator', 'applications/notifications/storage/base');
 
 

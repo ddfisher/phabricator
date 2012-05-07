@@ -7,7 +7,6 @@
 
 
 phutil_require_module('phabricator', 'aphront/response/404');
-phutil_require_module('phabricator', 'aphront/writeguard');
 phutil_require_module('phabricator', 'applications/differential/controller/base');
 phutil_require_module('phabricator', 'applications/differential/data/revisionlist');
 phutil_require_module('phabricator', 'applications/differential/storage/diff');
@@ -16,8 +15,6 @@ phutil_require_module('phabricator', 'applications/differential/view/difftableof
 phutil_require_module('phabricator', 'applications/differential/view/primarypane');
 phutil_require_module('phabricator', 'applications/notifications/storage/subscribed');
 phutil_require_module('phabricator', 'infrastructure/env');
-phutil_require_module('phabricator', 'storage/qsprintf');
-phutil_require_module('phabricator', 'storage/queryfx');
 phutil_require_module('phabricator', 'view/form/base');
 phutil_require_module('phabricator', 'view/form/control/markup');
 phutil_require_module('phabricator', 'view/form/control/submit');
