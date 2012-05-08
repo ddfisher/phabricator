@@ -95,6 +95,18 @@ final class PhabricatorAuditCommentEditor {
     $commit->updateAuditStatus($requests);
     $commit->save();
 
+
+
+    $subscriberPHIDs = array();
+    $subscriberPHIDs[] = $commit->getAuthorPHID();
+    $subscriberPHIDs[] = $comment->getActorPHID();
+    foreach ($other_comments as $other_comment) {
+      $subscriberPHIDs[] = $other_comment->getActorPHID();
+    }
+    $subscriberPHIDs = array_unique($subscriberPHIDs);
+    id(new PhabricatorNotificationsPublisher())
+    ->changeSubscribers($commit->getPHID(), $subscriberPHIDs);
+
     $this->publishFeedStory($comment, array_keys($audit_phids));
     $this->publishNotifications($comment);
     PhabricatorSearchCommitIndexer::indexCommit($commit);

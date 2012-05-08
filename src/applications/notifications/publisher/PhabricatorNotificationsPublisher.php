@@ -54,6 +54,35 @@ final class PhabricatorNotificationsPublisher {
     return $this;
   }
 
+  public function changeSubscribers($objectPHID, $ccPHIDs) {
+    $ref = new PhabricatorNotificationsSubscribed();
+    $currentSubscribers = $ref->loadAllWhere("objectPHID = %s", $objectPHID);
+    foreach ($currentSubscribers as $currentSubscriber) {
+      $index = array_search($currentSubscriber->getUserPHID(), $ccPHIDs);
+      if ($index) {
+        // this person is already subscribed
+        unset($ccPHIDs[$index]);
+      } else {
+        // this person is no longer subscribed, delete them
+        $currentSubscriber->delete();
+      }
+    }
+
+    // TODO: make sure current notification is unread
+    $chrono_key = $this->generateChronologicalKey();
+
+    // $ccPHIDs now contains only new subscribers
+    foreach ($ccPHIDs as $userPHID) {
+      $subscription = id(new PhabricatorNotificationsSubscribed())
+        ->setUserPHID($userPHID)
+        ->setObjectPHID($objectPHID)
+        ->setLastViewed($chrono_key)
+        ->insert();
+    }
+
+    return $this;
+  }
+
   public function publish() {
     if (!$this->objectPHID) {
       throw new Exception("There is no object PHID for this story!");
@@ -73,23 +102,23 @@ final class PhabricatorNotificationsPublisher {
       ->setChronologicalKey($chrono_key)
       ->save();
 
-    $ref = new PhabricatorNotificationsSubscribed();
-    $subscription = $ref->loadOneWhere("userPHID = %s AND objectpHID = %s",
-		    $this->storyAuthorPHID,
-		    $this->objectPHID);
-    
-    if(!$subscription) {
-      $subscription = id(new PhabricatorNotificationsSubscribed())
-	->setUserPHID($this->storyAuthorPHID)
-	->setObjectPHID($this->objectPHID)
-	->setLastViewed($chrono_key)
-	->insert();
-    } else {
-      $subscription
-	->setLastViewed($chrono_key)
-	->update();
-    }
-    
+    /* $ref = new PhabricatorNotificationsSubscribed(); */
+    /* $subscription = $ref->loadOneWhere("userPHID = %s AND objectPHID = %s", */
+		    /* $this->storyAuthorPHID, */
+		    /* $this->objectPHID); */
+
+    /* if(!$subscription) { */
+    /*   $subscription = id(new PhabricatorNotificationsSubscribed()) */
+    /*     ->setUserPHID($this->storyAuthorPHID) */
+    /*     ->setObjectPHID($this->objectPHID) */
+    /*     ->setLastViewed($chrono_key) */
+    /*     ->insert(); */
+    /* } else { */
+    /*   $subscription */
+    /*     ->setLastViewed($chrono_key) */
+    /*     ->update(); */
+    /* } */
+
     $this->sendAphlictNotification();
     return $story;
   }

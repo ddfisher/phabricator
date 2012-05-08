@@ -189,6 +189,11 @@ class ManiphestTransactionEditor {
       $email_cc,
       $task->getCCPHIDs());
 
+    // TODO: notify people when they've been removed from CCs
+
+    id(new PhabricatorNotificationsPublisher())
+      ->changeSubscribers($task->getPHID(), $task->getCCPHIDs());
+
     $this->publishFeedStory($task, $transactions);
     $this->publishNotifications($task, $transactions);
 
@@ -204,7 +209,7 @@ class ManiphestTransactionEditor {
 
   private function publishNotifications($task, $transactions) {
     $comments = null;
-      
+
     foreach ($transactions as $transaction) {
       if ($transaction->hasComments()) {
         $comments = $transaction->getComments();
@@ -216,7 +221,7 @@ class ManiphestTransactionEditor {
           'taskID'          => $task->getID(),
           'type'            => $transaction->getTransactionType(),
           'description'     => $task->getDescription(),
-	  'comments'        => $comments);
+          'comments'        => $comments);
 
       id(new PhabricatorNotificationsPublisher())
         ->setStoryType(

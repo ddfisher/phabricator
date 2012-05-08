@@ -15,7 +15,6 @@ phutil_require_module('phabricator', 'applications/notifications/aphlict/refresh
 phutil_require_module('phabricator', 'applications/notifications/constants/story');
 phutil_require_module('phabricator', 'applications/notifications/storage/storydata');
 phutil_require_module('phabricator', 'applications/notifications/storage/subscribed');
-phutil_require_module('phabricator', 'storage/qsprintf');
 phutil_require_module('phabricator', 'storage/queryfx');
 
 phutil_require_module('phutil', 'filesystem');

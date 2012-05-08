@@ -6,10 +6,9 @@
 
 
 
+phutil_require_module('phabricator', 'applications/audit/constants/action');
 phutil_require_module('phabricator', 'applications/notifications/story/base');
 phutil_require_module('phabricator', 'applications/notifications/view/story');
 
-phutil_require_module('phutil', 'utils');
 
-
-phutil_require_source('PhabricatorNotificationsStoryDifferential.php');
+phutil_require_source('PhabricatorNotificationsStoryAudit.php');

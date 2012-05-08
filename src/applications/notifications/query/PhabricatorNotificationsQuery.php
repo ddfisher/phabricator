@@ -20,7 +20,7 @@ final class PhabricatorNotificationsQuery {
 
   private $limit = 100;
   private $userPHID;
-  
+
 
   public function setLimit($limit) {
     $this->limit = $limit;
@@ -56,6 +56,7 @@ final class PhabricatorNotificationsQuery {
       $story_table->getTableName(),
       $this->userPHID,
       $this->userPHID,
+      /* "", //XXX */
       $this->limit);
 
     $data = $story_table->loadAllFromArray($data);
