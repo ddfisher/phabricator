@@ -179,6 +179,11 @@ class PhrictionDocumentController
         'View History');
       // these float right so history_button which is right most goes first
       $buttons = $history_button.$edit_button;
+
+      id(new PhabricatorNotificationsSubscribed())
+        ->updateLastViewed($user->getPHID(),
+            $document->getPHID(),
+            $this->generateChronologicalKey());
     }
 
     if ($version_note) {
@@ -196,12 +201,6 @@ class PhrictionDocumentController
       $version_note.
       $page_content.
       $children;
-
-
-    id(new PhabricatorNotificationsSubscribed())
-      ->updateLastViewed($user->getPHID(), 
-	$document->getPHID(), 
-	$this->generateChronologicalKey());    
 
 
     return $this->buildStandardPageResponse(
