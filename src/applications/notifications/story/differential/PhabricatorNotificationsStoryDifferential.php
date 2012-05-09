@@ -59,6 +59,10 @@ final class PhabricatorNotificationsStoryDifferential
       return "{$author_link} accepted {$revision_link}";
     case 'add_reviewers':
       return "{$author_link} added reviewers to {$revision_link}";
+    case 'add_ccs':
+      return "{$author_link} added CCs to {$revision_link}";
+    case 'commit':
+      return "{$author_link} committed {$revision_link}";
     case 'create':
       return "{$author_link} created {$revision_link}";
     case 'none':
