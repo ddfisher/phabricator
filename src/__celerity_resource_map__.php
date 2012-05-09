@@ -344,7 +344,7 @@ celerity_register_resource_map(array(
   ),
   'javelin-behavior-aphlict-dropdown' =>
   array(
-    'uri' => '/res/6bdf13aa/rsrc/js/application/aphlict/behavior-aphlict-dropdown.js',
+    'uri' => '/res/8ed73fa8/rsrc/js/application/aphlict/behavior-aphlict-dropdown.js',
     'type' => 'js',
     'requires' =>
     array(
@@ -1452,15 +1452,6 @@ celerity_register_resource_map(array(
     ),
     'disk' => '/rsrc/js/application/owners/OwnersPathEditor.js',
   ),
-  'owners-path-editor-css' =>
-  array(
-    'uri' => '/res/9bc5332c/rsrc/css/application/owners/owners-path-editor.css',
-    'type' => 'css',
-    'requires' =>
-    array(
-    ),
-    'disk' => '/rsrc/css/application/owners/owners-path-editor.css',
-  ),
   'path-typeahead' =>
   array(
     'uri' => '/res/50246fb6/rsrc/js/application/herald/PathTypeahead.js',
@@ -1484,6 +1475,24 @@ celerity_register_resource_map(array(
     array(
     ),
     'disk' => '/rsrc/css/application/directory/phabricator-app-buttons.css',
+  ),
+  0 =>
+  array(
+    'uri' => '/res/936e8e81/rsrc/js/javelin/docs/onload.js',
+    'type' => 'js',
+    'requires' =>
+    array(
+    ),
+    'disk' => '/rsrc/js/javelin/docs/onload.js',
+  ),
+  'owners-path-editor-css' =>
+  array(
+    'uri' => '/res/9bc5332c/rsrc/css/application/owners/owners-path-editor.css',
+    'type' => 'css',
+    'requires' =>
+    array(
+    ),
+    'disk' => '/rsrc/css/application/owners/owners-path-editor.css',
   ),
   'phabricator-chatlog-css' =>
   array(
@@ -1611,17 +1620,6 @@ celerity_register_resource_map(array(
       4 => 'javelin-vector',
     ),
     'disk' => '/rsrc/js/application/core/KeyboardShortcutManager.js',
-  ),
-  0 =>
-  array(
-    'uri' => '/res/5aa87210/rsrc/js/javelin/core/__tests__/stratcom.js',
-    'type' => 'js',
-    'requires' =>
-    array(
-      0 => 'javelin-stratcom',
-      1 => 'javelin-dom',
-    ),
-    'disk' => '/rsrc/js/javelin/core/__tests__/stratcom.js',
   ),
   'phabricator-menu-item' =>
   array(

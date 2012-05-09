@@ -8,17 +8,17 @@
  */
 
 JX.behavior('aphlict-dropdown', function(config) {
-  var open = false;
   var dropdown = JX.$('phabricator-notification-dropdown');
   var indicator = JX.$('phabricator-notification-indicator');
   var request = null;
 
+  dropdown.style.visibility = 'hidden';
   
   JX.Stratcom.listen(
     'click',
     null,
-    function() {
-      dropdown.style.visibility = "hidden";
+    function(e) {
+      dropdown.style.visibility = 'hidden';
     });
 
   function refresh() {
@@ -43,13 +43,19 @@ JX.behavior('aphlict-dropdown', function(config) {
 
   refresh();
 
-  indicator.onclick = function() {
-    if (!open) {
-      dropdown.style.visibility = 'visible';
-      JX.Stratcom.invoke('notification-update', null, {});
-    }
-    open = !open;
-  };
+  JX.DOM.listen(
+      indicator,
+      'click',
+      null,
+      function(e) {
+        if (dropdown.style.visibility == 'hidden') {
+          dropdown.style.visibility = 'visible';
+          JX.Stratcom.invoke('notification-update', null, {});
+        } else {
+          dropdown.style.visibility = 'hidden';
+        }
+        e.stop();
+      });
 
   JX.Stratcom.listen('notification-update', null, refresh);
 });
