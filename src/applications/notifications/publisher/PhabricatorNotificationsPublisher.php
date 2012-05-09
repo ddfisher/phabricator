@@ -102,23 +102,6 @@ final class PhabricatorNotificationsPublisher {
       ->setChronologicalKey($chrono_key)
       ->save();
 
-    /* $ref = new PhabricatorNotificationsSubscribed(); */
-    /* $subscription = $ref->loadOneWhere("userPHID = %s AND objectPHID = %s", */
-		    /* $this->storyAuthorPHID, */
-		    /* $this->objectPHID); */
-
-    /* if(!$subscription) { */
-    /*   $subscription = id(new PhabricatorNotificationsSubscribed()) */
-    /*     ->setUserPHID($this->storyAuthorPHID) */
-    /*     ->setObjectPHID($this->objectPHID) */
-    /*     ->setLastViewed($chrono_key) */
-    /*     ->insert(); */
-    /* } else { */
-    /*   $subscription */
-    /*     ->setLastViewed($chrono_key) */
-    /*     ->update(); */
-    /* } */
-
     $this->sendAphlictNotification();
     return $story;
   }
