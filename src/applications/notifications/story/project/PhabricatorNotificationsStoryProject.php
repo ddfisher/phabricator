@@ -1,5 +1,21 @@
 <?php
 
+/*
+ * Copyright 2012 Facebook, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 class PhabricatorNotificationsStoryProject extends PhabricatorNotificationsStory {
     public function getRequiredHandlePHIDs() {
       return array(
@@ -7,10 +23,10 @@ class PhabricatorNotificationsStoryProject extends PhabricatorNotificationsStory
         $this->getStoryData()->getValue('projectPHID'),
       );
     }
-    
+
     public function renderView() {
       $data = $this->getStoryData();
-      
+
       $view = new PhabricatorNotificationsStoryView();
       $view->setTitle($this->one_line_for_data($data));
       $view->setOneLineStory(true);
@@ -41,8 +57,8 @@ class PhabricatorNotificationsStoryProject extends PhabricatorNotificationsStory
           "action: {$action}, ".
           "old: {$old}, ".
           "new: {$new}, ".
-          "proj_phid: {$proj_phid}, ".
-          "author_phid: {$author_phid}".
+          "proj_phid: {$proj_link}, ".
+          "author_phid: {$author_link}".
           "]";
       }
     }

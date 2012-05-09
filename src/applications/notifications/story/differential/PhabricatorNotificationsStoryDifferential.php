@@ -18,7 +18,7 @@
 
 final class PhabricatorNotificationsStoryDifferential
  extends PhabricatorNotificationsStory {
-   
+
   public function getRequiredHandlePHIDs() {
     $data = $this->getStoryData();
     return array(
@@ -55,19 +55,27 @@ final class PhabricatorNotificationsStoryDifferential
     switch($action) {
     case 'abandon':
       return "{$author_link} abandoned {$revision_link}";
+    case 'accept':
+      return "{$author_link} accepted {$revision_link}";
+    case 'add_reviewers':
+      return "{$author_link} added reviewers to {$revision_link}";
     case 'create':
       return "{$author_link} created {$revision_link}";
     case 'none':
       return "{$author_link} commented on {$revision_link} \"{$feedback_content}\"";
     case 'rethink':
       return "{$author_link} planned changes to {$revision_link}";
-    case 'update': 
+    case 'reject':
+      return "{$author_link} requested changes to {$revision_link}";
+    case 'resign':
+      return "{$author_link} resigned from {$revision_link}";
+    case 'update':
       return "{$author_link} updated {$revision_link}";
     default:
       return "[ ".
         "action: {$action}, ".
-        "author: {$author_phid}, ".
-        "revision: {$revision_phid} ".
+        "author: {$author_link}, ".
+        "revision: {$revision_link} ".
         "feedback_content: {$feedback_content}".
         "]";
     }

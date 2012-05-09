@@ -57,16 +57,24 @@ final class PhabricatorNotificationsStoryManiphest
     $owner_link = $this->linkTo($owner_phid);
 
     switch ($action) {
+    case 'assign':
+      return "{$actor_link} assigned {$task_link} to {$owner_link}";
+    case 'create':
+      return "{$actor_link} created {$task_link}";
     case 'comment':
       return  "{$actor_link} commented on {$task_link} \"{$comments}\"";
     case 'ccs':
       return "{$actor_link} added cc's to {$task_link}";
+    case 'close':
+      return "{$actor_link} closed {$task_link}";
     case 'priority':
       return "{$actor_link} changed the priority of {$task_link}";
     case 'projects':
       return "{$actor_link} added projects to {$task_link}";
+    /*TODO remove this, it's only here for things generate
+      improperly in the past */
     case 'status':
-      return "{$actor_link} created task {$task_link}";
+      return "{$actor_link} updated task {$task_link}";
     case 'title':
       return "{$actor_link} updated title of {$task_link}";
     case 'description':
@@ -74,14 +82,14 @@ final class PhabricatorNotificationsStoryManiphest
     case 'reassign':
       return "{$actor_link} reassigned task {$task_link} to {$owner_link}";
     case 'attach':
-      return "{$actor_link} attached another task to {$task_link}";
+      return "{$actor_link} attached something to {$task_link}";
 
 
     default:
       return '['.
-        'actor: '.$actor_phid.", ".
-        'owner: '.$owner_phid.", ".
-        'task: '.$task_phid.", ".
+        'actor: '.$actor_link.", ".
+        'owner: '.$owner_link.", ".
+        'task: '.$task_link.", ".
         'action: '.$action.", ".
         'description: '.$description.
         ']';

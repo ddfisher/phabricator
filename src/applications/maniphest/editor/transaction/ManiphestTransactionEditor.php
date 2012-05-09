@@ -214,12 +214,29 @@ class ManiphestTransactionEditor {
       if ($transaction->hasComments()) {
         $comments = $transaction->getComments();
       }
+
+      switch ($transaction->getTransactionType()) {
+        case ManiphestTransactionType::TYPE_OWNER:
+          $action = ManiphestAction::ACTION_ASSIGN;
+          break;
+        case ManiphestTransactionType::TYPE_STATUS:
+          if ($task->getStatus() != ManiphestTaskStatus::STATUS_OPEN) {
+            $action = ManiphestAction::ACTION_CLOSE;
+          } else if ($this->isCreate($transactions)) {
+            $action = ManiphestAction::ACTION_CREATE;
+          }
+          break;
+        default:
+          $action = $transaction->getTransactionType();
+          break;
+      }
+
       $event_data = array(
           'taskPHID'        => $task->getPHID(),
           'transactionID'   => $transaction->getID(),
           'ownerPHID'       => $task->getOwnerPHID(),
           'taskID'          => $task->getID(),
-          'type'            => $transaction->getTransactionType(),
+          'type'            => $action,
           'description'     => $task->getDescription(),
           'comments'        => $comments);
 
