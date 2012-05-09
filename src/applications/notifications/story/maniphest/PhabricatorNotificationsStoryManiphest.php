@@ -79,12 +79,12 @@ final class PhabricatorNotificationsStoryManiphest
 
     default:
       return '['.
-	'actor: '.$actor_phid.", ".
-	'owner: '.$owner_phid.", ".
-	'task: '.$task_phid.", ".
-	'action: '.$action.", ".
-	'description: '.$description.
-	']';
+        'actor: '.$actor_phid.", ".
+        'owner: '.$owner_phid.", ".
+        'task: '.$task_phid.", ".
+        'action: '.$action.", ".
+        'description: '.$description.
+        ']';
     }
   }
 

@@ -37,12 +37,10 @@ extends PhabricatorNotificationsStory {
       return "{$author_link} created document {$document_link}";
     default:
       return '['.
-	'author: '.$author_phid.', '.
-	'document: '.$document_phid.', '.
-	'action: '.$action.
-	']';
-	
-      
+        'author: '.$author_phid.', '.
+        'document: '.$document_phid.', '.
+        'action: '.$action.
+        ']';
     }
   }
 }

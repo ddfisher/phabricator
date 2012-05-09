@@ -62,7 +62,7 @@ extends PhabricatorNotificationsView {
     $head = phutil_render_tag(
       'div',
       array(
-	'class' => 'phabricator-notifications-story-head',
+        'class' => 'phabricator-notifications-story-head',
       ),
       nonempty($title, 'Untitled Story'));
       
@@ -70,9 +70,9 @@ extends PhabricatorNotificationsView {
     return phutil_render_tag(
       'div',
       array(
-	'class' =>
-	'phabricator-notifications '.
-	'phabricator-notifications-story-one-line'),
+        'class' =>
+          'phabricator-notifications '.
+          'phabricator-notifications-story-one-line'),
       $head);
   }
 

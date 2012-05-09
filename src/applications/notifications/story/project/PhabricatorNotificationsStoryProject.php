@@ -3,8 +3,8 @@
 class PhabricatorNotificationsStoryProject extends PhabricatorNotificationsStory {
     public function getRequiredHandlePHIDs() {
       return array(
-	$this->getStoryData()->getAuthorPHID(),
-	$this->getStoryData()->getValue('projectPHID'),
+        $this->getStoryData()->getAuthorPHID(),
+        $this->getStoryData()->getValue('projectPHID'),
       );
     }
     
@@ -31,21 +31,20 @@ class PhabricatorNotificationsStoryProject extends PhabricatorNotificationsStory
       $proj_link = $this->linkTo($proj_phid);
       switch($action) {
       case 'name':
-	if($old) {
-	  return "{$author_link} renamed project {$old} to {$proj_link}";
-	} else {
-	  return "{$author_link} created project {$proj_link}";
-	}
+        if($old) {
+          return "{$author_link} renamed project {$old} to {$proj_link}";
+        } else {
+          return "{$author_link} created project {$proj_link}";
+        }
       default:
-	return '['.
-	  "action: {$action}, ".
-	  "old: {$old}, ".
-	  "new: {$new}, ".
-	  "proj_phid: {$proj_phid}, ".
-	  "author_phid: {$author_phid}".
-	  "]";
+        return '['.
+          "action: {$action}, ".
+          "old: {$old}, ".
+          "new: {$new}, ".
+          "proj_phid: {$proj_phid}, ".
+          "author_phid: {$author_phid}".
+          "]";
       }
     }
-
 }
 

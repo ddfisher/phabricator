@@ -34,12 +34,12 @@ final class PhabricatorNotificationsSubscribed
   public function updateLastViewed($userPHID, $objectPHID, $lastViewed) {
     $unguarded = AphrontWriteGuard::beginScopedUnguardedWrites();
     $sub = $this->loadOneWhere("userPHID = %s AND objectPHID = %s",
-	   $userPHID,
-	   $objectPHID);
+      $userPHID,
+      $objectPHID);
     
     if($sub) {
       $sub->setLastViewed($lastViewed)
-	->update();
+        ->update();
     }
     unset($unguarded);
   }

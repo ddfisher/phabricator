@@ -120,8 +120,8 @@ class DifferentialDiffViewController extends DifferentialController {
     
     id(new PhabricatorNotificationsSubscribed())
       ->updateLastViewed($request->getUser->getPHID(), 
-	$diff->getPHID(), 
-	$this->generateChronologicalKey());    
+      $diff->getPHID(), 
+      $this->generateChronologicalKey());    
 
     return $this->buildStandardPageResponse(
       id(new DifferentialPrimaryPaneView())

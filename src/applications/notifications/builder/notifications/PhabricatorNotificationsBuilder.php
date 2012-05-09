@@ -55,7 +55,7 @@ final class PhabricatorNotificationsBuilder {
       $story->loadLastViewed();
 
       if ($story->getLastViewed() > $story->getChronologicalKey()) {
-	$story->setConsumed(true);
+        $story->setConsumed(true);
       }
 
       // $date = phabricator_date($story->getEpoch(), $user);

@@ -498,8 +498,8 @@ class ManiphestTaskDetailController extends ManiphestController {
 
     id(new PhabricatorNotificationsSubscribed())
       ->updateLastViewed($user->getPHID(), 
-	$task->getPHID(), 
-	$this->generateChronologicalKey());    
+      $task->getPHID(), 
+      $this->generateChronologicalKey());    
 
     return $this->buildStandardPageResponse(
       array(
@@ -513,5 +513,4 @@ class ManiphestTaskDetailController extends ManiphestController {
         'title' => 'T'.$task->getID().' '.$task->getTitle(),
       ));
   }
-
 }

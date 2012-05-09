@@ -65,11 +65,11 @@ final class PhabricatorNotificationsStoryDifferential
       return "{$author_link} updated {$revision_link}";
     default:
       return "[ ".
-	"action: {$action}, ".
-	"author: {$author_phid}, ".
-	"revision: {$revision_phid} ".
-	"feedback_content: {$feedback_content}";
-	"]";
+        "action: {$action}, ".
+        "author: {$author_phid}, ".
+        "revision: {$revision_phid} ".
+        "feedback_content: {$feedback_content}".
+        "]";
     }
   }
 }
