@@ -50,7 +50,8 @@ class PhabricatorLoginController extends PhabricatorAuthController {
     }
 
     $next_uri = $this->getRequest()->getPath();
-    if ($next_uri == '/login/') {
+    //TODO HACKISH WAY TO MAKE LOGIN NOT GO TO NOTIFICATIONS, FIX IT
+    if ($next_uri == '/login/' || $next_uri == '/notifications/') {
       $next_uri = '/';
     }
 
