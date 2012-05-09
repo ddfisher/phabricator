@@ -21,6 +21,11 @@
   vertical-align: middle;
   height: 40px;
   width: 40px;
+
+  -moz-user-select: -moz-none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -o-user-select: none;
 }
 
 #phabricator-notification-indicator:hover {
