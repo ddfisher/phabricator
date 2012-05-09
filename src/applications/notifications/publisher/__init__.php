@@ -6,10 +6,7 @@
 
 
 
-phutil_require_module('phabricator', 'applications/differential/constants/action');
-phutil_require_module('phabricator', 'applications/differential/storage/revision');
 phutil_require_module('phabricator', 'applications/feed/storage/story');
-phutil_require_module('phabricator', 'applications/maniphest/constants/transactiontype');
 phutil_require_module('phabricator', 'applications/maniphest/storage/task');
 phutil_require_module('phabricator', 'applications/maniphest/storage/transaction');
 phutil_require_module('phabricator', 'applications/notifications/aphlict/differential');
@@ -18,10 +15,9 @@ phutil_require_module('phabricator', 'applications/notifications/aphlict/refresh
 phutil_require_module('phabricator', 'applications/notifications/constants/story');
 phutil_require_module('phabricator', 'applications/notifications/storage/storydata');
 phutil_require_module('phabricator', 'applications/notifications/storage/subscribed');
-phutil_require_module('phabricator', 'applications/phriction/storage/document');
+phutil_require_module('phabricator', 'storage/qsprintf');
 phutil_require_module('phabricator', 'storage/queryfx');
 
-phutil_require_module('phutil', 'error');
 phutil_require_module('phutil', 'filesystem');
 phutil_require_module('phutil', 'utils');
 
