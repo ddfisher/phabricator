@@ -430,6 +430,11 @@ class DifferentialRevisionEditor {
         ))
       ->publish();
 
+    $subscribers = array_keys(array_mergev(
+      array($add['rev'], $add['ccs'], $stable['rev'], $stable['ccs'])));
+    id(new PhabricatorNotificationsPublisher())
+      ->changeSubscribers($revision->getPHID(), $subscribers);
+
     id(new PhabricatorNotificationsPublisher())
       ->setStoryType(
         PhabricatorNotificationsStoryTypeConstants::STORY_DIFFERENTIAL)

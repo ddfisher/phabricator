@@ -83,6 +83,11 @@ final class PhabricatorProjectEditor {
         $affil->save();
       }
 
+      $affils = $project->loadAffiliations();
+      $member_phids = array_keys(mpull($affils, null, 'getUserPHID'));
+      id(new PhabricatorNotificationsPublisher())
+        ->changeSubscribers($project->getPHID(), $member_phids);
+
       foreach ($transactions as $xaction) {
         $this->publishTransactionStory($project, $xaction);
         $this->publishNotification($project, $xaction);
