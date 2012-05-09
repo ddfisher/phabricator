@@ -44,6 +44,14 @@ JX.behavior('aphlict-dropdown', function(config) {
   refresh();
 
   JX.DOM.listen(
+      dropdown,
+      'click',
+      null,
+      function(e) {
+        e.stop();
+      });
+
+  JX.DOM.listen(
       indicator,
       'click',
       null,
