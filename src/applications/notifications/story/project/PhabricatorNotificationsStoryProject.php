@@ -28,7 +28,7 @@ class PhabricatorNotificationsStoryProject extends PhabricatorNotificationsStory
       $data = $this->getStoryData();
 
       $view = new PhabricatorNotificationsStoryView();
-      $view->setTitle($this->one_line_for_data($data));
+      $view->setTitle($this->lineForData($data));
       $view->setOneLineStory(true);
       $view->setConsumed($this->getConsumed());
 
@@ -36,7 +36,7 @@ class PhabricatorNotificationsStoryProject extends PhabricatorNotificationsStory
       return $view;
     }
 
-    function one_line_for_data($data) {
+    function lineForData($data) {
       $action = $data->getValue('type');
       $old = $data->getValue('old');
       $new = $data->getValue('new');

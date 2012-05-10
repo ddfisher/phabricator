@@ -37,18 +37,20 @@ final class PhabricatorNotificationsStoryDifferential
     $view->setOneLineStory(true);
     $view->setConsumed($this->getConsumed());
 
-    $view->setTitle($this->one_line_for_data($data));
+    $view->setTitle($this->lineForData($data));
     return $view;
   }
 
-  function one_line_for_data($data) {
+  function lineForData($data) {
     $author_phid = $data->getAuthorPHID();
     $revision_phid = $data->getValue('revision_phid');
     $action = $data->getValue('action');
     //set as summary or comment
-    $feedback_content = phutil_utf8_shorten(
-      $data->getValue('feedback_content'),
-      140);
+    $feedback_content = phutil_escape_html(
+      phutil_utf8_shorten(
+        $data->getValue('feedback_content'),
+        140)
+      );
 
     $author_link = $this->linkTo($author_phid);
     $revision_link = $this->linkTo($revision_phid);

@@ -39,17 +39,21 @@ final class PhabricatorNotificationsStoryManiphest
     $view->setOneLineStory(true);
     $view->setConsumed($this->getConsumed());
 
-    $view->setTitle($this->one_line_for_data($data));
+    $view->setTitle($this->lineForData($data));
     return $view;
   }
 
-  function one_line_for_data($data) {
+  function lineForData($data) {
     $actor_phid = $data->getAuthorPHID();
     $owner_phid = $data->getValue('ownerPHID');
     $task_phid = $data->getValue('taskPHID');
     $action = $data->getValue('type');
     $description = $data->getValue('description');
-    $comments = phutil_utf8_shorten($data->getValue('comments'), 140);
+    $comments = phutil_escape_html(
+      phutil_utf8_shorten(
+        $data->getValue('comments'),
+        140)
+      );
     //todo, cut the length of comment off
     $actor_link = $this->linkTo($actor_phid);
 
