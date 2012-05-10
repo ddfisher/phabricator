@@ -31,7 +31,7 @@ final class PhabricatorNotificationsBuilder {
   }
 
   public function buildView() {
-    if(!$this->user) {
+    if (!$this->user) {
       throw new Exception('Call setUser() before buildView()!');
     }
 
@@ -41,7 +41,7 @@ final class PhabricatorNotificationsBuilder {
     $handles = array();
     $objects = array();
 
-    if($stories) {
+    if ($stories) {
       $handle_phids = array_mergev(mpull($stories, 'getRequiredHandlePHIDs'));
       $handles = id(new PhabricatorObjectHandleData($handle_phids))
         ->loadHandles();

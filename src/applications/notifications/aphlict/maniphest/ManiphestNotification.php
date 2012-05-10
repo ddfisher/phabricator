@@ -35,10 +35,10 @@ final class ManiphestNotification extends AphlictNotification{
            'phid = %s',
            $actor_phid);
     $username = $user->getUserName();
-    switch($type) {
+    switch ($type) {
     case ManiphestTransactionType::TYPE_NONE:
       return sprintf("%s commented on by %s",
-        substr($this->pagePathname,1),
+        substr($this->pagePathname, 1),
         $username);
     default:
       return "NO MESSAGE SET FOR TYPE:".$type;

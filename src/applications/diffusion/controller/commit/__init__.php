@@ -22,6 +22,7 @@ phutil_require_module('phabricator', 'applications/diffusion/view/commentlist');
 phutil_require_module('phabricator', 'applications/diffusion/view/commitchangetable');
 phutil_require_module('phabricator', 'applications/draft/storage/draft');
 phutil_require_module('phabricator', 'applications/markup/engine');
+phutil_require_module('phabricator', 'applications/notifications/storage/subscribed');
 phutil_require_module('phabricator', 'applications/phid/handle/data');
 phutil_require_module('phabricator', 'applications/repository/constants/repositorytype');
 phutil_require_module('phabricator', 'applications/repository/storage/repository');

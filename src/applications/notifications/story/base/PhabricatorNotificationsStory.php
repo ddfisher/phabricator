@@ -95,7 +95,7 @@ abstract class PhabricatorNotificationsStory {
   }
 
   final public function loadLastViewed() {
-    if(!$this->viewer) {
+    if (!$this->viewer) {
       throw new Exception('You must call setViewer first!');
     }
 

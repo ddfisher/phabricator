@@ -52,7 +52,7 @@ final class PhabricatorNotificationsStoryDifferential
 
     $author_link = $this->linkTo($author_phid);
     $revision_link = $this->linkTo($revision_phid);
-    switch($action) {
+    switch ($action) {
     case 'abandon':
       return "{$author_link} abandoned {$revision_link}";
     case 'accept':

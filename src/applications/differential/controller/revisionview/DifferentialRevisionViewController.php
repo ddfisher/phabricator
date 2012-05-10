@@ -315,10 +315,10 @@ class DifferentialRevisionViewController extends DifferentialController {
     }
 
     id(new PhabricatorNotificationsSubscribed())
-      ->updateLastViewed($user->getPHID(), 
-      $revision->getPHID(), 
+      ->updateLastViewed($user->getPHID(),
+      $revision->getPHID(),
       $this->generateChronologicalKey());
-    
+
     return $this->buildStandardPageResponse(
       $page_pane,
       array(

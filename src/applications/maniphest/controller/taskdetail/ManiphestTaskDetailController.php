@@ -497,9 +497,9 @@ class ManiphestTaskDetailController extends ManiphestController {
     $transaction_view->setMarkupEngine($engine);
 
     id(new PhabricatorNotificationsSubscribed())
-      ->updateLastViewed($user->getPHID(), 
-      $task->getPHID(), 
-      $this->generateChronologicalKey());    
+      ->updateLastViewed($user->getPHID(),
+      $task->getPHID(),
+      $this->generateChronologicalKey());
 
     return $this->buildStandardPageResponse(
       array(

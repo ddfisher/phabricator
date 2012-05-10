@@ -36,8 +36,8 @@ final class PhabricatorNotificationsSubscribed
     $sub = $this->loadOneWhere("userPHID = %s AND objectPHID = %s",
       $userPHID,
       $objectPHID);
-    
-    if($sub) {
+
+    if ($sub) {
       $sub->setLastViewed($lastViewed)
         ->update();
     }

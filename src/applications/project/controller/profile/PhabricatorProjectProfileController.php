@@ -144,9 +144,9 @@ class PhabricatorProjectProfileController
     $header->appendChild($nav_view);
 
     id(new PhabricatorNotificationsSubscribed())
-      ->updateLastViewed($user->getPHID(), 
-      $project->getPHID(), 
-      $this->generateChronologicalKey());    
+      ->updateLastViewed($user->getPHID(),
+      $project->getPHID(),
+      $this->generateChronologicalKey());
 
     return $this->buildStandardPageResponse(
       $header,

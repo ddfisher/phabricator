@@ -45,9 +45,9 @@ class PhabricatorNotificationsStoryProject extends PhabricatorNotificationsStory
 
       $author_link = $this->linkTo($author_phid);
       $proj_link = $this->linkTo($proj_phid);
-      switch($action) {
+      switch ($action) {
       case 'name':
-        if($old) {
+        if ($old) {
           return "{$author_link} renamed project {$old} to {$proj_link}";
         } else {
           return "{$author_link} created project {$proj_link}";

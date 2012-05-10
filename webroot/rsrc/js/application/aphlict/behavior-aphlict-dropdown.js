@@ -13,7 +13,7 @@ JX.behavior('aphlict-dropdown', function(config) {
   var request = null;
 
   dropdown.style.visibility = 'hidden';
-  
+
   JX.Stratcom.listen(
     'click',
     null,

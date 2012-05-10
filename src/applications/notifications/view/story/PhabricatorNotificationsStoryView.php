@@ -45,17 +45,17 @@ extends PhabricatorNotificationsView {
     $this->oneLine = $one_line;
     return $this;
   }
-  
+
   public function setConsumed($is_consumed) {
     $this->consumed = $is_consumed;
   }
 
-  
+
 
   public function render() {
 
     $title = $this->title;
-    if(!$this->consumed) {
+    if (!$this->consumed) {
       $title = '<b>'.$title.'</b>';
     }
 
@@ -65,7 +65,7 @@ extends PhabricatorNotificationsView {
         'class' => 'phabricator-notifications-story-head',
       ),
       nonempty($title, 'Untitled Story'));
-      
+
 
     return phutil_render_tag(
       'div',

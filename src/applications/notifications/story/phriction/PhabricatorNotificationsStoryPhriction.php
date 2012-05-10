@@ -46,7 +46,7 @@ extends PhabricatorNotificationsStory {
     $action = $data->getValue('action');
     $author_link = $this->linkTo($author_phid);
     $document_link = $this->linkTo($document_phid);
-    switch($action) {
+    switch ($action) {
     case 'edit':
       return "{$author_link} edited document {$document_link}";
     case 'create':
