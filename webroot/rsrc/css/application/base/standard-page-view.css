@@ -36,7 +36,7 @@
 #phabricator-notification-dropdown {
 
   visibility: hidden;
-
+  word-wrap: break-word;
 
   overflow-y: scroll;
   position: absolute;
