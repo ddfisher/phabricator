@@ -344,7 +344,7 @@ celerity_register_resource_map(array(
   ),
   'javelin-behavior-aphlict-dropdown' =>
   array(
-    'uri' => '/res/6c8d9014/rsrc/js/application/aphlict/behavior-aphlict-dropdown.js',
+    'uri' => '/res/a2177b9b/rsrc/js/application/aphlict/behavior-aphlict-dropdown.js',
     'type' => 'js',
     'requires' =>
     array(
@@ -1727,7 +1727,7 @@ celerity_register_resource_map(array(
   ),
   'phabricator-standard-page-view' =>
   array(
-    'uri' => '/res/d1ad7b38/rsrc/css/application/base/standard-page-view.css',
+    'uri' => '/res/ef6587ee/rsrc/css/application/base/standard-page-view.css',
     'type' => 'css',
     'requires' =>
     array(
@@ -2056,7 +2056,7 @@ celerity_register_resource_map(array(
       'uri' => '/res/pkg/ae7ea233/typeahead.pkg.js',
       'type' => 'js',
     ),
-    'cfd5ac68' =>
+    'c2cec0f3' =>
     array(
       'name' => 'core.pkg.css',
       'symbols' =>
@@ -2081,7 +2081,7 @@ celerity_register_resource_map(array(
         17 => 'aphront-pager-view-css',
         18 => 'phabricator-transaction-view-css',
       ),
-      'uri' => '/res/pkg/cfd5ac68/core.pkg.css',
+      'uri' => '/res/pkg/c2cec0f3/core.pkg.css',
       'type' => 'css',
     ),
     31583232 =>
@@ -2123,17 +2123,17 @@ celerity_register_resource_map(array(
   'reverse' =>
   array(
     'aphront-attached-file-view-css' => '31583232',
-    'aphront-crumbs-view-css' => 'cfd5ac68',
-    'aphront-dialog-view-css' => 'cfd5ac68',
-    'aphront-form-view-css' => 'cfd5ac68',
+    'aphront-crumbs-view-css' => 'c2cec0f3',
+    'aphront-dialog-view-css' => 'c2cec0f3',
+    'aphront-form-view-css' => 'c2cec0f3',
     'aphront-headsup-action-list-view-css' => '09c86840',
-    'aphront-list-filter-view-css' => 'cfd5ac68',
-    'aphront-pager-view-css' => 'cfd5ac68',
-    'aphront-panel-view-css' => 'cfd5ac68',
-    'aphront-side-nav-view-css' => 'cfd5ac68',
-    'aphront-table-view-css' => 'cfd5ac68',
-    'aphront-tokenizer-control-css' => 'cfd5ac68',
-    'aphront-typeahead-control-css' => 'cfd5ac68',
+    'aphront-list-filter-view-css' => 'c2cec0f3',
+    'aphront-pager-view-css' => 'c2cec0f3',
+    'aphront-panel-view-css' => 'c2cec0f3',
+    'aphront-side-nav-view-css' => 'c2cec0f3',
+    'aphront-table-view-css' => 'c2cec0f3',
+    'aphront-tokenizer-control-css' => 'c2cec0f3',
+    'aphront-typeahead-control-css' => 'c2cec0f3',
     'differential-changeset-view-css' => '09c86840',
     'differential-core-view-css' => '09c86840',
     'differential-inline-comment-editor' => '2e291441',
@@ -2191,23 +2191,23 @@ celerity_register_resource_map(array(
     'maniphest-task-detail-css' => '31583232',
     'maniphest-task-summary-css' => '31583232',
     'maniphest-transaction-detail-css' => '31583232',
-    'phabricator-app-buttons-css' => 'cfd5ac68',
+    'phabricator-app-buttons-css' => 'c2cec0f3',
     'phabricator-content-source-view-css' => '09c86840',
-    'phabricator-core-buttons-css' => 'cfd5ac68',
-    'phabricator-core-css' => 'cfd5ac68',
-    'phabricator-directory-css' => 'cfd5ac68',
+    'phabricator-core-buttons-css' => 'c2cec0f3',
+    'phabricator-core-css' => 'c2cec0f3',
+    'phabricator-directory-css' => 'c2cec0f3',
     'phabricator-drag-and-drop-file-upload' => '2e291441',
     'phabricator-dropdown-menu' => '95944588',
-    'phabricator-jump-nav' => 'cfd5ac68',
+    'phabricator-jump-nav' => 'c2cec0f3',
     'phabricator-keyboard-shortcut' => '95944588',
     'phabricator-keyboard-shortcut-manager' => '95944588',
     'phabricator-menu-item' => '95944588',
     'phabricator-object-selector-css' => '09c86840',
     'phabricator-paste-file-upload' => '95944588',
-    'phabricator-remarkup-css' => 'cfd5ac68',
+    'phabricator-remarkup-css' => 'c2cec0f3',
     'phabricator-shaped-request' => '2e291441',
-    'phabricator-standard-page-view' => 'cfd5ac68',
-    'phabricator-transaction-view-css' => 'cfd5ac68',
-    'syntax-highlighting-css' => 'cfd5ac68',
+    'phabricator-standard-page-view' => 'c2cec0f3',
+    'phabricator-transaction-view-css' => 'c2cec0f3',
+    'syntax-highlighting-css' => 'c2cec0f3',
   ),
 ));
