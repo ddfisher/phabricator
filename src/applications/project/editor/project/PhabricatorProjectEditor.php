@@ -109,6 +109,7 @@ final class PhabricatorProjectEditor {
 
   private function publishNotification($project, $xaction) {
     $event_data = array(
+      'projectID' => $project->getID(),
       'projectPHID'   => $project->getPHID(),
       'transactionID' => $xaction->getID(),
       'type'          => $xaction->getTransactionType(),

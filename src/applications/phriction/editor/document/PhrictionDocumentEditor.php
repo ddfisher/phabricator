@@ -228,6 +228,7 @@ final class PhrictionDocumentEditor {
       ->setStoryType(PhabricatorFeedStoryTypeConstants::STORY_PHRICTION)
       ->setStoryData(
         array(
+          'slug'    => $document->getSlug(),
           'phid'    => $document->getPHID(),
           'action'  => $feed_action,
           'content' => phutil_utf8_shorten($new_content->getContent(), 140),

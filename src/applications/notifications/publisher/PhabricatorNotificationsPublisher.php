@@ -127,6 +127,8 @@ final class PhabricatorNotificationsPublisher {
         $document_phid = $event_data['documentPHID'];
         $actor_phid = $event_data['actor_phid'];
         $action = $event_data['action'];
+        $pathname = PhrictionDocument::getSlugURI($event_data['slug']);
+        // TODO push PhrictionNotification
         break;
       case PhabricatorNotificationsStoryTypeConstants::STORY_MANIPHEST:
         $task = id(new ManiphestTask)->load($event_data['taskID']);
@@ -138,10 +140,15 @@ final class PhabricatorNotificationsPublisher {
       case PhabricatorNotificationsStoryTypeConstants::STORY_PROJECT:
         $project_phid = $event_data['projectPHID'];
         $transaction_id = $event_data['transactionID'];
+        $project_id = $event_data['projectID'];
+        $pathname = '/project/view/'.$project_id.'/';
+        // TODO push ProjectNotification
         break;
       case PhabricatorNotificationsStoryTypeConstants::STORY_AUDIT:
         $commit_phid = $event_data['commitPHID'];
         $action = $event_data['action'];
+        // TODO find audit pathname
+        // TODO push AuditNotification
         break;
       default:
         break;
