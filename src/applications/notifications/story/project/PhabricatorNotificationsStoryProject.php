@@ -37,7 +37,7 @@ class PhabricatorNotificationsStoryProject extends PhabricatorNotificationsStory
     }
 
     function lineForData($data) {
-      $action = $data->getValue('type');
+      $action = $data->getValue('action');
       $old = $data->getValue('old');
       $new = $data->getValue('new');
       $proj_phid = $data->getValue('projectPHID');
@@ -45,22 +45,61 @@ class PhabricatorNotificationsStoryProject extends PhabricatorNotificationsStory
 
       $author_link = $this->linkTo($author_phid);
       $proj_link = $this->linkTo($proj_phid);
+      $verb = PhabricatorProjectAction::getActionPastTenseVerb($action);
+
+      $one_line = "{$author_link} {$verb} {$proj_link}";
+
       switch ($action) {
-      case 'name':
-        if ($old) {
-          return "{$author_link} renamed project {$old} to {$proj_link}";
-        } else {
-          return "{$author_link} created project {$proj_link}";
-        }
-      default:
-        return '['.
-          "action: {$action}, ".
-          "old: {$old}, ".
-          "new: {$new}, ".
-          "proj_phid: {$proj_link}, ".
-          "author_phid: {$author_link}".
-          "]";
+        case PhabricatorProjectAction::ACTION_RENAME:
+          $one_line .= ' from '.
+            $this->renderString($old);
+          break;
+        case PhabricatorProjectAction::ACTION_STATUS:
+          $one_line .= ' from '.
+           $this->renderString(
+             PhabricatorProjectStatus::getNameForStatus($old)).
+               ' to '.
+           $this->renderString(
+             PhabricatorProjectStatus::getNameForStatus($new)).
+               '.';
+           break;
+        case PhabricatorProjectAction::ACTION_ADD_MEMBERS:
+          $one_line .= ' '.
+            $this->renderHandleList(
+              array_diff(
+                $new,
+                $old
+              )
+            );
+          break;
+        case PhabricatorProjectAction::ACTION_REMOVE_MEMBERS:
+          $one_line .= ' '.
+            $this->renderHandleList(
+              array_diff(
+                $old,
+                $new
+              )
+            );
+          break;
+       case PhabricatorProjectAction::ACTION_CHANGE_MEMBERS:
+         $one_line .= ' added '.
+           $this->renderHandleList(
+             array_diff(
+               $new,
+               $old
+              )
+           );
+         $one_line .= ' removed '.
+           $this->renderHandleList(
+             array_diff(
+               $new,
+               $old
+              )
+            );
+          break;
       }
+      return $one_line;
     }
+
 }
 

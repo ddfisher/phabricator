@@ -10,6 +10,7 @@ phutil_require_module('phabricator', 'applications/feed/constants/story');
 phutil_require_module('phabricator', 'applications/feed/publisher');
 phutil_require_module('phabricator', 'applications/notifications/constants/story');
 phutil_require_module('phabricator', 'applications/notifications/publisher');
+phutil_require_module('phabricator', 'applications/project/constants/action');
 phutil_require_module('phabricator', 'applications/project/constants/transaction');
 phutil_require_module('phabricator', 'applications/project/exception/namecollison');
 phutil_require_module('phabricator', 'applications/project/storage/affiliation');

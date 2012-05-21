@@ -118,4 +118,8 @@ abstract class PhabricatorNotificationsStory {
     return $this->lastViewed;
   }
 
+  final protected function renderString($str) {
+    return '<strong>'.phutil_escape_html($str).'</strong>';
+  }
+
 }

@@ -108,12 +108,65 @@ final class PhabricatorProjectEditor {
     return $this;
   }
 
+  /*
+   * Meant to help unify the code between feed and notifications
+   * and also make projects behave similar to other apps in
+   * terms of these two.  It makes us have to grab some things
+   * twice, but I'm assuming this won't be a bottlekneck..
+   */
+
+  private function getActionFromXAction($project, $xaction) {
+    $type = $xaction->getTransactionType();
+    $old  = $xaction->getOldValue();
+    $new  = $xaction->getNewValue();
+    $author_phid = $this->user->getPHID();
+
+    switch ($type) {
+      case PhabricatorProjectTransactionType::TYPE_NAME:
+        if (strlen($old)) {
+          $action = PhabricatorProjectAction::ACTION_RENAME;
+        } else {
+          $action = PhabricatorProjectAction::ACTION_CREATE;
+        }
+        break;
+      case PhabricatorProjectTransactionType::TYPE_STATUS:
+        //fallthrough
+        $action = PhabricatorProjectAction::ACTION_STATUS;
+      case PhabricatorProjectTransactionType::TYPE_MEMBERS:
+        $add = array_diff($new, $old);
+        $rem = array_diff($old, $new);
+
+        if ((count($add) == 1) && (count($rem) == 0) &&
+            (head($add) == $author_phid)) {
+          $action = PhabricatorProjectAction::ACTION_JOIN;
+        } else if ((count($add) == 0) && (count($rem) == 1) &&
+                   (head($rem) == $author_phid)) {
+          $action = PhabricatorProjectAction::ACTION_LEAVE;
+        } else if (empty($rem)) {
+          $action = PhabricatorProjectAction::ACTION_ADD_MEMBERS;
+        } else if (empty($add)) {
+          $action = PhabricatorProjectAction::ACTION_REMOVE_MEMBERS;
+        } else {
+          $action = PhabricatorProjectAction::ACTION_CHANGE_MEMBERS;
+        }
+        break;
+      default:
+        $action = 'updated';
+        break;
+    }
+
+    return $action;
+  }
+
   private function publishNotification($project, $xaction) {
+
+    $action = $this->getActionFromXAction($project, $xaction);
+
     $event_data = array(
-      'projectID' => $project->getID(),
+      'projectID'     => $project->getID(),
       'projectPHID'   => $project->getPHID(),
       'transactionID' => $xaction->getID(),
-      'type'          => $xaction->getTransactionType(),
+      'action'        => $action,
       'old'           => $xaction->getOldValue(),
       'new'           => $xaction->getNewValue(),
     );
