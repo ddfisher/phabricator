@@ -46,17 +46,12 @@ extends PhabricatorNotificationsStory {
     $action = $data->getValue('action');
     $author_link = $this->linkTo($author_phid);
     $document_link = $this->linkTo($document_phid);
-    switch ($action) {
-    case 'edit':
-      return "{$author_link} edited document {$document_link}";
-    case 'create':
-      return "{$author_link} created document {$document_link}";
-    default:
-      return '['.
-        'author: '.$author_link.', '.
-        'document: '.$document_link.', '.
-        'action: '.$action.
-        ']';
-    }
+
+    $verb = PhrictionActionConstants::getActionPastTenseVerb($action);
+
+    //TODO: Check for revert's and print edit message of document
+    $one_line = "{$author_link} {$verb} document {$document_link}";
+    return $one_line;
   }
 }
+

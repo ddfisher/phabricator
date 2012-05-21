@@ -224,6 +224,9 @@ class ManiphestTransactionEditor {
             $action = ManiphestAction::ACTION_CLOSE;
           } else if ($this->isCreate($transactions)) {
             $action = ManiphestAction::ACTION_CREATE;
+          } else {
+            //epriestly, can you verify this?!?
+            $action = ManiphestAction::ACTION_REOPEN;
           }
           break;
         default:

@@ -51,39 +51,16 @@ final class PhabricatorNotificationsStoryDifferential
         $data->getValue('feedback_content'),
         140)
       );
-
     $author_link = $this->linkTo($author_phid);
     $revision_link = $this->linkTo($revision_phid);
-    switch ($action) {
-    case 'abandon':
-      return "{$author_link} abandoned {$revision_link}";
-    case 'accept':
-      return "{$author_link} accepted {$revision_link}";
-    case 'add_reviewers':
-      return "{$author_link} added reviewers to {$revision_link}";
-    case 'add_ccs':
-      return "{$author_link} added CCs to {$revision_link}";
-    case 'commit':
-      return "{$author_link} committed {$revision_link}";
-    case 'create':
-      return "{$author_link} created {$revision_link}";
-    case 'none':
-      return "{$author_link} commented on {$revision_link} \"{$feedback_content}\"";
-    case 'rethink':
-      return "{$author_link} planned changes to {$revision_link}";
-    case 'reject':
-      return "{$author_link} requested changes to {$revision_link}";
-    case 'resign':
-      return "{$author_link} resigned from {$revision_link}";
-    case 'update':
-      return "{$author_link} updated {$revision_link}";
-    default:
-      return "[ ".
-        "action: {$action}, ".
-        "author: {$author_link}, ".
-        "revision: {$revision_link} ".
-        "feedback_content: {$feedback_content}".
-        "]";
+
+    $verb = DifferentialAction::getActionPastTenseVerb($action);
+    $one_line = "{$author_link} {$verb} {$revision_link}";
+
+    if ($feedback_content) {
+      $one_line .= " \"{$feedback_content}\"";
     }
+
+    return $one_line;
   }
 }

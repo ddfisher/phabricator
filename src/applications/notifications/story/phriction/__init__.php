@@ -8,6 +8,7 @@
 
 phutil_require_module('phabricator', 'applications/notifications/story/base');
 phutil_require_module('phabricator', 'applications/notifications/view/story');
+phutil_require_module('phabricator', 'applications/phriction/constants/action');
 
 
 phutil_require_source('PhabricatorNotificationsStoryPhriction.php');

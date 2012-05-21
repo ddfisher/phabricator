@@ -40,6 +40,8 @@ final class PhabricatorNotificationsStoryManiphest
     $view->setConsumed($this->getConsumed());
 
     $view->setTitle($this->lineForData($data));
+    $view->setEpoch($data->getEpoch());
+
     return $view;
   }
 
@@ -59,45 +61,31 @@ final class PhabricatorNotificationsStoryManiphest
 
     $task_link = $this->linkTo($task_phid);
     $owner_link = $this->linkTo($owner_phid);
+    $verb = ManiphestAction::getActionPastTenseVerb($action);
+
+    if ($verb == ManiphestAction::ACTION_ASSIGN
+      or $verb == ManiphestAction::ACTION_REASSIGN) {
+      //double assignment since the action is diff in this case
+      $verb = $action = 'placed up for grabs';
+    }
+
+    $one_line = "{$actor_link} {$verb} {$task_link}";
 
     switch ($action) {
-    case 'assign':
-      return "{$actor_link} assigned {$task_link} to {$owner_link}";
-    case 'create':
-      return "{$actor_link} created {$task_link}";
-    case 'comment':
-      return  "{$actor_link} commented on {$task_link} \"{$comments}\"";
-    case 'ccs':
-      return "{$actor_link} added cc's to {$task_link}";
-    case 'close':
-      return "{$actor_link} closed {$task_link}";
-    case 'priority':
-      return "{$actor_link} changed the priority of {$task_link}";
-    case 'projects':
-      return "{$actor_link} added projects to {$task_link}";
-    /*TODO remove this, it's only here for things generate
-      improperly in the past */
-    case 'status':
-      return "{$actor_link} updated task {$task_link}";
-    case 'title':
-      return "{$actor_link} updated title of {$task_link}";
-    case 'description':
-      return "{$actor_link} updated description of {$task_link} to \"{$description}\"";
-    case 'reassign':
-      return "{$actor_link} reassigned task {$task_link} to {$owner_link}";
-    case 'attach':
-      return "{$actor_link} attached something to {$task_link}";
-
-
-    default:
-      return '['.
-        'actor: '.$actor_link.", ".
-        'owner: '.$owner_link.", ".
-        'task: '.$task_link.", ".
-        'action: '.$action.", ".
-        'description: '.$description.
-        ']';
+    case ManiphestAction::ACTION_ASSIGN:
+    case ManiphestAction::ACTION_REASSIGN:
+      $one_line .= " to {$owner_link}";
+      break;
+    case ManiphestAction::ACTION_DESCRIPTION:
+      $one_line .= " to {$description}";
+      break;
     }
-  }
 
+    if ($comments) {
+      $one_line .= " \"{$comments}\"";
+    }
+
+    return $one_line;
+  }
 }
+
