@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 
-
 /**
  * Records information about symbol locations in a codebase, like where classes
  * and functions are defined.
@@ -25,7 +24,7 @@
  *
  * @group diffusion
  */
-class PhabricatorRepositorySymbol extends PhabricatorRepositoryDAO {
+final class PhabricatorRepositorySymbol extends PhabricatorRepositoryDAO {
 
   protected $arcanistProjectID;
   protected $symbolName;
@@ -46,18 +45,16 @@ class PhabricatorRepositorySymbol extends PhabricatorRepositoryDAO {
   }
 
   public function getURI() {
-    $repo = $this->getRepository();
-    $file = $this->getPath();
-    $line = $this->getLineNumber();
-
-    $drequest = DiffusionRequest::newFromAphrontRequestDictionary(
+    $request = DiffusionRequest::newFromDictionary(
       array(
-        'callsign' => $repo->getCallsign(),
+        'repository'  => $this->getRepository(),
       ));
-    $branch = $drequest->getBranchURIComponent($drequest->getBranch());
-    $file = $branch.ltrim($file, '/');
-
-    return '/diffusion/'.$repo->getCallsign().'/browse/'.$file.'$'.$line;
+    return $request->generateURI(
+      array(
+        'action'    => 'browse',
+        'path'      => $this->getPath(),
+        'line'      => $this->getLineNumber(),
+      ));
   }
 
   public function getPath() {

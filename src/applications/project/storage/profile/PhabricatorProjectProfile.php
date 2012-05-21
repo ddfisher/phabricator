@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,10 @@
  * limitations under the License.
  */
 
-class PhabricatorProjectProfile extends PhabricatorProjectDAO {
+final class PhabricatorProjectProfile extends PhabricatorProjectDAO {
 
   protected $projectPHID;
   protected $blurb;
   protected $profileImagePHID;
 
-  public function getProfileImagePHID() {
-    return nonempty(
-        $this->profileImagePHID,
-        PhabricatorEnv::getEnvConfig('user.default-profile-image-phid'));
-  }
 }

@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class PhabricatorUIExampleRenderController
+final class PhabricatorUIExampleRenderController
   extends PhabricatorUIExampleController {
 
   private $class;
@@ -41,8 +41,7 @@ class PhabricatorUIExampleRenderController
     }
 
     if (!$selected) {
-      reset($classes);
-      $selected = key($classes);
+      $selected = head_key($classes);
     }
 
     $nav = new AphrontSideNavView();

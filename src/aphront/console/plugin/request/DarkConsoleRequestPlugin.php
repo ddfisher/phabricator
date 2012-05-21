@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
 /**
  * @group console
  */
-class DarkConsoleRequestPlugin extends DarkConsolePlugin {
+final class DarkConsoleRequestPlugin extends DarkConsolePlugin {
 
   public function getName() {
     return 'Request';
@@ -42,11 +42,16 @@ class DarkConsoleRequestPlugin extends DarkConsolePlugin {
 
     $sections = array(
       'Basics' => array(
-        'Host'      => $data['Server']['SERVER_ADDR'],
-        'Hostname'  => gethostbyaddr($data['Server']['SERVER_ADDR']),
         'Machine'   => php_uname('n'),
       ),
     );
+
+    // NOTE: This may not be present for some SAPIs, like php-fpm.
+    if (!empty($data['Server']['SERVER_ADDR'])) {
+      $addr = $data['Server']['SERVER_ADDR'];
+      $sections['Basics']['Host'] = $addr;
+      $sections['Basics']['Hostname'] = @gethostbyaddr($addr);
+    }
 
     $sections = array_merge($sections, $data);
 

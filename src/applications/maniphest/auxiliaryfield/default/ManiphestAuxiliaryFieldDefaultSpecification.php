@@ -29,6 +29,7 @@ class ManiphestAuxiliaryFieldDefaultSpecification
   private $checkboxLabel;
   private $checkboxValue;
   private $error;
+  private $shouldCopyWhenCreatingSimilarTask;
 
   const TYPE_SELECT = 'select';
   const TYPE_STRING = 'string';
@@ -134,7 +135,7 @@ class ManiphestAuxiliaryFieldDefaultSpecification
 
   public function setValueFromRequest($request) {
     $aux_post_values = $request->getArr('auxiliary');
-    $this->setValue(idx($aux_post_values, $this->getAuxiliaryKey(), ''));
+    return $this->setValue(idx($aux_post_values, $this->getAuxiliaryKey(), ''));
   }
 
   public function getValueForStorage() {
@@ -142,7 +143,7 @@ class ManiphestAuxiliaryFieldDefaultSpecification
   }
 
   public function setValueFromStorage($value) {
-    $this->setValue($value);
+    return $this->setValue($value);
   }
 
   public function validate() {
@@ -177,6 +178,7 @@ class ManiphestAuxiliaryFieldDefaultSpecification
     }
     return parent::renderForDetailView();
   }
+
 
   public function renderTransactionDescription(
     ManiphestTransaction $transaction,
@@ -222,6 +224,15 @@ class ManiphestAuxiliaryFieldDefaultSpecification
     }
 
     return $desc;
+  }
+
+  public function setShouldCopyWhenCreatingSimilarTask($copy) {
+    $this->shouldCopyWhenCreatingSimilarTask = $copy;
+    return $this;
+  }
+
+  public function shouldCopyWhenCreatingSimilarTask() {
+    return $this->shouldCopyWhenCreatingSimilarTask;
   }
 
 }

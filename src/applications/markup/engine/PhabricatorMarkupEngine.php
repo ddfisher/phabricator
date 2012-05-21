@@ -49,6 +49,13 @@ class PhabricatorMarkupEngine {
     ));
   }
 
+  public static function newPhameMarkupEngine() {
+    return self::newMarkupEngine(array(
+      'macros' => false,
+    ));
+  }
+
+
   public static function newDifferentialMarkupEngine(array $options = array()) {
     return self::newMarkupEngine(array(
       'custom-inline' => PhabricatorEnv::getEnvConfig(
@@ -106,6 +113,7 @@ class PhabricatorMarkupEngine {
 
     $rules = array();
     $rules[] = new PhutilRemarkupRuleEscapeRemarkup();
+    $rules[] = new PhutilRemarkupRuleMonospace();
 
     $custom_rule_classes = $options['custom-inline'];
     if ($custom_rule_classes) {
@@ -123,8 +131,8 @@ class PhabricatorMarkupEngine {
       $rules[] = new PhabricatorRemarkupRuleYoutube();
     }
 
-    $rules[] = new PhabricatorRemarkupRulePhriction();
     $rules[] = new PhutilRemarkupRuleHyperlink();
+    $rules[] = new PhabricatorRemarkupRulePhriction();
 
     $rules[] = new PhabricatorRemarkupRuleDifferentialHandle();
     $rules[] = new PhabricatorRemarkupRuleManiphestHandle();
@@ -143,9 +151,9 @@ class PhabricatorMarkupEngine {
     $rules[] = new PhabricatorRemarkupRuleMention();
 
     $rules[] = new PhutilRemarkupRuleEscapeHTML();
-    $rules[] = new PhutilRemarkupRuleMonospace();
     $rules[] = new PhutilRemarkupRuleBold();
     $rules[] = new PhutilRemarkupRuleItalic();
+    $rules[] = new PhutilRemarkupRuleDel();
 
     $blocks = array();
     $blocks[] = new PhutilRemarkupEngineRemarkupQuotesBlockRule();
@@ -167,7 +175,6 @@ class PhabricatorMarkupEngine {
     foreach ($blocks as $block) {
       if ($block instanceof PhutilRemarkupEngineRemarkupLiteralBlockRule) {
         $literal_rules = array();
-        $literal_rules[] = new PhutilRemarkupRuleHyperlink();
         $literal_rules[] = new PhutilRemarkupRuleEscapeHTML();
         $literal_rules[] = new PhutilRemarkupRuleLinebreaks();
         $block->setMarkupRules($literal_rules);

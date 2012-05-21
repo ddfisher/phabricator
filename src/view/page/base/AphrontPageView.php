@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class AphrontPageView extends AphrontView {
+abstract class AphrontPageView extends AphrontView {
 
   private $title;
 
@@ -26,7 +26,11 @@ class AphrontPageView extends AphrontView {
   }
 
   public function getTitle() {
-    return $this->title;
+    $title = $this->title;
+    if (is_array($title)) {
+      $title = implode(" \xC2\xB7 ", $title);
+    }
+    return $title;
   }
 
   protected function getHead() {

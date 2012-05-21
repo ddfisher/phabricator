@@ -35,17 +35,7 @@ final class DifferentialReviewersFieldSpecification
   }
 
   public function renderValueForRevisionView() {
-    $reviewer_phids = $this->getReviewerPHIDs();
-    if (!$reviewer_phids) {
-      return '<em>None</em>';
-    }
-
-    $links = array();
-    foreach ($reviewer_phids as $reviewer_phid) {
-      $links[] = $this->getHandle($reviewer_phid)->renderLink();
-    }
-
-    return implode(', ', $links);
+    return $this->renderUserList($this->getReviewerPHIDs());
   }
 
   private function getReviewerPHIDs() {
@@ -86,6 +76,7 @@ final class DifferentialReviewersFieldSpecification
     return id(new AphrontFormTokenizerControl())
       ->setLabel('Reviewers')
       ->setName('reviewers')
+      ->setUser($this->getUser())
       ->setDatasource('/typeahead/common/users/')
       ->setValue($reviewer_map)
       ->setError($this->error);
@@ -149,7 +140,7 @@ final class DifferentialReviewersFieldSpecification
   }
 
   public function renderValueForRevisionList(DifferentialRevision $revision) {
-    $primary_reviewer = $this->getPrimaryReviewer($revision);
+    $primary_reviewer = $revision->getPrimaryReviewer();
     if ($primary_reviewer) {
       $other_reviewers = array_flip($revision->getReviewers());
       unset($other_reviewers[$primary_reviewer]);
@@ -166,19 +157,11 @@ final class DifferentialReviewersFieldSpecification
 
   public function getRequiredHandlePHIDsForRevisionList(
     DifferentialRevision $revision) {
-    $primary_reviewer = $this->getPrimaryReviewer($revision);
+    $primary_reviewer = $revision->getPrimaryReviewer();
     if ($primary_reviewer) {
       return array($primary_reviewer);
     }
     return array();
-  }
-
-  private function getPrimaryReviewer(DifferentialRevision $revision) {
-    $primary_reviewer = $revision->getLastReviewerPHID();
-    if (!$primary_reviewer) {
-      $primary_reviewer = head($revision->getReviewers());
-    }
-    return $primary_reviewer;
   }
 
 }

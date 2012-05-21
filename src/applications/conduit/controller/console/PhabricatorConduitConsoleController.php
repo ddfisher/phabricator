@@ -19,13 +19,13 @@
 /**
  * @group conduit
  */
-class PhabricatorConduitConsoleController
+final class PhabricatorConduitConsoleController
   extends PhabricatorConduitController {
 
   private $method;
 
   public function willProcessRequest(array $data) {
-    $this->method = idx($data, 'method');
+    $this->method = $data['method'];
   }
 
   public function processRequest() {
@@ -34,14 +34,40 @@ class PhabricatorConduitConsoleController
 
     $methods = $this->getAllMethods();
     if (empty($methods[$this->method])) {
-      $this->method = key($methods);
+      return new Aphront404Response();
     }
     $this->setFilter('method/'.$this->method);
 
     $method_class = $methods[$this->method];
-    PhutilSymbolLoader::loadClass($method_class);
     $method_object = newv($method_class, array());
 
+    $status = $method_object->getMethodStatus();
+    $reason = $method_object->getMethodStatusDescription();
+
+    $status_view = null;
+    if ($status != ConduitAPIMethod::METHOD_STATUS_STABLE) {
+      $status_view = new AphrontErrorView();
+      switch ($status) {
+        case ConduitAPIMethod::METHOD_STATUS_DEPRECATED:
+          $status_view->setTitle('Deprecated Method');
+          $status_view->appendChild(
+            phutil_escape_html(
+              nonempty(
+                $reason,
+                "This method is deprecated.")));
+          break;
+        case ConduitAPIMethod::METHOD_STATUS_UNSTABLE:
+          $status_view->setSeverity(AphrontErrorView::SEVERITY_WARNING);
+          $status_view->setTitle('Unstable Method');
+          $status_view->appendChild(
+            phutil_escape_html(
+              nonempty(
+                $reason,
+                "This method is new and unstable. Its interface is subject ".
+                "to change.")));
+          break;
+      }
+    }
 
     $error_description = array();
     $error_types = $method_object->defineErrorTypes();
@@ -110,9 +136,12 @@ class PhabricatorConduitConsoleController
     $panel->setWidth(AphrontPanelView::WIDTH_FULL);
 
     return $this->buildStandardPageResponse(
-      array($panel),
       array(
-        'title' => 'Conduit Console',
+        $status_view,
+        $panel,
+      ),
+      array(
+        'title' => 'Conduit Console - '.$this->method,
       ));
   }
 

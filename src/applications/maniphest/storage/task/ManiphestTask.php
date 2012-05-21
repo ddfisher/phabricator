@@ -19,7 +19,7 @@
 /**
  * @group maniphest
  */
-class ManiphestTask extends ManiphestDAO {
+final class ManiphestTask extends ManiphestDAO {
 
   protected $phid;
   protected $authorPHID;
@@ -28,6 +28,7 @@ class ManiphestTask extends ManiphestDAO {
 
   protected $status;
   protected $priority;
+  protected $subpriority;
 
   protected $title;
   protected $description;
@@ -123,7 +124,7 @@ class ManiphestTask extends ManiphestDAO {
   public function loadAndAttachAuxiliaryAttributes() {
     if (!$this->getPHID()) {
       $this->auxiliaryAttributes = array();
-      return;
+      return $this;
     }
 
     $storage = id(new ManiphestTaskAuxiliaryStorage())->loadAllWhere(

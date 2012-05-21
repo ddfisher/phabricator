@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class PhabricatorFeedStoryPhriction extends PhabricatorFeedStory {
+final class PhabricatorFeedStoryPhriction extends PhabricatorFeedStory {
 
   public function getRequiredHandlePHIDs() {
     return array(
@@ -36,8 +36,6 @@ class PhabricatorFeedStoryPhriction extends PhabricatorFeedStory {
 
     $author_phid = $data->getAuthorPHID();
     $document_phid = $data->getValue('phid');
-
-    $objects = $this->getObjects();
 
     $view = new PhabricatorFeedStoryView();
 

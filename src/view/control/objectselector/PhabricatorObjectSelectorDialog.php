@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class PhabricatorObjectSelectorDialog {
+final class PhabricatorObjectSelectorDialog {
 
   private $user;
   private $filters = array();
@@ -25,6 +25,7 @@ class PhabricatorObjectSelectorDialog {
   private $submitURI;
   private $searchURI;
   private $selectedFilter;
+  private $excluded;
 
   private $title;
   private $header;
@@ -46,7 +47,13 @@ class PhabricatorObjectSelectorDialog {
     return $this;
   }
 
+  public function setExcluded($excluded_phid) {
+    $this->excluded = $excluded_phid;
+    return $this;
+  }
+
   public function setHandles(array $handles) {
+    assert_instances_of($handles, 'PhabricatorObjectHandle');
     $this->handles = $handles;
     return $this;
   }
@@ -189,6 +196,7 @@ class PhabricatorObjectSelectorDialog {
         'results' => $results_id,
         'current' => $current_id,
         'form'    => $form_id,
+        'exclude' => $this->excluded,
         'uri'     => $this->searchURI,
         'handles' => $handle_views,
       ));

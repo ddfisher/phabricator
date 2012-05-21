@@ -25,8 +25,9 @@ final class DifferentialInlineCommentView extends AphrontView {
   private $markupEngine;
   private $editable;
   private $preview;
+  private $allowReply;
 
-  public function setInlineComment(DifferentialInlineComment $comment) {
+  public function setInlineComment(PhabricatorInlineCommentInterface $comment) {
     $this->inlineComment = $comment;
     return $this;
   }
@@ -42,6 +43,7 @@ final class DifferentialInlineCommentView extends AphrontView {
   }
 
   public function setHandles(array $handles) {
+    assert_instances_of($handles, 'PhabricatorObjectHandle');
     $this->handles = $handles;
     return $this;
   }
@@ -58,6 +60,12 @@ final class DifferentialInlineCommentView extends AphrontView {
 
   public function setPreview($preview) {
     $this->preview = $preview;
+    return $this;
+  }
+
+  public function setAllowReply($allow_reply) {
+    $this->allowReply = $allow_reply;
+    return $this;
   }
 
   public function render() {
@@ -94,7 +102,7 @@ final class DifferentialInlineCommentView extends AphrontView {
     }
 
     $is_draft = false;
-    if (!$inline->getCommentID() && !$is_synthetic) {
+    if ($inline->isDraft() && !$is_synthetic) {
       $links[] = 'Not Submitted Yet';
       $is_draft = true;
     }
@@ -118,23 +126,29 @@ final class DifferentialInlineCommentView extends AphrontView {
         ),
         'Next');
 
-      if (!$is_synthetic) {
+      if ($this->allowReply) {
 
-        // NOTE: No product reason why you can't reply to these, but the reply
-        // mechanism currently sends the inline comment ID to the server, not
-        // file/line information, and synthetic comments don't have an inline
-        // comment ID.
+        if (!$is_synthetic) {
 
-        $links[] = javelin_render_tag(
-          'a',
-          array(
-            'href'        => '#',
-            'mustcapture' => true,
-            'sigil'       => 'differential-inline-reply',
-          ),
-          'Reply');
+          // NOTE: No product reason why you can't reply to these, but the reply
+          // mechanism currently sends the inline comment ID to the server, not
+          // file/line information, and synthetic comments don't have an inline
+          // comment ID.
+
+          $links[] = javelin_render_tag(
+            'a',
+            array(
+              'href'        => '#',
+              'mustcapture' => true,
+              'sigil'       => 'differential-inline-reply',
+            ),
+            'Reply');
+        }
+
       }
     }
+
+    $anchor_name = 'inline-'.$inline->getID();
 
     if ($this->editable && !$this->preview) {
       $links[] = javelin_render_tag(
@@ -153,6 +167,16 @@ final class DifferentialInlineCommentView extends AphrontView {
           'sigil'       => 'differential-inline-delete',
         ),
         'Delete');
+    } else if ($this->preview) {
+      $links[] = javelin_render_tag(
+        'a',
+        array(
+          'meta'        => array(
+            'anchor' => $anchor_name,
+          ),
+          'sigil'       => 'differential-inline-preview-jump',
+        ),
+        'Not Visible');
     }
 
     if ($links) {
@@ -178,15 +202,18 @@ final class DifferentialInlineCommentView extends AphrontView {
       }
     }
 
-    $anchor_name = 'inline-'.$inline->getID();
-
-    $anchor = phutil_render_tag(
-      'a',
-      array(
-        'name' => $anchor_name,
-        'id'   => $anchor_name,
-      ),
-      '');
+    if ($this->preview) {
+      $anchor = null;
+    } else {
+      $anchor = phutil_render_tag(
+        'a',
+        array(
+          'name'    => $anchor_name,
+          'id'      => $anchor_name,
+          'class'   => 'differential-inline-comment-anchor',
+        ),
+        '');
+    }
 
     $classes = array(
       'differential-inline-comment',
@@ -215,7 +242,7 @@ final class DifferentialInlineCommentView extends AphrontView {
       '<div class="differential-inline-comment-head">'.
         $anchor.
         $links.
-        '<span class="differential-inline-comment-line">'.$line.'</span>'.
+        ' <span class="differential-inline-comment-line">'.$line.'</span> '.
         phutil_escape_html($author).
       '</div>'.
       '<div class="differential-inline-comment-content">'.
@@ -241,7 +268,7 @@ final class DifferentialInlineCommentView extends AphrontView {
           '<th></th>'.
           '<td>'.$left_markup.'</td>'.
           '<th></th>'.
-          '<td>'.$right_markup.'</td>'.
+          '<td colspan="2">'.$right_markup.'</td>'.
         '</tr>'.
       '</table>';
   }

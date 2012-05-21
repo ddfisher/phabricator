@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,22 @@
 final class DiffusionBranchTableView extends DiffusionView {
 
   private $branches;
+  private $user;
+  private $commits = array();
 
   public function setBranches(array $branches) {
+    assert_instances_of($branches, 'DiffusionBranchInformation');
     $this->branches = $branches;
+    return $this;
+  }
+
+  public function setCommits(array $commits) {
+    $this->commits = mpull($commits, null, 'getCommitIdentifier');
+    return $this;
+  }
+
+  public function setUser(PhabricatorUser $user) {
+    $this->user = $user;
     return $this;
   }
 
@@ -29,23 +42,49 @@ final class DiffusionBranchTableView extends DiffusionView {
     $drequest = $this->getDiffusionRequest();
     $current_branch = $drequest->getBranch();
 
-    $callsign = $drequest->getRepository()->getCallsign();
-
     $rows = array();
     $rowc = array();
     foreach ($this->branches as $branch) {
-      $branch_uri = $drequest->getBranchURIComponent($branch->getName());
+      $commit = idx($this->commits, $branch->getHeadCommitIdentifier());
+      if ($commit) {
+        $details = $commit->getCommitData()->getCommitMessage();
+        $details = idx(explode("\n", $details), 0);
+        $details = substr($details, 0, 80);
+
+        $datetime = phabricator_datetime($commit->getEpoch(), $this->user);
+      } else {
+        $datetime = null;
+        $details = null;
+      }
 
       $rows[] = array(
         phutil_render_tag(
           'a',
           array(
-            'href' => "/diffusion/{$callsign}/repository/{$branch_uri}",
+            'href' => $drequest->generateURI(
+              array(
+                'action' => 'history',
+                'branch' => $branch->getName(),
+              ))
+          ),
+          'History'
+        ),
+        phutil_render_tag(
+          'a',
+          array(
+            'href' => $drequest->generateURI(
+              array(
+                'action' => 'browse',
+                'branch' => $branch->getName(),
+              )),
           ),
           phutil_escape_html($branch->getName())),
         self::linkCommit(
           $drequest->getRepository(),
           $branch->getHeadCommitIdentifier()),
+        $datetime,
+        AphrontTableView::renderSingleDisplayLine(
+          phutil_escape_html($details))
         // TODO: etc etc
       );
       if ($branch->getName() == $current_branch) {
@@ -58,11 +97,18 @@ final class DiffusionBranchTableView extends DiffusionView {
     $view = new AphrontTableView($rows);
     $view->setHeaders(
       array(
+        'History',
         'Branch',
         'Head',
+        'Modified',
+        'Details',
       ));
     $view->setColumnClasses(
       array(
+        '',
+        'pri',
+        '',
+        '',
         'wide',
       ));
     $view->setRowClasses($rowc);

@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -140,9 +140,49 @@ class PhabricatorRepositorySvnCommitChangeParserWorker
       }
     }
 
-    $path_file_types = $this->lookupPathFileTypes($repository, $lookup);
-
     $effects = array();
+
+    $path_file_types = $this->lookupPathFileTypes($repository, $lookup);
+    foreach ($raw_paths as $path => $raw_info) {
+      if ($raw_info['rawChangeType'] == 'D' &&
+          $path_file_types[$path] == DifferentialChangeType::FILE_DIRECTORY) {
+
+        // Bad. Child paths aren't enumerated in "svn log" so we need
+        // to go fishing.
+        $list = $this->lookupRecursiveFileList(
+          $repository,
+          $lookup[$path]);
+
+        foreach ($list as $deleted_path => $path_file_type) {
+          $deleted_path = rtrim($path.'/'.$deleted_path, '/');
+          if (!empty($raw_paths[$deleted_path])) {
+            // We somehow learned about this deletion explicitly?
+            // TODO: Unclear how this is possible.
+            continue;
+          }
+          $effect_type = DifferentialChangeType::TYPE_DELETE;
+          $effect_target_path = null;
+          if (isset($copied_or_moved_map[$deleted_path])) {
+            $effect_target_path = $path;
+            if (count($copied_or_moved_map[$deleted_path]) > 1) {
+              $effect_type = DifferentialChangeType::TYPE_MULTICOPY;
+            } else {
+              $effect_type = DifferentialChangeType::TYPE_MOVE_AWAY;
+            }
+          }
+          $effects[$deleted_path] = array(
+            'rawPath'         => $deleted_path,
+            'rawTargetPath'   => $effect_target_path,
+            'rawTargetCommit' => null,
+            'rawDirect'       => true,
+            'changeType'      => $effect_type,
+            'fileType'        => $path_file_type,
+          );
+          $deleted_paths[$deleted_path] = $effects[$deleted_path];
+        }
+      }
+    }
+
     $resolved_types = array();
     $supplemental = array();
     foreach ($raw_paths as $path => $raw_info) {
@@ -159,34 +199,6 @@ class PhabricatorRepositorySvnCommitChangeParserWorker
               }
             } else {
               $type = DifferentialChangeType::TYPE_DELETE;
-              $file_type = $path_file_types[$path];
-
-              if ($file_type == DifferentialChangeType::FILE_DIRECTORY) {
-                // Bad. Child paths aren't enumerated in "svn log" so we need
-                // to go fishing.
-
-                $list = $this->lookupRecursiveFileList(
-                  $repository,
-                  $lookup[$path]);
-
-                foreach ($list as $deleted_path => $path_file_type) {
-                  $deleted_path = rtrim($path.'/'.$deleted_path, '/');
-                  if (!empty($raw_paths[$deleted_path])) {
-                    // We somehow learned about this deletion explicitly?
-                    // TODO: Unclear how this is possible.
-                    continue;
-                  }
-                  $effects[$deleted_path] = array(
-                    'rawPath'         => $deleted_path,
-                    'rawTargetPath'   => null,
-                    'rawTargetCommit' => null,
-                    'rawDirect'       => true,
-
-                    'changeType'      => $type,
-                    'fileType'        => $path_file_type,
-                  );
-                }
-              }
             }
             break;
           case 'A':
@@ -217,7 +229,8 @@ class PhabricatorRepositorySvnCommitChangeParserWorker
               }
 
               if ($source_file_type != DifferentialChangeType::FILE_DIRECTORY) {
-                if (isset($raw_paths[$copy_from])) {
+                if (isset($raw_paths[$copy_from]) ||
+                    isset($effects[$copy_from])) {
                   break;
                 }
                 $effects[$copy_from] = array(
@@ -266,7 +279,8 @@ class PhabricatorRepositorySvnCommitChangeParserWorker
                     }
                   }
 
-                  if (empty($raw_paths[$full_from])) {
+                  if (empty($raw_paths[$full_from]) &&
+                      empty($effects[$full_from])) {
                     if ($other_type == DifferentialChangeType::TYPE_COPY_AWAY) {
                       $effects[$full_from] = array(
                         'rawPath'         => $full_from,
@@ -687,10 +701,9 @@ class PhabricatorRepositorySvnCommitChangeParserWorker
   }
 
   private function parseRecursiveListFileData($file_path) {
-    $map = array();
-
-    $mode = 'xml';
-    $done = false;
+    $map   = array();
+    $mode  = 'xml';
+    $done  = false;
     $entry = null;
     foreach (new LinesOfALargeFile($file_path) as $lno => $line) {
       switch ($mode) {
@@ -723,8 +736,8 @@ class PhabricatorRepositorySvnCommitChangeParserWorker
           }
           break;
         case 'xml':
-          $expect = '<?xml version="1.0"?>';
-          if ($line !== $expect) {
+          $expect = '/<?xml version="1.0".*?>/';
+          if (!preg_match($expect, $line)) {
             throw new Exception("Expected '{$expect}', got {$line}.");
           }
           $mode = 'list';

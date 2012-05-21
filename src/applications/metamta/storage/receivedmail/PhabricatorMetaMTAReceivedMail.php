@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class PhabricatorMetaMTAReceivedMail extends PhabricatorMetaMTADAO {
+final class PhabricatorMetaMTAReceivedMail extends PhabricatorMetaMTADAO {
 
   protected $headers = array();
   protected $bodies = array();
@@ -205,8 +205,8 @@ class PhabricatorMetaMTAReceivedMail extends PhabricatorMetaMTADAO {
   public function getCleanTextBody() {
     $body = idx($this->bodies, 'text');
 
-    $parser = new PhabricatorMetaMTAEmailBodyParser($body);
-    return $parser->stripQuotedText();
+    $parser = new PhabricatorMetaMTAEmailBodyParser();
+    return $parser->stripTextBody($body);
   }
 
   public static function loadReceiverObject($receiver_name) {
@@ -274,9 +274,7 @@ class PhabricatorMetaMTAReceivedMail extends PhabricatorMetaMTADAO {
     $from = idx($this->headers, 'from');
     $from = $this->getRawEmailAddress($from);
 
-    $user = id(new PhabricatorUser())->loadOneWhere(
-      'email = %s',
-      $from);
+    $user = PhabricatorUser::loadOneWithEmailAddress($from);
 
     // If Phabricator is configured to allow "Reply-To" authentication, try
     // the "Reply-To" address if we failed to match the "From" address.
@@ -287,9 +285,7 @@ class PhabricatorMetaMTAReceivedMail extends PhabricatorMetaMTADAO {
       $reply_to = idx($this->headers, 'reply-to');
       $reply_to = $this->getRawEmailAddress($reply_to);
       if ($reply_to) {
-        $user = id(new PhabricatorUser())->loadOneWhere(
-          'email = %s',
-          $reply_to);
+        $user = PhabricatorUser::loadOneWithEmailAddress($reply_to);
       }
     }
 

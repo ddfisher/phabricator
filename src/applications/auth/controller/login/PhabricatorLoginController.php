@@ -16,7 +16,8 @@
  * limitations under the License.
  */
 
-class PhabricatorLoginController extends PhabricatorAuthController {
+final class PhabricatorLoginController
+  extends PhabricatorAuthController {
 
   public function shouldRequireLogin() {
     return false;
@@ -49,10 +50,25 @@ class PhabricatorLoginController extends PhabricatorAuthController {
       return id(new AphrontPlainTextResponse())->setContent($message);
     }
 
-    $next_uri = $this->getRequest()->getPath();
-    //TODO HACKISH WAY TO MAKE LOGIN NOT GO TO NOTIFICATIONS, FIX IT
-    if ($next_uri == '/login/' || $next_uri == '/notifications/') {
+    $error_view = null;
+    if ($request->getCookie('phusr') && $request->getCookie('phsid')) {
+      // The session cookie is invalid, so clear it.
+      $request->clearCookie('phusr');
+      $request->clearCookie('phsid');
+
+      $error_view = new AphrontErrorView();
+      $error_view->setTitle('Invalid Session');
+      $error_view->setErrors(array(
+        "Your login session is invalid. Try logging in again. If that ".
+        "doesn't work, clear your browser cookies."
+      ));
+    }
+
+    $next_uri_path = $this->getRequest()->getPath();
+    if ($next_uri_path == '/login/') {
       $next_uri = '/';
+    } else {
+      $next_uri = $this->getRequest()->getRequestURI();
     }
 
     if (!$request->isFormPost()) {
@@ -97,9 +113,7 @@ class PhabricatorLoginController extends PhabricatorAuthController {
           $username_or_email);
 
         if (!$user) {
-          $user = id(new PhabricatorUser())->loadOneWhere(
-            'email = %s',
-            $username_or_email);
+          $user = PhabricatorUser::loadOneWithEmailAddress($username_or_email);
         }
 
         if (!$errors) {
@@ -140,8 +154,6 @@ class PhabricatorLoginController extends PhabricatorAuthController {
         $error_view = new AphrontErrorView();
         $error_view->setTitle('Login Failed');
         $error_view->setErrors($errors);
-      } else {
-        $error_view = null;
       }
 
       $form = new AphrontFormView();

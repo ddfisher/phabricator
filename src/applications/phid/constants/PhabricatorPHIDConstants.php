@@ -40,4 +40,5 @@ final class PhabricatorPHIDConstants {
   const PHID_TYPE_OASC    = 'OASC';
   const PHID_TYPE_OASA    = 'OASA';
   const PHID_TYPE_NTFN    = 'NTFN';
+  const PHID_TYPE_POST    = 'POST';
 }

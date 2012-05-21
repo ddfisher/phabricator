@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class DifferentialChangesetParser {
+final class DifferentialChangesetParser {
 
   protected $visible      = array();
   protected $new          = array();
@@ -54,8 +54,10 @@ class DifferentialChangesetParser {
   private $lineWidth = 80;
   private $isTopLevel;
   private $coverage;
+  private $markupEngine;
+  private $highlightErrors;
 
-  const CACHE_VERSION = 4;
+  const CACHE_VERSION = 5;
 
   const ATTR_GENERATED  = 'attr:generated';
   const ATTR_DELETED    = 'attr:deleted';
@@ -66,7 +68,11 @@ class DifferentialChangesetParser {
 
   const WHITESPACE_SHOW_ALL         = 'show-all';
   const WHITESPACE_IGNORE_TRAILING  = 'ignore-trailing';
+
+  // TODO: This is now "Ignore Most" in the UI.
   const WHITESPACE_IGNORE_ALL       = 'ignore-all';
+
+  const WHITESPACE_IGNORE_FORCE     = 'ignore-force';
 
   /**
    * Configure which Changeset comments added to the right side of the visible
@@ -164,6 +170,7 @@ class DifferentialChangesetParser {
   }
 
   public function setHandles(array $handles) {
+    assert_instances_of($handles, 'PhabricatorObjectHandle');
     $this->handles = $handles;
     return $this;
   }
@@ -198,8 +205,6 @@ class DifferentialChangesetParser {
         $char = $line[0];
         if ($char == ' ') {
           $types[$line_index] = null;
-        } else if ($char == '\\' && $line_index > 0) {
-          $types[$line_index] = $types[$line_index - 1];
         } else {
           $types[$line_index] = $char;
         }
@@ -225,6 +230,10 @@ class DifferentialChangesetParser {
         'text'  => (string)substr($lines[$cursor], 1),
         'line'  => $new_line,
       );
+      if ($type == '\\') {
+        $type = $types[$cursor - 1];
+        $data['text'] = ltrim($data['text']);
+      }
       switch ($type) {
         case '+':
           $this->new[] = $data;
@@ -246,7 +255,9 @@ class DifferentialChangesetParser {
     }
   }
 
-  public function parseInlineComment(DifferentialInlineComment $comment) {
+  public function parseInlineComment(
+    PhabricatorInlineCommentInterface $comment) {
+
     // Parse only comments which are actually visible.
     if ($this->isCommentVisibleOnRenderedDiff($comment)) {
       $this->comments[] = $comment;
@@ -329,9 +340,14 @@ class DifferentialChangesetParser {
             break;
         }
         if ($similar) {
-          $o_desc['type'] = null;
-          $n_desc['type'] = null;
-          $skip_intra[count($old)] = true;
+          if ($o_desc['type'] == '\\') {
+            // These are similar because they're "No newline at end of file"
+            // comments.
+          } else {
+            $o_desc['type'] = null;
+            $n_desc['type'] = null;
+            $skip_intra[count($old)] = true;
+          }
         } else {
           $changed = true;
         }
@@ -395,6 +411,12 @@ class DifferentialChangesetParser {
         }
         $new[$k]['text'] = idx($new_text, $desc['line']);
 
+        if ($this->whitespaceMode == self::WHITESPACE_IGNORE_FORCE) {
+          // Under forced ignore mode, ignore even internal whitespace
+          // changes.
+          continue;
+        }
+
         // If there's a corresponding "old" text and the line is marked as
         // unchanged, test if there are internal whitespace changes between
         // non-whitespace characters, e.g. spaces added to a string or spaces
@@ -412,6 +434,9 @@ class DifferentialChangesetParser {
             // whitespace changes. Mark this line changed.
             $old[$k]['type'] = '-';
             $new[$k]['type'] = '+';
+
+            // Re-mark this line for intraline diffing.
+            unset($skip_intra[$k]);
           }
         }
       }
@@ -461,56 +486,21 @@ class DifferentialChangesetParser {
       }
     }
 
-    // NOTE: Micro-optimize a couple of ipull()s here since it gives us a
-    // 10% performance improvement for certain types of large diffs like
-    // Phriction changes.
-
     $old_corpus = array();
     foreach ($this->old as $o) {
-      $old_corpus[] = $o['text'];
+      if ($o['type'] != '\\') {
+        $old_corpus[] = $o['text'];
+      }
     }
     $old_corpus_block = implode("\n", $old_corpus);
 
     $new_corpus = array();
     foreach ($this->new as $n) {
-      $new_corpus[] = $n['text'];
-    }
-    $new_corpus_block = implode("\n", $new_corpus);
-
-    $old_future = $this->getHighlightFuture($old_corpus_block);
-    $new_future = $this->getHighlightFuture($new_corpus_block);
-    $futures = array(
-      'old' => $old_future,
-      'new' => $new_future,
-    );
-    foreach (Futures($futures) as $key => $future) {
-      try {
-        switch ($key) {
-          case 'old':
-            $this->oldRender = $this->processHighlightedSource(
-              $this->old,
-              $future->resolve());
-            break;
-          case 'new':
-            $this->newRender = $this->processHighlightedSource(
-              $this->new,
-              $future->resolve());
-            break;
-        }
-      } catch (Exception $ex) {
-        phlog($ex);
-        throw $ex;
+      if ($n['type'] != '\\') {
+        $new_corpus[] = $n['text'];
       }
     }
-
-    $this->applyIntraline(
-      $this->oldRender,
-      ipull($this->intra, 0),
-      $old_corpus);
-    $this->applyIntraline(
-      $this->newRender,
-      ipull($this->intra, 1),
-      $new_corpus);
+    $new_corpus_block = implode("\n", $new_corpus);
 
     $generated_guess = (strpos($new_corpus_block, '@'.'generated') !== false);
 
@@ -535,8 +525,60 @@ class DifferentialChangesetParser {
     PhutilEventEngine::dispatchEvent($event);
 
     $generated = $event->getValue('is_generated');
-
     $this->specialAttributes[self::ATTR_GENERATED] = $generated;
+
+    if ($this->isTopLevel && !$this->comments &&
+        ($this->isGenerated() || $this->isUnchanged() || $this->isDeleted())) {
+      return;
+    }
+
+    $old_future = $this->getHighlightFuture($old_corpus_block);
+    $new_future = $this->getHighlightFuture($new_corpus_block);
+    $futures = array(
+      'old' => $old_future,
+      'new' => $new_future,
+    );
+    $corpus_blocks = array(
+      'old' => $old_corpus_block,
+      'new' => $new_corpus_block,
+    );
+    $this->highlightErrors = false;
+    foreach (Futures($futures) as $key => $future) {
+      try {
+        try {
+          $highlighted = $future->resolve();
+        } catch (PhutilSyntaxHighlighterException $ex) {
+          $this->highlightErrors = true;
+          $highlighted = id(new PhutilDefaultSyntaxHighlighter())
+            ->getHighlightFuture($corpus_blocks[$key])
+            ->resolve();
+        }
+        switch ($key) {
+          case 'old':
+            $this->oldRender = $this->processHighlightedSource(
+              $this->old,
+              $highlighted);
+            break;
+          case 'new':
+            $this->newRender = $this->processHighlightedSource(
+              $this->new,
+              $highlighted);
+            break;
+        }
+      } catch (Exception $ex) {
+        phlog($ex);
+        throw $ex;
+      }
+    }
+
+    $this->applyIntraline(
+      $this->oldRender,
+      ipull($this->intra, 0),
+      $old_corpus);
+    $this->applyIntraline(
+      $this->newRender,
+      ipull($this->intra, 1),
+      $new_corpus);
   }
 
   public function loadCache() {
@@ -576,6 +618,11 @@ class DifferentialChangesetParser {
       return false;
     }
 
+    // Someone displays contents of a partially cached shielded file.
+    if (!isset($data['newRender']) && (!$this->isTopLevel || $this->comments)) {
+      return false;
+    }
+
     unset($data['cacheVersion'], $data['cacheHost']);
     $cache_prop = array_select_keys($data, self::getCacheableProperties());
     foreach ($cache_prop as $cache_key => $v) {
@@ -602,6 +649,10 @@ class DifferentialChangesetParser {
   }
 
   public function saveCache() {
+    if ($this->highlightErrors) {
+      return false;
+    }
+
     $render_cache_key = $this->getRenderCacheKey();
     if (!$render_cache_key) {
       return false;
@@ -700,6 +751,7 @@ class DifferentialChangesetParser {
     switch ($whitespace_mode) {
       case self::WHITESPACE_SHOW_ALL:
       case self::WHITESPACE_IGNORE_TRAILING:
+      case self::WHITESPACE_IGNORE_FORCE:
         break;
       default:
         $whitespace_mode = self::WHITESPACE_IGNORE_ALL;
@@ -715,10 +767,15 @@ class DifferentialChangesetParser {
         $changeset->getFileType() == DifferentialChangeType::FILE_SYMLINK) {
       if ($skip_cache || !$this->loadCache()) {
 
-        $ignore_all = ($this->whitespaceMode == self::WHITESPACE_IGNORE_ALL);
+        $ignore_all = (($whitespace_mode == self::WHITESPACE_IGNORE_ALL) ||
+                       ($whitespace_mode == self::WHITESPACE_IGNORE_FORCE));
 
-        if ($ignore_all && $changeset->getWhitespaceMatters()) {
-          $ignore_all = false;
+        $force_ignore = ($whitespace_mode == self::WHITESPACE_IGNORE_FORCE);
+
+        if (!$force_ignore) {
+          if ($ignore_all && $changeset->getWhitespaceMatters()) {
+            $ignore_all = false;
+          }
         }
 
         // The "ignore all whitespace" algorithm depends on rediffing the
@@ -810,10 +867,48 @@ class DifferentialChangesetParser {
     // requests.
     $this->isTopLevel = (($range_start === null) && ($range_len === null));
 
-
     $this->highlightEngine = PhabricatorSyntaxHighlighter::newEngine();
 
-    $this->tryCacheStuff();
+    $shield = null;
+    if ($this->isTopLevel && !$this->comments &&
+        !($this->isGenerated() || $this->isUnchanged() || $this->isDeleted()) &&
+        $this->changeset->getAffectedLineCount() > 2500) {
+      $lines = number_format($this->changeset->getAffectedLineCount());
+      $shield = $this->renderShield(
+        "This file has a very large number of changes ({$lines} lines).",
+        true);
+    } else {
+
+      $this->tryCacheStuff();
+
+      if ($this->isTopLevel && !$this->comments) {
+        if ($this->isGenerated()) {
+          $shield = $this->renderShield(
+            "This file contains generated code, which does not normally need ".
+            "to be reviewed.",
+            true);
+        } else if ($this->isUnchanged()) {
+          if ($this->isWhitespaceOnly()) {
+            $shield = $this->renderShield(
+              "This file was changed only by adding or removing trailing ".
+              "whitespace.",
+              false);
+          } else {
+            $shield = $this->renderShield(
+              "The contents of this file were not changed.",
+              false);
+          }
+        } else if ($this->isDeleted()) {
+          $shield = $this->renderShield(
+            "This file was completely deleted.",
+            true);
+        }
+      }
+    }
+
+    if ($shield) {
+      return $this->renderChangesetTable($this->changeset, $shield);
+    }
 
     $feedback_mask = array();
 
@@ -903,12 +998,12 @@ class DifferentialChangesetParser {
           $html_old[] =
             '<tr class="inline"><th /><td>'.
               $xhp.
-            '</td><th /><td /></tr>';
+            '</td><th /><td colspan="2" /></tr>';
         }
         foreach ($new_comments as $comment) {
           $xhp = $this->renderInlineComment($comment);
           $html_new[] =
-            '<tr class="inline"><th /><td /><th /><td>'.
+            '<tr class="inline"><th /><td /><th /><td colspan="2">'.
               $xhp.
             '</td></tr>';
         }
@@ -936,6 +1031,7 @@ class DifferentialChangesetParser {
               '</div>'.
             '</td>'.
             $th_new.
+            '<td class="copy differential-new-image"></td>'.
             '<td class="differential-new-image">'.
               '<div class="differential-image-stage">'.
                 $cur.
@@ -950,40 +1046,6 @@ class DifferentialChangesetParser {
       case DifferentialChangeType::FILE_BINARY:
         $output = $this->renderChangesetTable($this->changeset, null);
         return $output;
-    }
-
-    $shield = null;
-    if ($this->isTopLevel && !$this->comments) {
-      if ($this->isGenerated()) {
-        $shield = $this->renderShield(
-          "This file contains generated code, which does not normally need ".
-          "to be reviewed.",
-          true);
-      } else if ($this->isUnchanged()) {
-        if ($this->isWhitespaceOnly()) {
-          $shield = $this->renderShield(
-            "This file was changed only by adding or removing trailing ".
-            "whitespace.",
-            false);
-        } else {
-          $shield = $this->renderShield(
-            "The contents of this file were not changed.",
-            false);
-        }
-      } else if ($this->isDeleted()) {
-        $shield = $this->renderShield(
-          "This file was completely deleted.",
-          true);
-      } else if ($this->changeset->getAffectedLineCount() > 2500) {
-        $lines = number_format($this->changeset->getAffectedLineCount());
-        $shield = $this->renderShield(
-          "This file has a very large number of changes ({$lines} lines).",
-          true);
-      }
-    }
-
-    if ($shield) {
-      return $this->renderChangesetTable($this->changeset, $shield);
     }
 
     $old_comments = array();
@@ -1048,11 +1110,11 @@ class DifferentialChangesetParser {
    * taking into consideration which halves of which changesets will actually
    * be shown.
    *
-   * @param DifferentialInlineComment Comment to test for visibility.
+   * @param PhabricatorInlineCommentInterface Comment to test for visibility.
    * @return bool True if the comment is visible on the rendered diff.
    */
   private function isCommentVisibleOnRenderedDiff(
-    DifferentialInlineComment $comment) {
+    PhabricatorInlineCommentInterface $comment) {
 
     $changeset_id = $comment->getChangesetID();
     $is_new = $comment->getIsNewFile();
@@ -1076,11 +1138,12 @@ class DifferentialChangesetParser {
    * Note that the comment must appear somewhere on the rendered changeset, as
    * per isCommentVisibleOnRenderedDiff().
    *
-   * @param DifferentialInlineComment Comment to test for display location.
+   * @param PhabricatorInlineCommentInterface Comment to test for display
+   *              location.
    * @return bool True for right, false for left.
    */
   private function isCommentOnRightSideWhenDisplayed(
-    DifferentialInlineComment $comment) {
+    PhabricatorInlineCommentInterface $comment) {
 
     if (!$this->isCommentVisibleOnRenderedDiff($comment)) {
       throw new Exception("Comment is not visible on changeset!");
@@ -1126,7 +1189,7 @@ class DifferentialChangesetParser {
       array(
         'sigil' => 'context-target',
       ),
-      '<td class="differential-shield" colspan="5">'.
+      '<td class="differential-shield" colspan="6">'.
         phutil_escape_html($message).
         $more.
       '</td>');
@@ -1139,6 +1202,9 @@ class DifferentialChangesetParser {
     $feedback_mask,
     array $old_comments,
     array $new_comments) {
+    foreach (array_merge($old_comments, $new_comments) as $comments) {
+      assert_instances_of($comments, 'PhabricatorInlineCommentInterface');
+    }
 
     $context_not_available = null;
     if ($this->missingOld || $this->missingNew) {
@@ -1147,8 +1213,8 @@ class DifferentialChangesetParser {
         array(
           'sigil' => 'context-target',
         ),
-        '<td colspan="5" class="show-more">'.
-            'Context not available.'.
+        '<td colspan="6" class="show-more">'.
+          'Context not available.'.
         '</td>');
     }
 
@@ -1220,6 +1286,8 @@ class DifferentialChangesetParser {
     $right_char = $this->rightSideAttachesToNewFile
       ? 'N'
       : 'O';
+
+    $copy_lines = idx($this->changeset->getMetadata(), 'copy:lines', array());
 
     for ($ii = $range_start; $ii < $range_start + $range_len; $ii++) {
       if (empty($mask[$ii])) {
@@ -1299,7 +1367,7 @@ class DifferentialChangesetParser {
           array(
             'sigil' => 'context-target',
           ),
-          '<td colspan="5" class="show-more">'.
+          '<td colspan="6" class="show-more">'.
             implode(' &bull; ', $contents).
           '</td>');
 
@@ -1314,7 +1382,10 @@ class DifferentialChangesetParser {
         $o_text = isset($this->oldRender[$ii]) ? $this->oldRender[$ii] : null;
         $o_attr = null;
         if ($this->old[$ii]['type']) {
-          if (empty($this->new[$ii])) {
+          if ($this->old[$ii]['type'] == '\\') {
+            $o_text = $this->old[$ii]['text'];
+            $o_attr = ' class="comment"';
+          } else if (empty($this->new[$ii])) {
             $o_attr = ' class="old old-full"';
           } else {
             $o_attr = ' class="old"';
@@ -1326,6 +1397,7 @@ class DifferentialChangesetParser {
         $o_attr = null;
       }
 
+      $n_copy = '<td class="copy"></td>';
 
       if (isset($this->new[$ii])) {
         $n_num  = $this->new[$ii]['line'];
@@ -1345,10 +1417,39 @@ class DifferentialChangesetParser {
         $n_cov = '<td class="cov '.$cov_class.'"></td>';
 
         if ($this->new[$ii]['type']) {
-          if (empty($this->old[$ii])) {
-            $n_attr = ' class="new new-full"';
+          if ($this->new[$ii]['type'] == '\\') {
+            $n_text = $this->new[$ii]['text'];
+            $n_class = 'comment';
+          } else if (empty($this->old[$ii])) {
+            $n_class = 'new new-full';
           } else {
-            $n_attr = ' class="new"';
+            $n_class = 'new';
+          }
+          $n_attr = ' class="'.$n_class.'"';
+
+          if ($this->new[$ii]['type'] == '\\' || !isset($copy_lines[$n_num])) {
+            $n_copy = '<td class="copy '.$n_class.'"></td>';
+          } else {
+            list($orig_file, $orig_line, $orig_type) = $copy_lines[$n_num];
+            $title = ($orig_type == '-' ? 'Moved' : 'Copied').' from ';
+            if ($orig_file == '') {
+              $title .= "line {$orig_line}";
+            } else {
+              $title .=
+                basename($orig_file).
+                ":{$orig_line} in dir ".
+                dirname('/'.$orig_file);
+            }
+            $class = ($orig_type == '-' ? 'new-move' : 'new-copy');
+            $n_copy = javelin_render_tag(
+              'td',
+              array(
+                'meta' => array(
+                  'msg' => $title,
+                ),
+                'class' => 'copy '.$class,
+              ),
+              '');
           }
         }
       } else {
@@ -1383,7 +1484,11 @@ class DifferentialChangesetParser {
           '<th'.$o_id.'>'.$o_num.'</th>'.
           '<td'.$o_attr.'>'.$o_text.'</td>'.
           '<th'.$n_id.'>'.$n_num.'</th>'.
-          '<td'.$n_attr.'>'.$n_text.'</td>'.
+          $n_copy.
+          // NOTE: This is a unicode zero-width space, which we use as a hint
+          // when intercepting 'copy' events to make sure sensible text ends
+          // up on the clipboard. See the 'phabricator-oncopy' behavior.
+          '<td'.$n_attr.'>'."\xE2\x80\x8B".$n_text.'</td>'.
           $n_cov.
         '</tr>';
 
@@ -1406,7 +1511,7 @@ class DifferentialChangesetParser {
           $html[] =
             '<tr class="inline"><th /><td>'.
               $xhp.
-            '</td><th /><td>'.
+            '</td><th /><td colspan="2">'.
               $new.
             '</td><td class="cov" /></tr>';
         }
@@ -1415,7 +1520,7 @@ class DifferentialChangesetParser {
         foreach ($new_comments[$n_num] as $comment) {
           $xhp = $this->renderInlineComment($comment);
           $html[] =
-            '<tr class="inline"><th /><td /><th /><td>'.
+            '<tr class="inline"><th /><td /><th /><td colspan="2">'.
               $xhp.
             '</td><td class="cov" /></tr>';
         }
@@ -1425,12 +1530,14 @@ class DifferentialChangesetParser {
     return implode('', $html);
   }
 
-  private function renderInlineComment(DifferentialInlineComment $comment) {
+  private function renderInlineComment(
+    PhabricatorInlineCommentInterface $comment) {
 
     $user = $this->user;
     $edit = $user &&
             ($comment->getAuthorPHID() == $user->getPHID()) &&
-            (!$comment->getCommentID());
+            ($comment->isDraft());
+    $allow_reply = (bool)$this->user;
 
     $on_right = $this->isCommentOnRightSideWhenDisplayed($comment);
 
@@ -1440,6 +1547,7 @@ class DifferentialChangesetParser {
       ->setHandles($this->handles)
       ->setMarkupEngine($this->markupEngine)
       ->setEditable($edit)
+      ->setAllowReply($allow_reply)
       ->render();
   }
 
@@ -1511,10 +1619,13 @@ class DifferentialChangesetParser {
     $props  = $this->renderPropertyChangeHeader($this->changeset);
     $table = null;
     if ($contents) {
-      $table =
-        '<table class="differential-diff remarkup-code PhabricatorMonospaced">'.
-          $contents.
-        '</table>';
+      $table = javelin_render_tag(
+        'table',
+        array(
+          'class' => 'differential-diff remarkup-code PhabricatorMonospaced',
+          'sigil' => 'differential-diff',
+        ),
+        $contents);
     }
 
     if (!$table && !$props) {
@@ -1544,6 +1655,7 @@ class DifferentialChangesetParser {
       DifferentialChangeType::FILE_DIRECTORY  => 'directory',
       DifferentialChangeType::FILE_BINARY     => 'binary file',
       DifferentialChangeType::FILE_SYMLINK    => 'symlink',
+      DifferentialChangeType::FILE_SUBMODULE  => 'submodule',
     );
 
     static $changes = array(
@@ -1695,6 +1807,51 @@ class DifferentialChangesetParser {
     }
 
     return array($range_s, $range_e, $mask);
+  }
+
+  /**
+   * Render "modified coverage" information; test coverage on modified lines.
+   * This synthesizes diff information with unit test information into a useful
+   * indicator of how well tested a change is.
+   */
+  public function renderModifiedCoverage() {
+    $na = '<em>-</em>';
+
+    if (!$this->coverage) {
+      return $na;
+    }
+
+    $covered = 0;
+    $not_covered = 0;
+
+    foreach ($this->new as $k => $new) {
+      if (!$new['line']) {
+        continue;
+      }
+
+      if (!$new['type']) {
+        continue;
+      }
+
+      if (empty($this->coverage[$new['line'] - 1])) {
+        continue;
+      }
+
+      switch ($this->coverage[$new['line'] - 1]) {
+        case 'C':
+          $covered++;
+          break;
+        case 'U':
+          $not_covered++;
+          break;
+      }
+    }
+
+    if (!$covered && !$not_covered) {
+      return $na;
+    }
+
+    return sprintf('%d%%', 100 * ($covered / ($covered + $not_covered)));
   }
 
 }

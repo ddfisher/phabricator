@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class DifferentialRevision extends DifferentialDAO {
+final class DifferentialRevision extends DifferentialDAO {
 
   protected $title;
   protected $status;
@@ -35,11 +35,14 @@ class DifferentialRevision extends DifferentialDAO {
   protected $unsubscribed = array();
 
   protected $mailKey;
+  protected $branchName;
+  protected $arcanistProjectPHID;
 
   private $relationships;
   private $commits;
   private $activeDiff = false;
   private $diffIDs;
+
 
   const RELATIONSHIP_TABLE    = 'differential_relationship';
   const TABLE_COMMIT          = 'differential_commit';
@@ -203,11 +206,18 @@ class DifferentialRevision extends DifferentialDAO {
     return array_keys($this->getUnsubscribed());
   }
 
+  public function getPrimaryReviewer() {
+    if (!$this->lastReviewerPHID) {
+      return head($this->getReviewers());
+    }
+    return $this->lastReviewerPHID;
+  }
+
   public function loadReviewedBy() {
     $reviewer = null;
 
     if ($this->status == ArcanistDifferentialRevisionStatus::ACCEPTED ||
-        $this->status == ArcanistDifferentialRevisionStatus::COMMITTED) {
+        $this->status == ArcanistDifferentialRevisionStatus::CLOSED) {
       $comments = $this->loadComments();
       foreach ($comments as $comment) {
         $action = $comment->getAction();

@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
 /**
  * @group console
  */
-class DarkConsoleErrorLogPlugin extends DarkConsolePlugin {
+final class DarkConsoleErrorLogPlugin extends DarkConsolePlugin {
 
   public function getName() {
     $count = count($this->getData());
@@ -75,17 +75,21 @@ class DarkConsoleErrorLogPlugin extends DarkConsolePlugin {
           $line .= $entry['class'].'::';
         }
         $line .= idx($entry, 'function', '');
-        $onclick = '';
+        $href = null;
         if (isset($entry['file'])) {
           $line .= ' called at ['.$entry['file'].':'.$entry['line'].']';
-          $onclick = jsprintf(
-            'open_file(%s, %d)', $entry['file'], $entry['line']);
+          try {
+            $user = $this->getRequest()->getUser();
+            $href = $user->loadEditorLink($entry['file'], $entry['line'], '');
+          } catch (Exception $ex) {
+            // The database can be inaccessible.
+          }
         }
 
         $details .= phutil_render_tag(
           'a',
           array(
-            'onclick' => $onclick,
+            'href' => $href,
           ),
           phutil_escape_html($line));
         $details .= "\n";

@@ -19,7 +19,8 @@
 /**
  * @group conduit
  */
-class PhabricatorConduitLogController extends PhabricatorConduitController {
+final class PhabricatorConduitLogController
+  extends PhabricatorConduitController {
 
   public function processRequest() {
     $request = $this->getRequest();
@@ -56,7 +57,7 @@ class PhabricatorConduitLogController extends PhabricatorConduitController {
     $panel->appendChild($table);
     $panel->appendChild($pager);
 
-    $this->setFilter('log');
+    $this->setShowSideNav(false);
 
     return $this->buildStandardPageResponse(
       $panel,
@@ -66,6 +67,9 @@ class PhabricatorConduitLogController extends PhabricatorConduitController {
   }
 
   private function renderCallTable(array $calls, array $conns) {
+    assert_instances_of($calls, 'PhabricatorConduitMethodCallLog');
+    assert_instances_of($conns, 'PhabricatorConduitConnectionLog');
+
     $user = $this->getRequest()->getUser();
 
     $rows = array();

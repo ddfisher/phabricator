@@ -265,6 +265,55 @@ abstract class DifferentialFieldSpecification {
   }
 
 
+  /**
+   * Load users, their current statuses and return a markup with links to the
+   * user profiles and information about their current status.
+   *
+   * @return string Display markup.
+   * @task view
+   */
+  public function renderUserList(array $user_phids) {
+    if (!$user_phids) {
+      return '<em>None</em>';
+    }
+
+    $statuses = id(new PhabricatorUserStatus())->loadCurrentStatuses(
+      $user_phids);
+
+    $links = array();
+    foreach ($user_phids as $user_phid) {
+      $handle = $this->getHandle($user_phid);
+      $extra = null;
+      $status = idx($statuses, $handle->getPHID());
+      if ($handle->isDisabled()) {
+        $extra = ' <strong>(disabled)</strong>';
+      } else if ($status) {
+        $until = phabricator_date($status->getDateTo(), $this->getUser());
+        if ($status->getStatus() == PhabricatorUserStatus::STATUS_SPORADIC) {
+          $extra = ' <strong title="until '.$until.'">(sporadic)</strong>';
+        } else {
+          $extra = ' <strong title="until '.$until.'">(away)</strong>';
+        }
+      }
+      $links[] = $handle->renderLink().$extra;
+    }
+
+    return implode(', ', $links);
+  }
+
+
+  /**
+   * Return a markup block representing a warning to display with the comment
+   * box when preparing to accept a diff. A return value of null indicates no
+   * warning box should be displayed for this field.
+   *
+   * @return string|null Display markup for warning box, or null for no warning
+   */
+  public function renderWarningBoxForRevisionAccept() {
+    return null;
+  }
+
+
 /* -(  Extending the Revision List Interface  )------------------------------ */
 
 
@@ -418,6 +467,8 @@ abstract class DifferentialFieldSpecification {
    * If a field is safe to overwrite when edited in a working copy commit
    * message, return true. If the authoritative value should always be used,
    * return false. By default, fields can not be overwritten.
+   *
+   * arc will only attempt to overwrite field values if run with "--verbatim".
    *
    * @return bool True to indicate the field is save to overwrite.
    * @task commit
@@ -658,9 +709,7 @@ abstract class DifferentialFieldSpecification {
     $object_map = array();
 
     $users = id(new PhabricatorUser())->loadAllWhere(
-      '((username IN (%Ls)) OR (email IN (%Ls)))
-        AND isSystemAgent = 0',
-      $value,
+      '(username IN (%Ls))',
       $value);
 
     $user_map = mpull($users, 'getPHID', 'getUsername');
@@ -671,8 +720,6 @@ abstract class DifferentialFieldSpecification {
       $object_map[$username] = $phid;
       $object_map[strtolower($username)] = $phid;
     }
-
-    $object_map += mpull($users, 'getPHID', 'getEmail');
 
     if ($include_mailables) {
       $mailables = id(new PhabricatorMetaMTAMailingList())->loadAllWhere(
@@ -742,6 +789,7 @@ abstract class DifferentialFieldSpecification {
    * @task context
    */
   final public function setHandles(array $handles) {
+    assert_instances_of($handles, 'PhabricatorObjectHandle');
     $this->handles = $handles;
     return $this;
   }

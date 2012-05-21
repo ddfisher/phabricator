@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class PhabricatorRepositoryCommitOwnersWorker
+final class PhabricatorRepositoryCommitOwnersWorker
   extends PhabricatorRepositoryCommitParserWorker {
 
   protected function parseCommit(
@@ -111,6 +111,7 @@ class PhabricatorRepositoryCommitOwnersWorker
         $revision_author_phid = $revision->getAuthorPHID();
         $revision_reviewedby_phid = $revision->loadReviewedBy();
         $commit_reviewedby_phid = $data->getCommitDetail('reviewerPHID');
+        $commit_author_phid = $data->getCommitDetail('authorPHID');
         if ($revision_author_phid !== $commit_author_phid) {
           $reasons[] = "Author Not Matching with Revision";
         }
@@ -126,10 +127,8 @@ class PhabricatorRepositoryCommitOwnersWorker
       $reasons[] = "No Revision Specified";
     }
 
-    $owners = id(new PhabricatorOwnersOwner())->loadAllWhere(
-      'packageID = %d',
-      $package->getID());
-    $owners_phids = mpull($owners, 'getUserPHID');
+    $owners_phids = PhabricatorOwnersOwner::loadAffiliatedUserPHIDs(
+      array($package->getID()));
 
     if (!($commit_author_phid && in_array($commit_author_phid, $owners_phids) ||
         $commit_reviewedby_phid && in_array($commit_reviewedby_phid,

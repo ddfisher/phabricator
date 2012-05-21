@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,16 @@
 /**
  * @group conduit
  */
-class ConduitAPI_differential_updatetaskrevisionassoc_Method
+final class ConduitAPI_differential_updatetaskrevisionassoc_Method
   extends ConduitAPIMethod {
+
+  public function getMethodStatus() {
+    return self::METHOD_STATUS_DEPRECATED;
+  }
+
+  public function getMethodStatusDescription() {
+    return "This method should not really exist. Pretend it doesn't.";
+  }
 
   public function getMethodDescription() {
     return "Given a task together with its original and new associated ".
@@ -57,18 +65,16 @@ class ConduitAPI_differential_updatetaskrevisionassoc_Method
       $new_rev_phids = array();
     }
 
-    $task_class = PhabricatorEnv::getEnvConfig(
-      'differential.attach-task-class');
-    if (!$task_class) {
+    try {
+      $task_attacher = PhabricatorEnv::newObjectFromConfig(
+        'differential.attach-task-class');
+      $task_attacher->updateTaskRevisionAssoc(
+        $task_phid,
+        $orig_rev_phids,
+        $new_rev_phids);
+    } catch (ReflectionException $ex) {
       throw new ConduitException('ERR_NO_TASKATTACHER_DEFINED');
     }
-
-    PhutilSymbolLoader::loadClass($task_class);
-    $task_attacher = newv($task_class, array());
-    $task_attacher->updateTaskRevisionAssoc(
-      $task_phid,
-      $orig_rev_phids,
-      $new_rev_phids);
   }
 
 }

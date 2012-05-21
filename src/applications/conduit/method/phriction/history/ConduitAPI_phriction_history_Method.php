@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
 /**
  * @group conduit
  */
-class ConduitAPI_phriction_history_Method
+final class ConduitAPI_phriction_history_Method
   extends ConduitAPI_phriction_Method {
 
   public function getMethodDescription() {
@@ -46,7 +46,7 @@ class ConduitAPI_phriction_history_Method
     $slug = $request->getValue('slug');
     $doc = id(new PhrictionDocument())->loadOneWhere(
       'slug = %s',
-      PhrictionDocument::normalizeSlug($slug));
+      PhabricatorSlug::normalize($slug));
     if (!$doc) {
       throw new ConduitException('ERR-BAD-DOCUMENT');
     }

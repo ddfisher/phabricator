@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class HeraldEngine {
+final class HeraldEngine {
 
   protected $rules = array();
   protected $results = array();
@@ -40,6 +40,7 @@ class HeraldEngine {
   }
 
   public function applyRules(array $rules, HeraldObjectAdapter $object) {
+    assert_instances_of($rules, 'HeraldRule');
     $t_start = microtime(true);
 
     $rules = mpull($rules, null, 'getID');
@@ -122,6 +123,8 @@ class HeraldEngine {
     array $effects,
     HeraldObjectAdapter $object,
     array $rules) {
+    assert_instances_of($effects, 'HeraldEffect');
+    assert_instances_of($rules, 'HeraldRule');
 
     $this->transcript->setDryRun($object instanceof HeraldDryRunAdapter);
 

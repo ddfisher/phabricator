@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class DifferentialSubscribeController extends DifferentialController {
+final class DifferentialSubscribeController extends DifferentialController {
 
   private $id;
   private $action;
@@ -48,9 +48,9 @@ class DifferentialSubscribeController extends DifferentialController {
         case 'rem':
           $button = 'Unsubscribe';
           $title = 'Unsubscribe from Revision';
-          // TODO: Once herald is in, add a notice about not getting any more
-          // herald notifications.
-          $prompt = 'Really unsubscribe from this revision?';
+          $prompt = 'Really unsubscribe from this revision? Herald will '.
+                    'not resubscribe you to a revision you unsubscribe '.
+                    'from.';
           break;
         default:
           return new Aphront400Response();

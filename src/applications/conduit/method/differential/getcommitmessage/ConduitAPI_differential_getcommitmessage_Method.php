@@ -19,7 +19,8 @@
 /**
  * @group conduit
  */
-class ConduitAPI_differential_getcommitmessage_Method extends ConduitAPIMethod {
+final class ConduitAPI_differential_getcommitmessage_Method
+  extends ConduitAPIMethod {
 
   public function getMethodDescription() {
     return "Retrieve Differential commit messages or message templates.";
@@ -128,7 +129,7 @@ class ConduitAPI_differential_getcommitmessage_Method extends ConduitAPIMethod {
             array("\r\n", "\r"),
             array("\n",   "\n"),
             $value);
-          if (strpos($value, "\n") !== false) {
+          if (strpos($value, "\n") !== false || substr($value, 0, 2) === '  ') {
             $commit_message[] = "{$label}:\n{$value}";
           } else {
             $commit_message[] = "{$label}: {$value}";

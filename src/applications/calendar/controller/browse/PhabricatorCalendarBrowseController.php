@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,24 +16,53 @@
  * limitations under the License.
  */
 
-class PhabricatorCalendarBrowseController
+final class PhabricatorCalendarBrowseController
   extends PhabricatorCalendarController {
 
   public function processRequest() {
     $request = $this->getRequest();
     $user = $request->getUser();
 
-    $months = array();
-    for ($ii = 1; $ii <= 12; $ii++) {
-      $month_view = new AphrontCalendarMonthView($ii, 2011);
-      $month_view->setUser($user);
-      $months[] = '<div style="padding: 2em;">';
-      $months[] = $month_view;
-      $months[] = '</div>';
+    // TODO: These should be user-based and navigable in the interface.
+    $year = idate('Y');
+    $month = idate('m');
+
+    $holidays = id(new PhabricatorCalendarHoliday())->loadAllWhere(
+      'day BETWEEN %s AND %s',
+      "{$year}-{$month}-01",
+      "{$year}-{$month}-31");
+
+    $statuses = id(new PhabricatorUserStatus())
+      ->loadAllWhere(
+        'dateTo >= %d AND dateFrom <= %d',
+        strtotime("{$year}-{$month}-01"),
+        strtotime("{$year}-{$month}-01 next month"));
+
+    $month_view = new AphrontCalendarMonthView($month, $year);
+    $month_view->setUser($user);
+    $month_view->setHolidays($holidays);
+
+    $phids = mpull($statuses, 'getUserPHID');
+    $handles = id(new PhabricatorObjectHandleData($phids))->loadHandles();
+
+    foreach ($statuses as $status) {
+      $event = new AphrontCalendarEventView();
+      $event->setEpochRange($status->getDateFrom(), $status->getDateTo());
+
+      $name_text = $handles[$status->getUserPHID()]->getName();
+      $status_text = $status->getTextStatus();
+      $event->setUserPHID($status->getUserPHID());
+      $event->setName("{$name_text} ({$status_text})");
+      $event->setDescription($status->getStatusDescription($user));
+      $month_view->addEvent($event);
     }
 
     return $this->buildStandardPageResponse(
-      $months,
+      array(
+        '<div style="padding: 2em;">',
+          $month_view,
+        '</div>',
+      ),
       array(
         'title' => 'Calendar',
       ));

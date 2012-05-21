@@ -16,7 +16,8 @@
  * limitations under the License.
  */
 
-class PhabricatorPeopleEditController extends PhabricatorPeopleController {
+final class PhabricatorPeopleEditController
+  extends PhabricatorPeopleController {
 
   public function shouldRequireAdmin() {
     return true;
@@ -46,7 +47,7 @@ class PhabricatorPeopleEditController extends PhabricatorPeopleController {
 
     $views = array(
       'basic'     => 'Basic Information',
-      'role'      => 'Edit Role',
+      'role'      => 'Edit Roles',
       'cert'      => 'Conduit Certificate',
     );
 
@@ -122,13 +123,20 @@ class PhabricatorPeopleEditController extends PhabricatorPeopleController {
 
     $welcome_checked = true;
 
+    $new_email = null;
+
     $request = $this->getRequest();
     if ($request->isFormPost()) {
       $welcome_checked = $request->getInt('welcome');
 
       if (!$user->getID()) {
         $user->setUsername($request->getStr('username'));
-        $user->setEmail($request->getStr('email'));
+
+        $new_email = $request->getStr('email');
+        if (!strlen($new_email)) {
+          $errors[] = 'Email is required.';
+          $e_email = 'Required';
+        }
 
         if ($request->getStr('role') == 'agent') {
           $user->setIsSystemAgent(true);
@@ -153,13 +161,6 @@ class PhabricatorPeopleEditController extends PhabricatorPeopleController {
         $e_realname = null;
       }
 
-      if (!strlen($user->getEmail())) {
-        $errors[] = 'Email is required.';
-        $e_email = 'Required';
-      } else {
-        $e_email = null;
-      }
-
       if (!$errors) {
         try {
           $is_new = !$user->getID();
@@ -167,6 +168,14 @@ class PhabricatorPeopleEditController extends PhabricatorPeopleController {
           $user->save();
 
           if ($is_new) {
+
+            $email = id(new PhabricatorUserEmail())
+              ->setUserPHID($user->getPHID())
+              ->setAddress($new_email)
+              ->setIsPrimary(1)
+              ->setIsVerified(0)
+              ->save();
+
             $log = PhabricatorUserLog::newLog(
               $admin,
               $user,
@@ -186,8 +195,8 @@ class PhabricatorPeopleEditController extends PhabricatorPeopleController {
 
           $same_username = id(new PhabricatorUser())
             ->loadOneWhere('username = %s', $user->getUsername());
-          $same_email = id(new PhabricatorUser())
-            ->loadOneWhere('email = %s', $user->getEmail());
+          $same_email = id(new PhabricatorUserEmail())
+            ->loadOneWhere('address = %s', $new_email);
 
           if ($same_username) {
             $e_username = 'Duplicate';
@@ -235,14 +244,27 @@ class PhabricatorPeopleEditController extends PhabricatorPeopleController {
           ->setLabel('Real Name')
           ->setName('realname')
           ->setValue($user->getRealName())
-          ->setError($e_realname))
-      ->appendChild(
+          ->setError($e_realname));
+
+    if (!$user->getID()) {
+      $form->appendChild(
         id(new AphrontFormTextControl())
           ->setLabel('Email')
           ->setName('email')
           ->setDisabled($is_immutable)
-          ->setValue($user->getEmail())
+          ->setValue($new_email)
           ->setError($e_email));
+    } else {
+      $form->appendChild(
+        id(new AphrontFormStaticControl())
+          ->setLabel('Email')
+          ->setValue(
+              $user->loadPrimaryEmail()->getIsVerified()
+                ? 'Verified'
+                : 'Unverified'));
+    }
+
+    $form->appendChild($this->getRoleInstructions());
 
     if (!$user->getID()) {
       $form
@@ -267,13 +289,28 @@ class PhabricatorPeopleEditController extends PhabricatorPeopleController {
               'Send "Welcome to Phabricator" email.',
               $welcome_checked));
     } else {
+      $roles = array();
+
+      if ($user->getIsSystemAgent()) {
+        $roles[] = 'System Agent';
+      }
+      if ($user->getIsAdmin()) {
+        $roles[] = 'Admin';
+      }
+      if ($user->getIsDisabled()) {
+        $roles[] = 'Disabled';
+      }
+
+      if (!$roles) {
+        $roles[] = 'Normal User';
+      }
+
+      $roles = implode(', ', $roles);
+
       $form->appendChild(
         id(new AphrontFormStaticControl())
-          ->setLabel('Role')
-          ->setValue(
-            $user->getIsSystemAgent()
-              ? 'System Agent'
-              : 'Normal User'));
+          ->setLabel('Roles')
+          ->setValue($roles));
     }
 
     $form
@@ -366,12 +403,13 @@ class PhabricatorPeopleEditController extends PhabricatorPeopleController {
     }
 
     $form
+      ->appendChild($this->getRoleInstructions())
       ->appendChild(
         id(new AphrontFormCheckboxControl())
           ->addCheckbox(
             'is_admin',
             1,
-            'Admin: wields absolute power.',
+            'Administrator',
             $user->getIsAdmin())
           ->setDisabled($is_self))
       ->appendChild(
@@ -379,9 +417,17 @@ class PhabricatorPeopleEditController extends PhabricatorPeopleController {
           ->addCheckbox(
             'is_disabled',
             1,
-            'Disabled: can not login.',
+            'Disabled',
             $user->getIsDisabled())
-          ->setDisabled($is_self));
+          ->setDisabled($is_self))
+      ->appendChild(
+        id(new AphrontFormCheckboxControl())
+          ->addCheckbox(
+            'is_agent',
+            1,
+            'System Agent (Bot/Script User)',
+            $user->getIsSystemAgent())
+          ->setDisabled(true));
 
     if (!$is_self) {
       $form
@@ -437,6 +483,23 @@ class PhabricatorPeopleEditController extends PhabricatorPeopleController {
     $panel->appendChild($form);
 
     return array($panel);
+  }
+
+  private function getRoleInstructions() {
+    $roles_link = phutil_render_tag(
+      'a',
+      array(
+        'href'   => PhabricatorEnv::getDoclink(
+          'article/User_Guide_Account_Roles.html'),
+        'target' => '_blank',
+      ),
+      'User Guide: Account Roles');
+
+    return
+      '<p class="aphront-form-instructions">'.
+        'For a detailed explanation of account roles, see '.
+        $roles_link.'.'.
+      '</p>';
   }
 
 }

@@ -23,26 +23,30 @@ final class DifferentialDefaultFieldSelector
     $fields = array(
       new DifferentialTitleFieldSpecification(),
       new DifferentialSummaryFieldSpecification(),
-      new DifferentialTestPlanFieldSpecification(),
-      new DifferentialRevisionStatusFieldSpecification(),
-      new DifferentialAuthorFieldSpecification(),
-      new DifferentialReviewersFieldSpecification(),
-      new DifferentialReviewedByFieldSpecification(),
-      new DifferentialCCsFieldSpecification(),
-      new DifferentialUnitFieldSpecification(),
-      new DifferentialLintFieldSpecification(),
-      new DifferentialCommitsFieldSpecification(),
-      new DifferentialDependenciesFieldSpecification(),
-      new DifferentialManiphestTasksFieldSpecification(),
     );
 
+    if (PhabricatorEnv::getEnvConfig('differential.show-test-plan-field')) {
+      $fields[] = new DifferentialTestPlanFieldSpecification();
+    }
+
+    $fields = array_merge(
+      $fields,
+      array(
+        new DifferentialRevisionStatusFieldSpecification(),
+        new DifferentialAuthorFieldSpecification(),
+        new DifferentialReviewersFieldSpecification(),
+        new DifferentialReviewedByFieldSpecification(),
+        new DifferentialCCsFieldSpecification(),
+        new DifferentialUnitFieldSpecification(),
+        new DifferentialLintFieldSpecification(),
+        new DifferentialCommitsFieldSpecification(),
+        new DifferentialDependenciesFieldSpecification(),
+        new DifferentialManiphestTasksFieldSpecification(),
+      ));
+
     if (PhabricatorEnv::getEnvConfig('differential.show-host-field')) {
-      $fields = array_merge(
-        $fields,
-        array(
-          new DifferentialHostFieldSpecification(),
-          new DifferentialPathFieldSpecification(),
-        ));
+      $fields[] = new DifferentialHostFieldSpecification();
+      $fields[] = new DifferentialPathFieldSpecification();
     }
 
     $fields = array_merge(
@@ -62,6 +66,8 @@ final class DifferentialDefaultFieldSelector
   }
 
   public function sortFieldsForRevisionList(array $fields) {
+    assert_instances_of($fields, 'DifferentialFieldSpecification');
+
     $map = array();
     foreach ($fields as $field) {
       $map[get_class($field)] = $field;

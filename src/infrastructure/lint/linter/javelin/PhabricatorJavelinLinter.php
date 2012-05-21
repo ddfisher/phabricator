@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class PhabricatorJavelinLinter extends ArcanistLinter {
+final class PhabricatorJavelinLinter extends ArcanistLinter {
 
   private $symbols = array();
 
@@ -216,7 +216,7 @@ class PhabricatorJavelinLinter extends ArcanistLinter {
     $symbols = explode("\n", trim($symbols));
     foreach ($symbols as $line) {
       $matches = null;
-      if (!preg_match('/^([?+])([^:]*):(\d+)$/', $line, $matches)) {
+      if (!preg_match('/^([?+\*])([^:]*):(\d+)$/', $line, $matches)) {
         throw new Exception(
           "Received malformed output from `javelinsymbols`.");
       }

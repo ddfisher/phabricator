@@ -19,7 +19,7 @@
 /**
  * See #394445 for an explanation of why this thing even exists.
  */
-class PhabricatorMetaMTAMail extends PhabricatorMetaMTADAO {
+final class PhabricatorMetaMTAMail extends PhabricatorMetaMTADAO {
 
   const STATUS_QUEUE = 'queued';
   const STATUS_SENT  = 'sent';
@@ -108,6 +108,11 @@ class PhabricatorMetaMTAMail extends PhabricatorMetaMTADAO {
     return $this;
   }
 
+  public function addRawTos(array $raw_email) {
+    $this->setParam('raw-to', $raw_email);
+    return $this;
+  }
+
   public function addCCs(array $phids) {
     $phids = array_unique($phids);
     $this->setParam('cc', $phids);
@@ -129,6 +134,7 @@ class PhabricatorMetaMTAMail extends PhabricatorMetaMTADAO {
   }
 
   public function setAttachments(array $attachments) {
+    assert_instances_of($attachments, 'PhabricatorMetaMTAAttachment');
     $this->setParam('attachments', $attachments);
     return $this;
   }
@@ -145,6 +151,11 @@ class PhabricatorMetaMTAMail extends PhabricatorMetaMTADAO {
 
   public function setSubject($subject) {
     $this->setParam('subject', $subject);
+    return $this;
+  }
+
+  public function setVarySubject($subject) {
+    $this->setParam('vary-subject', $subject);
     return $this;
   }
 
@@ -247,9 +258,7 @@ class PhabricatorMetaMTAMail extends PhabricatorMetaMTADAO {
 
 
   public function buildDefaultMailer() {
-    $class_name = PhabricatorEnv::getEnvConfig('metamta.mail-adapter');
-    PhutilSymbolLoader::loadClass($class_name);
-    return newv($class_name, array());
+    return PhabricatorEnv::newObjectFromConfig('metamta.mail-adapter');
   }
 
   /**
@@ -363,8 +372,11 @@ class PhabricatorMetaMTAMail extends PhabricatorMetaMTADAO {
               $handles,
               $exclude);
             if ($emails) {
-              $add_to = $emails;
+              $add_to = array_merge($add_to, $emails);
             }
+            break;
+          case 'raw-to':
+            $add_to = array_merge($add_to, $value);
             break;
           case 'cc':
             $emails = $this->getDeliverableEmailsFromHandles(
@@ -396,23 +408,44 @@ class PhabricatorMetaMTAMail extends PhabricatorMetaMTADAO {
             $mailer->setBody($value);
             break;
           case 'subject':
+            // Only try to use preferences if everything is multiplexed, so we
+            // get consistent behavior.
+            $use_prefs = self::shouldMultiplexAllMail();
+
+            $prefs = null;
+            if ($use_prefs) {
+              $to = idx($params, 'to', array());
+              $user = id(new PhabricatorUser())->loadOneWhere(
+                'phid = %s',
+                head($to));
+              if ($user) {
+                $prefs = $user->loadPreferences();
+              }
+            }
+
+            $alt_subject = idx($params, 'vary-subject');
+            if ($alt_subject) {
+              $use_subject = PhabricatorEnv::getEnvConfig(
+                'metamta.vary-subjects');
+
+              if ($prefs) {
+                $use_subject = $prefs->getPreference(
+                  PhabricatorUserPreferences::PREFERENCE_VARY_SUBJECT,
+                  $use_subject);
+              }
+
+              if ($use_subject) {
+                $value = $alt_subject;
+              }
+            }
+
             if ($is_threaded) {
               $add_re = PhabricatorEnv::getEnvConfig('metamta.re-prefix');
 
-              // If this message has a single recipient, respect their "Re:"
-              // preference. Otherwise, use the global setting.
-
-              $to = idx($params, 'to', array());
-              $cc = idx($params, 'cc', array());
-              if (count($to) == 1 && count($cc) == 0) {
-                $user = id(new PhabricatorUser())->loadOneWhere(
-                  'phid = %s',
-                  head($to));
-                if ($user) {
-                  $prefs = $user->loadPreferences();
-                  $pref_key = PhabricatorUserPreferences::PREFERENCE_RE_PREFIX;
-                  $add_re = $prefs->getPreference($pref_key, $add_re);
-                }
+              if ($prefs) {
+                $add_re = $prefs->getPreference(
+                  PhabricatorUserPreferences::PREFERENCE_RE_PREFIX,
+                  $add_re);
               }
 
               if ($add_re) {
@@ -435,6 +468,14 @@ class PhabricatorMetaMTAMail extends PhabricatorMetaMTADAO {
             }
             break;
           case 'thread-id':
+
+            // NOTE: Gmail freaks out about In-Reply-To and References which
+            // aren't in the form "<string@domain.tld>"; this is also required
+            // by RFC 2822, although some clients are more liberal in what they
+            // accept.
+            $domain = PhabricatorEnv::getEnvConfig('metamta.domain');
+            $value = '<'.$value.'@'.$domain.'>';
+
             if ($is_first && $mailer->supportsMessageIDHeader()) {
               $mailer->addHeader('Message-ID',  $value);
             } else {
@@ -457,6 +498,9 @@ class PhabricatorMetaMTAMail extends PhabricatorMetaMTADAO {
           case 'mailtags':
             // Handled below.
             break;
+          case 'vary-subject':
+            // Handled above.
+            break;
           default:
             // Just discard.
         }
@@ -464,6 +508,9 @@ class PhabricatorMetaMTAMail extends PhabricatorMetaMTADAO {
 
       $mailer->addHeader('X-Phabricator-Sent-This-Message', 'Yes');
       $mailer->addHeader('X-Mail-Transport-Agent', 'MetaMTA');
+
+      // Some clients respect this to suppress OOF and other auto-responses.
+      $mailer->addHeader('X-Auto-Response-Suppress', 'All');
 
       // If the message has mailtags, filter out any recipients who don't want
       // to receive this type of mail.
@@ -616,6 +663,7 @@ class PhabricatorMetaMTAMail extends PhabricatorMetaMTADAO {
     array $phids,
     array $handles,
     array $exclude) {
+    assert_instances_of($handles, 'PhabricatorObjectHandle');
 
     $emails = array();
     foreach ($phids as $phid) {
@@ -632,6 +680,10 @@ class PhabricatorMetaMTAMail extends PhabricatorMetaMTADAO {
     }
 
     return $emails;
+  }
+
+  public static function shouldMultiplexAllMail() {
+    return PhabricatorEnv::getEnvConfig('metamta.one-mail-per-recipient');
   }
 
 }

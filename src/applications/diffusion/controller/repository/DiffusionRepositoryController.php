@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class DiffusionRepositoryController extends DiffusionController {
+final class DiffusionRepositoryController extends DiffusionController {
 
   public function processRequest() {
     $drequest = $this->diffusionRequest;
@@ -26,9 +26,12 @@ class DiffusionRepositoryController extends DiffusionController {
     $crumbs = $this->buildCrumbs();
     $content[] = $crumbs;
 
+    $content[] = $this->buildPropertiesTable($drequest->getRepository());
+
     $history_query = DiffusionHistoryQuery::newFromDiffusionRequest(
       $drequest);
     $history_query->setLimit(15);
+    $history_query->needParents(true);
     $history = $history_query->loadHistory();
 
     $browse_query = DiffusionBrowseQuery::newFromDiffusionRequest($drequest);
@@ -61,6 +64,8 @@ class DiffusionRepositoryController extends DiffusionController {
     $history_table->setDiffusionRequest($drequest);
     $history_table->setHandles($handles);
     $history_table->setHistory($history);
+    $history_table->setParents($history_query->getParents());
+    $history_table->setIsHead(true);
 
     $callsign = $drequest->getRepository()->getCallsign();
     $all = phutil_render_tag(
@@ -88,19 +93,16 @@ class DiffusionRepositoryController extends DiffusionController {
 
     $content[] = $browse_panel;
 
-    if ($drequest->getBranch() !== null) {
-      $branch_query = DiffusionBranchQuery::newFromDiffusionRequest($drequest);
-      $branches = $branch_query->loadBranches();
+    $content[] = $this->buildTagListTable($drequest);
 
-      $branch_table = new DiffusionBranchTableView();
-      $branch_table->setDiffusionRequest($drequest);
-      $branch_table->setBranches($branches);
+    $content[] = $this->buildBranchListTable($drequest);
 
-      $branch_panel = new AphrontPanelView();
-      $branch_panel->setHeader('Branches');
-      $branch_panel->appendChild($branch_table);
-
-      $content[] = $branch_panel;
+    $readme = $browse_query->renderReadme($browse_results);
+    if ($readme) {
+      $panel = new AphrontPanelView();
+      $panel->setHeader('README');
+      $panel->appendChild($readme);
+      $content[] = $panel;
     }
 
     return $this->buildStandardPageResponse(
@@ -108,6 +110,152 @@ class DiffusionRepositoryController extends DiffusionController {
       array(
         'title' => $drequest->getRepository()->getName(),
       ));
+  }
+
+  private function buildPropertiesTable(PhabricatorRepository $repository) {
+
+    $properties = array();
+    $properties['Name'] = $repository->getName();
+    $properties['Callsign'] = $repository->getCallsign();
+    $properties['Description'] = $repository->getDetail('description');
+    switch ($repository->getVersionControlSystem()) {
+      case PhabricatorRepositoryType::REPOSITORY_TYPE_GIT:
+      case PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL:
+        $properties['Clone URI'] = $repository->getPublicRemoteURI();
+        break;
+      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
+        $properties['Repository Root'] = $repository->getPublicRemoteURI();
+        break;
+    }
+
+    $rows = array();
+    foreach ($properties as $key => $value) {
+      $rows[] = array(
+        phutil_escape_html($key),
+        phutil_escape_html($value));
+    }
+
+    $table = new AphrontTableView($rows);
+    $table->setColumnClasses(
+      array(
+        'header',
+        'wide',
+      ));
+
+    $panel = new AphrontPanelView();
+    $panel->setHeader('Repository Properties');
+    $panel->appendChild($table);
+
+    return $panel;
+  }
+
+  private function buildBranchListTable(DiffusionRequest $drequest) {
+    if ($drequest->getBranch() !== null) {
+      $limit = 15;
+
+      $branch_query = DiffusionBranchQuery::newFromDiffusionRequest($drequest);
+      $branch_query->setLimit($limit + 1);
+      $branches = $branch_query->loadBranches();
+
+      if (!$branches) {
+          return null;
+      }
+
+      $more_branches = (count($branches) > $limit);
+      $branches = array_slice($branches, 0, $limit);
+
+      $commits = id(new PhabricatorAuditCommitQuery())
+        ->withIdentifiers(
+          $drequest->getRepository()->getID(),
+          mpull($branches, 'getHeadCommitIdentifier'))
+        ->needCommitData(true)
+        ->execute();
+
+      $table = new DiffusionBranchTableView();
+      $table->setDiffusionRequest($drequest);
+      $table->setBranches($branches);
+      $table->setCommits($commits);
+      $table->setUser($this->getRequest()->getUser());
+
+      $panel = new AphrontPanelView();
+      $panel->setHeader('Branches');
+
+      if ($more_branches) {
+        $panel->setCaption('Showing ' . $limit . ' branches.');
+      }
+
+      $panel->addButton(
+        phutil_render_tag(
+          'a',
+          array(
+            'href' => $drequest->generateURI(
+              array(
+                'action' => 'branches',
+              )),
+            'class' => 'grey button',
+          ),
+          "Show All Branches \xC2\xBB"));
+
+      $panel->appendChild($table);
+
+      return $panel;
+    }
+
+    return null;
+  }
+
+  private function buildTagListTable(DiffusionRequest $drequest) {
+    $tag_limit = 15;
+
+    $query = DiffusionTagListQuery::newFromDiffusionRequest($drequest);
+    $query->setLimit($tag_limit + 1);
+    $tags = $query->loadTags();
+
+    if (!$tags) {
+      return null;
+    }
+
+    $more_tags = (count($tags) > $tag_limit);
+    $tags = array_slice($tags, 0, $tag_limit);
+
+    $commits = id(new PhabricatorAuditCommitQuery())
+      ->withIdentifiers(
+        $drequest->getRepository()->getID(),
+        mpull($tags, 'getCommitIdentifier'))
+      ->needCommitData(true)
+      ->execute();
+
+    $view = new DiffusionTagListView();
+    $view->setDiffusionRequest($drequest);
+    $view->setTags($tags);
+    $view->setUser($this->getRequest()->getUser());
+    $view->setCommits($commits);
+
+    $phids = $view->getRequiredHandlePHIDs();
+    $handles = id(new PhabricatorObjectHandleData($phids))->loadHandles();
+    $view->setHandles($handles);
+
+    $panel = new AphrontPanelView();
+    $panel->setHeader('Tags');
+
+    if ($more_tags) {
+      $panel->setCaption('Showing the '.$tag_limit.' most recent tags.');
+    }
+
+    $panel->addButton(
+      phutil_render_tag(
+        'a',
+        array(
+          'href' => $drequest->generateURI(
+            array(
+              'action' => 'tags',
+            )),
+          'class' => 'grey button',
+        ),
+        "Show All Tags \xC2\xBB"));
+    $panel->appendChild($view);
+
+    return $panel;
   }
 
 }

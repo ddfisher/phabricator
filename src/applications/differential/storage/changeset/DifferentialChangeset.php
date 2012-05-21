@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class DifferentialChangeset extends DifferentialDAO {
+final class DifferentialChangeset extends DifferentialDAO {
 
   protected $diffID;
   protected $oldFile;
@@ -49,15 +49,8 @@ class DifferentialChangeset extends DifferentialDAO {
     return $this->getAddLines() + $this->getDelLines();
   }
 
-  public function getFileType() {
-    return $this->fileType;
-  }
-
-  public function getChangeType() {
-    return $this->changeType;
-  }
-
   public function attachHunks(array $hunks) {
+    assert_instances_of($hunks, 'DifferentialHunk');
     $this->hunks = $hunks;
     return $this;
   }
@@ -147,11 +140,11 @@ class DifferentialChangeset extends DifferentialDAO {
   }
 
   public function getAbsoluteRepositoryPath(
-    DifferentialDiff $diff,
-    PhabricatorRepository $repository) {
+    PhabricatorRepository $repository,
+    DifferentialDiff $diff = null) {
 
     $base = '/';
-    if ($diff->getSourceControlPath()) {
+    if ($diff && $diff->getSourceControlPath()) {
       $base = id(new PhutilURI($diff->getSourceControlPath()))->getPath();
     }
 

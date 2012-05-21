@@ -31,10 +31,6 @@ return array(
   // you through setting up Phabricator.
   'phabricator.setup'           => false,
 
-  // The default PHID for users who haven't uploaded a profile image. It should
-  // be 50x50px.
-  'user.default-profile-image-phid' => 'PHID-FILE-4d61229816cfe6f2b2a3',
-
 // -- IMPORTANT! Security! -------------------------------------------------- //
 
   // IMPORTANT: By default, Phabricator serves files from the same domain the
@@ -58,6 +54,66 @@ return array(
   // hash itself is secret). You can change this if you want (to any other
   // string), but doing so will break existing sessions and CSRF tokens.
   'security.hmac-key' => '[D\t~Y7eNmnQGJ;rnH6aF;m2!vJ8@v8C=Cs:aQS\.Qw',
+
+
+// -- Customization --------------------------------------------------------- //
+
+  // If you want to use a custom logo (e.g., for your company or organization),
+  // copy 'webroot/rsrc/image/custom/example_template.png' to
+  // 'webroot/rsrc/image/custom/custom.png' and set this to the URI you want it
+  // to link to (like http://www.yourcompany.com/).
+  'phabricator.custom.logo'   => null,
+
+
+// -- Access Policies ------------------------------------------------------- //
+
+  // Phabricator allows you to set the visibility of objects (like repositories
+  // and source code) to "Public", which means anyone on the internet can see
+  // them, even without being logged in. This is great for open source, but
+  // some installs may never want to make anything public, so this policy is
+  // disabled by default. You can enable it here, which will let you set the
+  // policy for objects to "Public". With this option disabled, the most open
+  // policy is "All Users", which means users must be logged in to view things.
+  'policy.allow-public'         => false,
+
+
+// -- Logging --------------------------------------------------------------- //
+
+  // To enable the Phabricator access log, specify a path here. The Phabricator
+  // access log can provide more detailed information about Phabricator access
+  // than normal HTTP access logs (for instance, it can show logged-in users,
+  // controllers, and other application data). If not set, no log will be
+  // written.
+  //
+  // Make sure the PHP process can write to the log!
+  'log.access.path'             => null,
+
+  // Format for the access log. If not set, the default format will be used:
+  //
+  //  "[%D]\t%h\t%u\t%M\t%C\t%m\t%U\t%c\t%T"
+  //
+  // Available variables are:
+  //
+  //  - %c The HTTP response code.
+  //  - %C The controller which handled the request.
+  //  - %D The request date.
+  //  - %e Epoch timestamp.
+  //  - %h The webserver's host name.
+  //  - %p The PID of the server process.
+  //  - %R The HTTP referrer.
+  //  - %r The remote IP.
+  //  - %T The request duration, in microseconds.
+  //  - %U The request path.
+  //  - %u The logged-in user, if one is logged in.
+  //  - %M The HTTP method.
+  //  - %m For conduit, the Conduit method which was invoked.
+  //
+  // If a variable isn't available (for example, %m appears in the file format
+  // but the request is not a Conduit request), it will be rendered as "-".
+  //
+  // Note that the default format is subject to change in the future, so if you
+  // rely on the log's format, specify it explicitly.
+  'log.access.format'           => null,
 
 
 // -- DarkConsole ----------------------------------------------------------- //
@@ -90,10 +146,19 @@ return array(
     'phabricator.csrf-key',
     'facebook.application-secret',
     'github.application-secret',
+    'google.application-secret',
+    'phabricator.application-secret',
+    'disqus.application-secret',
+    'phabricator.mail-key',
+    'security.hmac-key',
   ),
 
 
 // --  MySQL  --------------------------------------------------------------- //
+
+  // Class providing database configuration. It must implement
+  // DatabaseConfigurationProvider.
+  'mysql.configuration-provider' => 'DefaultDatabaseConfigurationProvider',
 
   // The username to use when connecting to MySQL.
   'mysql.user' => 'root',
@@ -108,6 +173,11 @@ return array(
 
   // The number of times to try reconnecting to the MySQL database
   'mysql.connection-retries' => 3,
+
+  // Phabricator supports PHP extensions MySQL and MySQLi. It is possible to
+  // implement also other access mechanism (e.g. PDO_MySQL). The class must
+  // extend AphrontMySQLDatabaseConnectionBase.
+  'mysql.implementation' => 'AphrontMySQLDatabaseConnection',
 
 
 // -- Email ----------------------------------------------------------------- //
@@ -124,6 +194,35 @@ return array(
 
   // Domain used to generate Message-IDs.
   'metamta.domain'              => 'example.com',
+
+  // When a message is sent to multiple recipients (for example, several
+  // reviewers on a code review), Phabricator can either deliver one email to
+  // everyone (e.g., "To: alincoln, usgrant, htaft") or separate emails to each
+  // user (e.g., "To: alincoln", "To: usgrant", "To: htaft"). The major
+  // advantages and disadvantages of each approach are:
+  //
+  //   - One mail to everyone:
+  //     - Recipients can see To/Cc at a glance.
+  //     - If you use mailing lists, you won't get duplicate mail if you're
+  //       a normal recipient and also Cc'd on a mailing list.
+  //     - Getting threading to work properly is harder, and probably requires
+  //       making mail less useful by turning off options.
+  //     - Sometimes people will "Reply All" and everyone will get two mails,
+  //       one from the user and one from Phabricator turning their mail into
+  //       a comment.
+  //     - Not supported with a private reply-to address.
+  //   - One mail to each user:
+  //     - Recipients need to look in the mail body to see To/Cc.
+  //     - If you use mailing lists, recipients may sometimes get duplicate
+  //       mail.
+  //     - Getting threading to work properly is easier, and threading settings
+  //       can be customzied by each user.
+  //     - "Reply All" no longer spams all other users.
+  //     - Required if private reply-to addresses are configured.
+  //
+  // In the code, splitting one outbound email into one-per-recipient is
+  // sometimes referred to as "multiplexing".
+  'metamta.one-mail-per-recipient'  => true,
 
   // When a user takes an action which generates an email notification (like
   // commenting on a Differential revision), Phabricator can either send that
@@ -145,6 +244,7 @@ return array(
   //      off since the risk in turning it on is that your outgoing mail will
   //      mostly never arrive.
   'metamta.can-send-as-user'    => false,
+
 
   // Adapter class to use to transmit mail to the MTA. The default uses
   // PHPMailerLite, which will invoke "sendmail". This is appropriate
@@ -256,6 +356,14 @@ return array(
   // affects Diffusion.
   'metamta.diffusion.reply-handler' => 'PhabricatorAuditReplyHandler',
 
+  // Prefix prepended to mail sent by Package.
+  'metamta.package.subject-prefix' => '[Package]',
+
+  // See 'metamta.maniphest.reply-handler'. This does similar thing for package
+  // except that it only supports sending out mail and doesn't handle incoming
+  // email.
+  'metamta.package.reply-handler' => 'OwnersPackageReplyHandler',
+
   // By default, Phabricator generates unique reply-to addresses and sends a
   // separate email to each recipient when you enable reply handling. This is
   // more secure than using "From" to establish user identity, but can mean
@@ -309,8 +417,17 @@ return array(
 
   // Mail.app on OS X Lion won't respect threading headers unless the subject
   // is prefixed with "Re:". If you enable this option, Phabricator will add
-  // "Re:" to the subject line of all mail which is expected to thread.
+  // "Re:" to the subject line of all mail which is expected to thread. If
+  // you've set 'metamta.one-mail-per-recipient', users can override this
+  // setting in their preferences.
   'metamta.re-prefix' => false,
+
+  // If true, allow MetaMTA to change mail subjects to put text like
+  // '[Accepted]' and '[Commented]' in them. This makes subjects more useful,
+  // but might break threading on some clients. If you've set
+  // 'metamta.one-mail-per-recipient', users can override this setting in their
+  // preferences.
+  'metamta.vary-subjects' => true,
 
 
 // -- Auth ------------------------------------------------------------------ //
@@ -335,6 +452,10 @@ return array(
   // Phabricator for authentication; in most situations you can leave this
   // disabled.
   'auth.sshkeys.enabled'        => false,
+
+  // If true, email addresses must be verified (by clicking a link in an
+  // email) before a user can login. By default, verification is optional.
+  'auth.require-email-verification' => false,
 
 
 // -- Accounts -------------------------------------------------------------- //
@@ -406,6 +527,25 @@ return array(
   // The Google "Client Secret" to use for Google API access.
   'google.application-secret'   => null,
 
+// -- Disqus OAuth ---------------------------------------------------------- //
+
+  // Can users use Disqus credentials to login to Phabricator?
+  'disqus.auth-enabled'         => false,
+
+  // Can users use Disqus credentials to create new Phabricator accounts?
+  'disqus.registration-enabled' => true,
+
+  // Are Disqus accounts permanently linked to Phabricator accounts, or can
+  // the user unlink them?
+  'disqus.auth-permanent'       => false,
+
+  // The Disqus "Client ID" to use for Disqus API access.
+  'disqus.application-id'       => null,
+
+  // The Disqus "Client Secret" to use for Disqus API access.
+  'disqus.application-secret'   => null,
+
+
 // -- Phabricator OAuth ----------------------------------------------------- //
 
   // Meta-town -- Phabricator is itself an OAuth Provider
@@ -429,6 +569,16 @@ return array(
 
   // The Phabricator "Client Secret" to use for Phabricator API access.
   'phabricator.application-secret'   => null,
+
+// -- Disqus Comments ------------------------------------------------------- //
+
+  // Should Phame users have Disqus comment widget, and if so what's the
+  // website shortname to use? For example, secure.phabricator.org uses
+  // "phabricator", which we registered with Disqus. If you aren't familiar
+  // with Disqus, see:
+  // Disqus quick start guide - http://docs.disqus.com/help/4/
+  // Information on shortnames - http://docs.disqus.com/help/68/
+  'disqus.shortname'            => null,
 
 // -- Recaptcha ------------------------------------------------------------- //
 
@@ -529,6 +679,26 @@ return array(
     'image/png'   => 'image/png',
     'image/gif'   => 'image/gif',
     'text/plain'  => 'text/plain; charset=utf-8',
+    'text/x-diff' => 'text/plain; charset=utf-8',
+
+    // ".ico" favicon files, which have mime type diversity. See:
+    // http://en.wikipedia.org/wiki/ICO_(file_format)#MIME_type
+    'image/x-ico'               => 'image/x-icon',
+    'image/x-icon'              => 'image/x-icon',
+    'image/vnd.microsoft.icon'  => 'image/x-icon',
+  ),
+
+  // List of mime types which can be used as the source for an <img /> tag.
+  // This should be a subset of 'files.viewable-mime-types' and exclude files
+  // like text.
+  'files.image-mime-types' => array(
+    'image/jpeg'                => true,
+    'image/jpg'                 => true,
+    'image/png'                 => true,
+    'image/gif'                 => true,
+    'image/x-ico'               => true,
+    'image/x-icon'              => true,
+    'image/vnd.microsoft.icon'  => true,
   ),
 
   // Phabricator can proxy images from other servers so you can paste the URI
@@ -584,8 +754,33 @@ return array(
   // fits within configured limits.
   'storage.engine-selector' => 'PhabricatorDefaultFileStorageEngineSelector',
 
+  // Set the size of the largest file a user may upload. This is used to render
+  // text like "Maximum file size: 10MB" on interfaces where users can upload
+  // files, and files larger than this size will be rejected.
+  //
+  // Specify this limit in bytes, or using a "K", "M", or "G" suffix.
+  //
+  // NOTE: Setting this to a large size is NOT sufficient to allow users to
+  // upload large files. You must also configure a number of other settings. To
+  // configure file upload limits, consult the article "Configuring File Upload
+  // Limits" in the documentation. Once you've configured some limit across all
+  // levels of the server, you can set this limit to an appropriate value and
+  // the UI will then reflect the actual configured limit.
+  'storage.upload-size-limit'   => null,
+
+  // Phabricator puts databases in a namespace, which defualts to "phabricator"
+  // -- for instance, the Differential database is named
+  // "phabricator_differential" by default. You can change this namespace if you
+  // want. Normally, you should not do this unless you are developing
+  // Phabricator and using namespaces to separate multiple sandbox datasets.
+  'storage.default-namespace'    => 'phabricator',
+
 
 // -- Search ---------------------------------------------------------------- //
+
+  // Phabricator supports Elastic Search; to use it, specify a host like
+  // 'http://elastic.example.com:9200/' here.
+  'search.elastic.host'     => null,
 
   // Phabricator uses a search engine selector to choose which search engine
   // to use when indexing and reconstructing documents, and when executing
@@ -635,6 +830,18 @@ return array(
   // occasionally have sensitive information; you can set this to true to
   // enable them.
   'differential.show-host-field'  => false,
+
+  // Differential has a required "Test Plan" field by default, which requires
+  // authors to fill out information about how they verified the correctness of
+  // their changes when sending code for review. If you'd prefer not to use
+  // this field, you can disable it here. You can also make it optional
+  // (instead of required) below.
+  'differential.show-test-plan-field' => true,
+
+  // Differential has a required "Test Plan" field by default. You can make it
+  // optional by setting this to false. You can also completely remove it above,
+  // if you prefer.
+  'differential.require-test-plan-field' => true,
 
   // If you set this to true, users can "!accept" revisions via email (normally,
   // they can take other actions but can not "!accept"). This action is disabled
@@ -742,6 +949,11 @@ return array(
   // track running daemons.
   'phd.pid-directory' => '/var/tmp/phd',
 
+  // Number of "TaskMaster" daemons that "phd start" should start. You can
+  // raise this if you have a task backlog, or explicitly launch more with
+  // "phd launch <N> taskmaster".
+  'phd.start-taskmasters' => 4,
+
   // This value is an input to the hash function when building resource hashes.
   // It has no security value, but if you accidentally poison user caches (by
   // pushing a bad patch or having something go wrong with a CDN, e.g.) you can
@@ -758,6 +970,10 @@ return array(
   // and performance improve with it off) but turn it on in development. (These
   // settings are the defaults.)
   'celerity.force-disk-reads' => false,
+
+  // Minify static resources by removing whitespace and comments. You should
+  // enable this in production, but disable it in development.
+  'celerity.minify' => false,
 
   // You can respond to various application events by installing listeners,
   // which will receive callbacks when interesting things occur. Specify a list

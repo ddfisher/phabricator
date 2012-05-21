@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -180,7 +180,7 @@ final class PhabricatorSearchEngineMySQL extends PhabricatorSearchEngine {
         "{$t_field} field ON field.phid = document.phid");
       $where[] = qsprintf(
         $conn_r,
-        'MATCH(corpus) AGAINST (%s)',
+        'MATCH(corpus) AGAINST (%s IN BOOLEAN MODE)',
         $q);
 
       // When searching for a string, promote user listings above other
@@ -200,6 +200,11 @@ final class PhabricatorSearchEngineMySQL extends PhabricatorSearchEngine {
           'field.field = %s',
           $field);
       }
+    }
+
+    $exclude = $query->getParameter('exclude');
+    if ($exclude) {
+      $where[] = qsprintf($conn_r, 'document.phid != %s', $exclude);
     }
 
     if ($query->getParameter('type')) {
@@ -283,10 +288,7 @@ final class PhabricatorSearchEngineMySQL extends PhabricatorSearchEngine {
     $hits = queryfx_all(
       $conn_r,
       'SELECT
-          document.phid,
-          document.documentType,
-          document.documentTitle,
-          document.documentCreated
+          document.phid
         FROM %T document
           %Q
           %Q
@@ -300,10 +302,15 @@ final class PhabricatorSearchEngineMySQL extends PhabricatorSearchEngine {
       $offset,
       $limit);
 
-    return $hits;
+    return ipull($hits, 'phid');
   }
 
-  protected function joinRelationship($conn, $query, $field, $type) {
+  protected function joinRelationship(
+    AphrontDatabaseConnection $conn,
+    PhabricatorSearchQuery $query,
+    $field,
+    $type) {
+
     $phids = $query->getParameter($field, array());
     if (!$phids) {
       return null;

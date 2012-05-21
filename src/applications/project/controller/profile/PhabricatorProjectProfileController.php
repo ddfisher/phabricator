@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class PhabricatorProjectProfileController
+final class PhabricatorProjectProfileController
   extends PhabricatorProjectController {
 
   private $id;
@@ -49,7 +49,7 @@ class PhabricatorProjectProfileController
     if ($file) {
       $picture = $file->getBestURI();
     } else {
-      $picture = null;
+      $picture = PhabricatorUser::getDefaultProfileImageURI();
     }
 
     $members = mpull($project->loadAffiliations(), null, 'getUserPHID');
@@ -60,7 +60,7 @@ class PhabricatorProjectProfileController
 
     $external_arrow = "\xE2\x86\x97";
     $tasks_uri = '/maniphest/view/all/?projects='.$project->getPHID();
-    $slug = PhrictionDocument::normalizeSlug($project->getName());
+    $slug = PhabricatorSlug::normalize($project->getName());
     $phriction_uri = '/w/projects/'.$slug;
 
     $edit_uri = '/project/edit/'.$project->getID().'/';
@@ -275,6 +275,7 @@ class PhabricatorProjectProfileController
   }
 
   private function renderStories(array $stories) {
+    assert_instances_of($stories, 'PhabricatorFeedStory');
 
     $builder = new PhabricatorFeedBuilder($stories);
     $builder->setUser($this->getRequest()->getUser());

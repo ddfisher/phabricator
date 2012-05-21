@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class PhabricatorUserPasswordSettingsPanelController
+final class PhabricatorUserPasswordSettingsPanelController
   extends PhabricatorUserSettingsPanelController {
 
   public function processRequest() {
@@ -40,10 +40,16 @@ class PhabricatorUserPasswordSettingsPanelController
     // the workflow from a password reset email.
 
     $token = $request->getStr('token');
+
+    $valid_token = false;
     if ($token) {
-      $valid_token = $user->validateEmailToken($token);
-    } else {
-      $valid_token = false;
+      $email_address = $request->getStr('email');
+      $email = id(new PhabricatorUserEmail())->loadOneWhere(
+        'address = %s',
+        $email_address);
+      if ($email) {
+        $valid_token = $user->validateEmailToken($email, $token);
+      }
     }
 
     $e_old = true;

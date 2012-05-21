@@ -34,7 +34,14 @@ abstract class DifferentialMail {
   protected $replyHandler;
   protected $parentMessageID;
 
-  abstract protected function renderSubject();
+  protected function renderSubject() {
+    $revision = $this->getRevision();
+    $title = $revision->getTitle();
+    $id = $revision->getID();
+    return "D{$id}: {$title}";
+  }
+
+  abstract protected function renderVarySubject();
   abstract protected function renderBody();
 
   public function setActorHandle($actor_handle) {
@@ -70,10 +77,11 @@ abstract class DifferentialMail {
       throw new Exception('No "To:" users provided!');
     }
 
-    $cc_phids    = $this->getCCPHIDs();
-    $subject     = $this->buildSubject();
-    $body        = $this->buildBody();
-    $attachments = $this->buildAttachments();
+    $cc_phids     = $this->getCCPHIDs();
+    $subject      = $this->buildSubject();
+    $vary_subject = $this->buildVarySubject();
+    $body         = $this->buildBody();
+    $attachments  = $this->buildAttachments();
 
     $template = new PhabricatorMetaMTAMail();
     $actor_handle = $this->getActorHandle();
@@ -85,6 +93,7 @@ abstract class DifferentialMail {
 
     $template
       ->setSubject($subject)
+      ->setVarySubject($vary_subject)
       ->setBody($body)
       ->setIsHTML($this->shouldMarkMailAsHTML())
       ->setParentMessageID($this->parentMessageID)
@@ -116,6 +125,33 @@ abstract class DifferentialMail {
         $template->addHeader(
           'X-Differential-CCs',
           '<'.implode('>, <', $revision->getCCPHIDs()).'>');
+
+        // Determine explicit CCs (those added by humans) and put them in a
+        // header so users can differentiate between Herald CCs and human CCs.
+
+        $relation_subscribed = DifferentialRevision::RELATION_SUBSCRIBED;
+        $raw = $revision->getRawRelations($relation_subscribed);
+
+        $reason_phids = ipull($raw, 'reasonPHID');
+        $reason_handles = id(new PhabricatorObjectHandleData($reason_phids))
+          ->loadHandles();
+
+        $explicit_cc = array();
+        foreach ($raw as $relation) {
+          if (!$relation['reasonPHID']) {
+            continue;
+          }
+          $type = $reason_handles[$relation['reasonPHID']]->getType();
+          if ($type == PhabricatorPHIDConstants::PHID_TYPE_USER) {
+            $explicit_cc[] = $relation['objectPHID'];
+          }
+        }
+
+        if ($explicit_cc) {
+          $template->addHeader(
+            'X-Differential-Explicit-CCs',
+            '<'.implode('>, <', $explicit_cc).'>');
+        }
       }
     }
 
@@ -170,6 +206,10 @@ abstract class DifferentialMail {
     return trim($this->getSubjectPrefix().' '.$this->renderSubject());
   }
 
+  protected function buildVarySubject() {
+    return trim($this->getSubjectPrefix().' '.$this->renderVarySubject());
+  }
+
   protected function shouldMarkMailAsHTML() {
     return false;
   }
@@ -215,16 +255,10 @@ EOTEXT;
   }
 
   public function getReplyHandler() {
-    if ($this->replyHandler) {
-      return $this->replyHandler;
+    if (!$this->replyHandler) {
+      $this->replyHandler =
+        self::newReplyHandlerForRevision($this->getRevision());
     }
-
-    $handler_class = PhabricatorEnv::getEnvConfig(
-      'metamta.differential.reply-handler');
-
-    $reply_handler = self::newReplyHandlerForRevision($this->getRevision());
-
-    $this->replyHandler = $reply_handler;
 
     return $this->replyHandler;
   }
@@ -232,10 +266,8 @@ EOTEXT;
   public static function newReplyHandlerForRevision(
     DifferentialRevision $revision) {
 
-    $handler_class = PhabricatorEnv::getEnvConfig(
+    $reply_handler = PhabricatorEnv::newObjectFromConfig(
       'metamta.differential.reply-handler');
-
-    $reply_handler = newv($handler_class, array());
     $reply_handler->setMailReceiver($revision);
 
     return $reply_handler;
@@ -301,8 +333,7 @@ EOTEXT;
 
   protected function getThreadID() {
     $phid = $this->getRevision()->getPHID();
-    $domain = PhabricatorEnv::getEnvConfig('metamta.domain');
-    return "<differential-rev-{$phid}-req@{$domain}>";
+    return "differential-rev-{$phid}-req";
   }
 
   public function setComment($comment) {
@@ -323,7 +354,13 @@ EOTEXT;
     return $this->changesets;
   }
 
+  protected function getManiphestTaskPHIDs() {
+    return $this->getRevision()->getAttachedPHIDs(
+      PhabricatorPHIDConstants::PHID_TYPE_TASK);
+  }
+
   public function setInlineComments(array $inline_comments) {
+    assert_instances_of($inline_comments, 'PhabricatorInlineCommentInterface');
     $this->inlineComments = $inline_comments;
     return $this;
   }
@@ -369,6 +406,7 @@ EOTEXT;
   }
 
   protected function renderHandleList(array $handles, array $phids) {
+    assert_instances_of($handles, 'PhabricatorObjectHandle');
     $names = array();
     foreach ($phids as $phid) {
       $names[] = $handles[$phid]->getName();

@@ -16,8 +16,7 @@
  * limitations under the License.
  */
 
-class DifferentialChangesetViewController extends DifferentialController {
-
+final class DifferentialChangesetViewController extends DifferentialController {
 
   public function shouldRequireLogin() {
     return !$this->allowsAnonymousAccess();
@@ -202,15 +201,22 @@ class DifferentialChangesetViewController extends DifferentialController {
 
     if ($request->isAjax()) {
       // TODO: This is sort of lazy, the effect is just to not render "Edit"
-      // links on the "standalone view".
+      // and "Reply" links on the "standalone view".
       $parser->setUser($request->getUser());
     }
 
     $output = $parser->render($range_s, $range_e, $mask);
 
+    $mcov = $parser->renderModifiedCoverage();
+
     if ($request->isAjax()) {
-      return id(new AphrontAjaxResponse())
-        ->setContent($output);
+      $coverage = array(
+        'differential-mcoverage-'.md5($changeset->getFilename()) => $mcov,
+      );
+
+      return id(new PhabricatorChangesetResponse())
+        ->setRenderedChangeset($output)
+        ->setCoverage($coverage);
     }
 
     Javelin::initBehavior('differential-show-more', array(
@@ -223,8 +229,7 @@ class DifferentialChangesetViewController extends DifferentialController {
     $detail = new DifferentialChangesetDetailView();
     $detail->setChangeset($changeset);
     $detail->appendChild($output);
-
-    $detail->setRevisionID($request->getInt('revision_id'));
+    $detail->setVsChangesetID($left_source);
 
     $output =
       id(new DifferentialPrimaryPaneView())

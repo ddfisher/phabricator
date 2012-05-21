@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class PhabricatorObjectHandle {
+final class PhabricatorObjectHandle {
 
   private $uri;
   private $phid;
@@ -27,7 +27,7 @@ class PhabricatorObjectHandle {
   private $imageURI;
   private $timestamp;
   private $alternateID;
-  private $status = 'open';
+  private $status = PhabricatorObjectHandleStatus::STATUS_OPEN;
   private $complete;
   private $disabled;
 
@@ -139,7 +139,7 @@ class PhabricatorObjectHandle {
 
   /**
    * Set whether or not the underlying object is complete. See
-   * @{method:getComplete} for an explanation of what it means to be complete.
+   * @{method:isComplete} for an explanation of what it means to be complete.
    *
    * @param bool True if the handle represents a complete object.
    * @return this
@@ -169,7 +169,7 @@ class PhabricatorObjectHandle {
 
   /**
    * Set whether or not the underlying object is disabled. See
-   * @{method:getDisabled} for an explanation of what it means to be disabled.
+   * @{method:isDisabled} for an explanation of what it means to be disabled.
    *
    * @param bool True if the handle represents a disabled object.
    * @return this
@@ -197,13 +197,16 @@ class PhabricatorObjectHandle {
   public function renderLink() {
     $name = $this->getLinkName();
     $class = null;
+    $title = null;
 
     if ($this->status != PhabricatorObjectHandleStatus::STATUS_OPEN) {
       $class .= ' handle-status-'.$this->status;
+      $title = $this->status;
     }
 
     if ($this->disabled) {
       $class .= ' handle-disabled';
+      $title = 'disabled'; // Overwrite status.
     }
 
     return phutil_render_tag(
@@ -211,6 +214,7 @@ class PhabricatorObjectHandle {
       array(
         'href'  => $this->getURI(),
         'class' => $class,
+        'title' => $title,
       ),
       phutil_escape_html($name));
   }
@@ -223,6 +227,7 @@ class PhabricatorObjectHandle {
         break;
       default:
         $name = $this->getFullName();
+        break;
     }
     return $name;
   }

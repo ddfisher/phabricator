@@ -34,6 +34,9 @@ JX.behavior('differential-edit-inline-comments', function(config) {
 
     var pos = JX.$V(top).add(1 + JX.Vector.getDim(target).x, 0);
     var dim = JX.Vector.getDim(code).add(-4, 0);
+    if (isOnRight(target)) {
+      dim.x += JX.Vector.getDim(code.nextSibling).x;
+    }
     dim.y = (JX.$V(bot).y - pos.y) + JX.Vector.getDim(bot).y;
 
     pos.setPos(reticle);
@@ -162,10 +165,6 @@ JX.behavior('differential-edit-inline-comments', function(config) {
     ['mouseover', 'mouseout'],
     'differential-inline-comment',
     function(e) {
-      if (selecting || editor) {
-        return;
-      }
-
       if (e.getType() == 'mouseout') {
         hideReticle();
       } else {
@@ -174,12 +173,10 @@ JX.behavior('differential-edit-inline-comments', function(config) {
         var data = e.getNodeData('differential-inline-comment');
         var change = e.getNodeData('differential-changeset');
 
-        var prefix;
-        if (data.on_right) {
-          prefix = 'C' + (change.left) + 'NL';
-        } else {
-          prefix = 'C' + (change.right) + 'OL';
-        }
+        var id_part  = data.on_right ? change.right : change.left;
+        var th = e.getNode('tag:td').previousSibling;
+        var new_part = isNewFile(th) ? 'N' : 'O';
+        var prefix = 'C' + id_part + new_part + 'L';
 
         origin = JX.$(prefix + data.number);
         target = JX.$(prefix + (parseInt(data.number, 10) +
@@ -215,6 +212,8 @@ JX.behavior('differential-edit-inline-comments', function(config) {
       .setTemplates(config.undo_templates)
       .setOperation(op)
       .setID(data.id)
+      .setLineNumber(data.number)
+      .setLength(data.length)
       .setOnRight(data.on_right)
       .setOriginalText(original)
       .setRow(row)

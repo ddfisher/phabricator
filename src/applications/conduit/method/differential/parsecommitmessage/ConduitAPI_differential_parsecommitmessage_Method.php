@@ -19,7 +19,7 @@
 /**
  * @group conduit
  */
-class ConduitAPI_differential_parsecommitmessage_Method
+final class ConduitAPI_differential_parsecommitmessage_Method
   extends ConduitAPIMethod {
 
   public function getMethodDescription() {
@@ -96,6 +96,7 @@ class ConduitAPI_differential_parsecommitmessage_Method
   }
 
   private function buildLabelMap(array $aux_fields) {
+    assert_instances_of($aux_fields, 'DifferentialFieldSpecification');
     $label_map = array();
     foreach ($aux_fields as $key => $aux_field) {
       $labels = $aux_field->getSupportedCommitMessageLabels();

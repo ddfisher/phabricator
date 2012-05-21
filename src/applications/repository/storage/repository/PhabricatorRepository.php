@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class PhabricatorRepository extends PhabricatorRepositoryDAO {
+final class PhabricatorRepository extends PhabricatorRepositoryDAO {
 
   const TABLE_PATH = 'repository_path';
   const TABLE_PATHCHANGE = 'repository_pathchange';
@@ -58,19 +58,16 @@ class PhabricatorRepository extends PhabricatorRepositoryDAO {
   }
 
   public function getDiffusionBrowseURIForPath($path) {
-    switch ($this->getVersionControlSystem()) {
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_GIT:
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL:
-        $branch = '/'.$this->getDetail('default-branch');
-        break;
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-        $branch = null;
-        break;
-      default:
-        throw new Exception("Unknown VCS.");
-    }
+    $drequest = DiffusionRequest::newFromDictionary(
+      array(
+        'repository' => $this,
+        'path'       => $path,
+      ));
 
-    return '/diffusion/'.$this->getCallsign().'/browse'.$branch.$path;
+    return $drequest->generateURI(
+      array(
+        'action' => 'browse',
+      ));
   }
 
   public static function newPhutilURIFromGitURI($raw_uri) {
@@ -97,6 +94,9 @@ class PhabricatorRepository extends PhabricatorRepositoryDAO {
 
   public function getRemoteURI() {
     $raw_uri = $this->getDetail('remote-uri');
+    if (!$raw_uri) {
+      return null;
+    }
 
     $vcs = $this->getVersionControlSystem();
     $is_git = ($vcs == PhabricatorRepositoryType::REPOSITORY_TYPE_GIT);
@@ -320,6 +320,21 @@ class PhabricatorRepository extends PhabricatorRepositoryDAO {
     }
   }
 
+  public function getPublicRemoteURI() {
+    $uri = new PhutilURI($this->getRemoteURI());
+
+    // Make sure we don't leak anything if this repo is using HTTP Basic Auth
+    // with the credentials in the URI or something zany like that.
+    $uri->setUser(null);
+    $uri->setPass(null);
+
+    return $uri;
+  }
+
+  public function getURI() {
+    return '/diffusion/'.$this->getCallsign().'/';
+  }
+
   private function isSSHProtocol($protocol) {
     return ($protocol == 'ssh' || $protocol == 'svn+ssh');
   }
@@ -330,6 +345,20 @@ class PhabricatorRepository extends PhabricatorRepositoryDAO {
 
   public function isTracked() {
     return $this->getDetail('tracking-enabled', false);
+  }
+
+  public function getDefaultBranch() {
+    $default = $this->getDetail('default-branch');
+    if (strlen($default)) {
+      return $default;
+    }
+
+    $default_branches = array(
+      PhabricatorRepositoryType::REPOSITORY_TYPE_GIT        => 'master',
+      PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL  => 'default',
+    );
+
+    return idx($default_branches, $this->getVersionControlSystem());
   }
 
   public function shouldTrackBranch($branch) {
@@ -348,6 +377,39 @@ class PhabricatorRepository extends PhabricatorRepositoryDAO {
 
     // By default, track all branches.
     return true;
+  }
+
+  public function formatCommitName($commit_identifier) {
+    $vcs = $this->getVersionControlSystem();
+
+    $type_git = PhabricatorRepositoryType::REPOSITORY_TYPE_GIT;
+    $type_hg = PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL;
+
+    $is_git = ($vcs == $type_git);
+    $is_hg = ($vcs == $type_hg);
+    if ($is_git || $is_hg) {
+      $short_identifier = substr($commit_identifier, 0, 12);
+    } else {
+      $short_identifier = $commit_identifier;
+    }
+
+    return 'r'.$this->getCallsign().$short_identifier;
+  }
+
+  public static function loadAllByPHIDOrCallsign(array $names) {
+    $repositories = array();
+    foreach ($names as $name) {
+      $repo = id(new PhabricatorRepository())->loadOneWhere(
+        'phid = %s OR callsign = %s',
+        $name,
+        $name);
+      if (!$repo) {
+        throw new Exception(
+          "No repository with PHID or callsign '{$name}' exists!");
+      }
+      $repositories[$repo->getID()] = $repo;
+    }
+    return $repositories;
   }
 
 }

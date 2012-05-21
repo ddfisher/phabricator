@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class PhabricatorUserProfileSettingsPanelController
+final class PhabricatorUserProfileSettingsPanelController
   extends PhabricatorUserSettingsPanelController {
 
   public function processRequest() {
@@ -32,10 +32,20 @@ class PhabricatorUserProfileSettingsPanelController
       $profile->setUserPHID($user->getPHID());
     }
 
+    $supported_formats = PhabricatorFile::getTransformableImageFormats();
+
+    $e_image = null;
     $errors = array();
     if ($request->isFormPost()) {
       $profile->setTitle($request->getStr('title'));
       $profile->setBlurb($request->getStr('blurb'));
+
+      $sex = $request->getStr('sex');
+      if (in_array($sex, array('m', 'f'))) {
+        $user->setSex($sex);
+      } else {
+        $user->setSex(null);
+      }
 
       if (!empty($_FILES['image'])) {
         $err = idx($_FILES['image'], 'error');
@@ -65,9 +75,10 @@ class PhabricatorUserProfileSettingsPanelController
               $max_height = 50);
             $user->setProfileImagePHID($small_xformed->getPHID());
           } else {
+            $e_image = 'Not Supported';
             $errors[] =
-              'Only valid image files (jpg, jpeg, png or gif) '.
-              'will be accepted.';
+              'This server only supports these image formats: '.
+              implode(', ', $supported_formats).'.';
           }
         }
       }
@@ -96,15 +107,14 @@ class PhabricatorUserProfileSettingsPanelController
       }
     }
 
-    $file = id(new PhabricatorFile())->loadOneWhere(
-      'phid = %s',
-      $user->getProfileImagePHID());
-    if ($file) {
-      $img_src = $file->getBestURI();
-    } else {
-      $img_src = null;
-    }
+    $img_src = $user->loadProfileImageURI();
     $profile_uri = PhabricatorEnv::getURI('/p/'.$user->getUsername().'/');
+
+    $sexes = array(
+      '' => 'Unknown',
+      'm' => 'Male',
+      'f' => 'Female',
+    );
 
     $form = new AphrontFormView();
     $form
@@ -117,6 +127,12 @@ class PhabricatorUserProfileSettingsPanelController
           ->setName('title')
           ->setValue($profile->getTitle())
           ->setCaption('Serious business title.'))
+      ->appendChild(
+        id(new AphrontFormSelectControl())
+          ->setOptions($sexes)
+          ->setLabel('Sex')
+          ->setName('sex')
+          ->setValue($user->getSex()))
       ->appendChild(
         id(new AphrontFormMarkupControl())
           ->setLabel('Profile URI')
@@ -148,7 +164,9 @@ class PhabricatorUserProfileSettingsPanelController
       ->appendChild(
         id(new AphrontFormFileControl())
           ->setLabel('Change Image')
-          ->setName('image'))
+          ->setName('image')
+          ->setError($e_image)
+          ->setCaption('Supported formats: '.implode(', ', $supported_formats)))
       ->appendChild(
         id(new AphrontFormSubmitControl())
           ->setValue('Save')

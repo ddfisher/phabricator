@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,87 +16,66 @@
  * limitations under the License.
  */
 
-class DiffusionGitRequest extends DiffusionRequest {
+/**
+ * @group diffusion
+ */
+final class DiffusionGitRequest extends DiffusionRequest {
 
-  protected function initializeFromAphrontRequestDictionary(array $data) {
-    parent::initializeFromAphrontRequestDictionary($data);
+  protected function getSupportsBranches() {
+    return true;
+  }
 
-    $path = $this->path;
-    $parts = explode('/', $path);
+  protected function didInitialize() {
+    $repository = $this->getRepository();
 
-    $branch = array_shift($parts);
-    if ($branch != ':') {
-      $this->branch = $this->decodeBranchName($branch);
+    if (!Filesystem::pathExists($repository->getLocalPath())) {
+      $this->raiseCloneException();
     }
 
-    foreach ($parts as $key => $part) {
-      // Prevent any hyjinx since we're ultimately shipping this to the
-      // filesystem under a lot of git workflows.
-      if ($part == '..') {
-        unset($parts[$key]);
-      }
+    if (!$this->commit) {
+      return;
     }
 
-    $this->path = implode('/', $parts);
+    // Expand short commit names and verify
 
-    if ($this->repository) {
-      $repository = $this->repository;
+    $future = $repository->getLocalCommandFuture(
+      'cat-file --batch');
+    $future->write($this->commit);
+    list($stdout) = $future->resolvex();
 
-      // TODO: This is not terribly efficient and does not produce terribly
-      // good error messages, but it seems better to put error handling code
-      // here than to try to do it in every query.
+    list($hash, $type) = explode(' ', $stdout);
+    if ($type == 'missing') {
+      throw new Exception("Bad commit '{$this->commit}'.");
+    }
 
-      $branch = $this->getBranch();
+    switch ($type) {
+      case 'tag':
+        $this->commitType = 'tag';
 
-      // TODO: Here, particularly, we should give the user a specific error
-      // message to indicate whether they've typed in some bogus branch and/or
-      // followed a bad link, or misconfigured the default branch in the
-      // Repository tool.
-      list($this->stableCommitName) = $repository->execxLocalCommand(
-        'rev-parse --verify %s/%s',
-        DiffusionBranchInformation::DEFAULT_GIT_REMOTE,
-        $branch);
-
-      if ($this->commit) {
-        list($commit) = $repository->execxLocalCommand(
-          'rev-parse --verify %s',
-          $this->commit);
-
-        // Beyond verifying them, expand commit short forms to full 40-character
-        // hashes.
-        $this->commit = trim($commit);
-
-        // If we have a commit, overwrite the branch commit with the more
-        // specific commit.
-        $this->stableCommitName = $this->commit;
-
-/*
-
-  TODO: Unclear if this is actually a good idea or not; it breaks commit views
-  at the very least.
-
-        list($contains) = $repository->execxLocalCommand(
-          'branch --contains %s',
-          $this->commit);
-        $contains = array_filter(explode("\n", $contains));
-        $found = false;
-        foreach ($contains as $containing_branch) {
-          $containing_branch = trim($containing_branch, "* \n");
-          if ($containing_branch == $branch) {
-            $found = true;
-            break;
-          }
-        }
-        if (!$found) {
+        $matches = null;
+        $ok = preg_match(
+          '/^object ([a-f0-9]+)$.*?\n\n(.*)$/sm',
+          $stdout,
+          $matches);
+        if (!$ok) {
           throw new Exception(
-            "Commit does not exist on this branch!");
+            "Unparseable output from cat-file: {$stdout}");
         }
-*/
 
-      }
+        $hash = $matches[1];
+        $this->tagContent = trim($matches[2]);
+        break;
+      case 'commit':
+        break;
+      default:
+        throw new AphrontUsageException(
+          "Invalid Object Name",
+          "The reference '{$this->commit}' does not name a valid ".
+          "commit or a tag in this repository.");
+        break;
     }
 
-
+    $this->commit = $hash;
   }
 
   public function getBranch() {
@@ -104,14 +83,9 @@ class DiffusionGitRequest extends DiffusionRequest {
       return $this->branch;
     }
     if ($this->repository) {
-      return $this->repository->getDetail('default-branch', 'master');
+      return $this->repository->getDefaultBranch();
     }
     throw new Exception("Unable to determine branch!");
-  }
-
-  public function getUriPath() {
-    return '/diffusion/'.$this->getCallsign().'/browse/'.
-      $this->getBranchURIComponent($this->branch).$this->path;
   }
 
   public function getCommit() {
@@ -123,29 +97,19 @@ class DiffusionGitRequest extends DiffusionRequest {
   }
 
   public function getStableCommitName() {
-    return substr($this->stableCommitName, 0, 16);
-  }
-
-  public function getBranchURIComponent($branch) {
-    return $this->encodeBranchName($branch).'/';
-  }
-
-  private function decodeBranchName($branch) {
-    $branch = str_replace(':', '/', $branch);
-
-    // Backward compatibility for older-style URIs which had an explicit
-    // "origin" remote in the branch name. If a remote is specified, strip it
-    // away.
-    if (strpos($branch, '/') !== false) {
-      $parts = explode('/', $branch);
-      $branch = end($parts);
+    if (!$this->stableCommitName) {
+      if ($this->commit) {
+        $this->stableCommitName = $this->commit;
+      } else {
+        $branch = $this->getBranch();
+        list($stdout) = $this->getRepository()->execxLocalCommand(
+          'rev-parse --verify %s/%s',
+          DiffusionBranchInformation::DEFAULT_GIT_REMOTE,
+          $branch);
+        $this->stableCommitName = trim($stdout);
+      }
     }
-
-    return $branch;
-  }
-
-  private function encodeBranchName($branch) {
-    return str_replace('/', ':', $branch);
+    return substr($this->stableCommitName, 0, 16);
   }
 
 }

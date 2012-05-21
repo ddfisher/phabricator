@@ -55,6 +55,16 @@
   font-family:        "Verdana";
   font-size:          11px;
   overflow:           hidden;
+
+  -moz-user-select:     -moz-none;
+  -khtml-user-select:   none;
+  -webkit-user-select:  none;
+  -ms-user-select:      none;
+  user-select:          none;
+}
+
+.differential-changeset-immutable .differential-diff th {
+  cursor: auto;
 }
 
 .differential-diff td.old {
@@ -75,17 +85,36 @@
   background: #aaffaa;
 }
 
+.differential-diff td.copy {
+  width: 6px;
+  padding: 0;
+}
+
+.differential-diff td.new-copy,
+.differential-diff td.new-copy span.bright {
+  background: #ffffaa;
+}
+
+.differential-diff td.new-move,
+.differential-diff td.new-move span.bright {
+  background: #eeee44;
+}
+
+.differential-diff td.comment {
+  background: #dddddd;
+}
+
 .differential-diff td.cov {
   width: 12px;
   padding: 0;
 }
 
 td.cov-U {
-  background: #dd3300;
+  background: #dd8866;
 }
 
 td.cov-C {
-  background: #0066ff;
+  background: #66bbff;
 }
 
 td.cov-N {
@@ -94,6 +123,21 @@ td.cov-N {
 
 td.cov-X {
   background: #aa00aa;
+}
+
+.differential-diff td.source-cov-C,
+.differential-diff td.source-cov-C span.bright {
+  background: #cceeff;
+}
+
+.differential-diff td.source-cov-U,
+.differential-diff td.source-cov-U span.bright {
+  background: #ffbb99;
+}
+
+.differential-diff td.source-cov-N,
+.differential-diff td.source-cov-N span.bright {
+  background: #f3f6ff;
 }
 
 .differential-diff td.show-more,
@@ -330,4 +374,31 @@ tr.differential-inline-hidden {
 
 tr.differential-inline-loading {
   opacity: 0.5;
+}
+
+
+/*  In the document, the anchor is positioned inside the inline comment, but
+    this makes the browser jump into the comment so the top isn't visible.
+    Instead, artificially position it a bit above the comment so we'll jump a
+    bit before the comment. This allows us to see the entire comment (and
+    generally the commented-on lines, at least in the case of one or two-line
+    comments) after the jump.
+*/
+.differential-inline-comment-anchor {
+  position: absolute;
+  display: block;
+  margin-top: -72px;
+}
+
+.differential-loading a {
+  color: #3b5998;
+}
+
+.differential-loading {
+  color: #999966;
+  background: #ffffee;
+  border: 1px solid #ccccaa;
+  padding: 1em;
+  text-align: center;
+  font-size: 11px;
 }

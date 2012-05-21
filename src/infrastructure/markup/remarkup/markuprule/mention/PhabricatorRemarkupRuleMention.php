@@ -19,7 +19,7 @@
 /**
  * @group markup
  */
-class PhabricatorRemarkupRuleMention
+final class PhabricatorRemarkupRuleMention
   extends PhutilRemarkupRule {
 
   const KEY_RULE_MENTION          = 'rule.mention';
@@ -27,17 +27,17 @@ class PhabricatorRemarkupRuleMention
 
   const KEY_MENTIONED = 'phabricator.mentioned-user-phids';
 
+
+  // NOTE: Negative lookahead for period prevents us from picking up email
+  // addresses, while allowing constructs like "@tomo, lol". The negative
+  // lookbehind for a word character prevents us from matching "mail@lists"
+  // while allowing "@tomo/@mroch". The negative lookahead prevents us from
+  // matching "@joe.com" while allowing us to match "hey, @joe.".
+  const REGEX = '/(?<!\w)@([a-zA-Z0-9]+)\b(?![.]\w)/';
+
   public function apply($text) {
-
-    // NOTE: Negative lookahead for period prevents us from picking up email
-    // addresses, while allowing constructs like "@tomo, lol". The negative
-    // lookbehind for a word character prevents us from matching "mail@lists"
-    // while allowing "@tomo/@mroch". The negative lookahead prevents us from
-    // matching "@joe.com" while allowing us to match "hey, @joe.".
-    $regexp = '/(?<!\w)@([a-zA-Z0-9]+)\b(?![.]\w)/';
-
     return preg_replace_callback(
-      $regexp,
+      self::REGEX,
       array($this, 'markupMention'),
       $text);
   }
@@ -82,7 +82,9 @@ class PhabricatorRemarkupRuleMention
     $user_table = new PhabricatorUser();
     $real_user_names = queryfx_all(
       $user_table->establishConnection('r'),
-      'SELECT username, phid, realName FROM %T WHERE username IN (%Ls)',
+      'SELECT username, phid, realName, isDisabled
+        FROM %T
+        WHERE username IN (%Ls)',
       $user_table->getTableName(),
       $usernames);
 
@@ -99,9 +101,13 @@ class PhabricatorRemarkupRuleMention
 
     foreach ($metadata as $username => $tokens) {
       $exists = isset($actual_users[$username]);
-      $class = $exists
-        ? 'phabricator-remarkup-mention-exists'
-        : 'phabricator-remarkup-mention-unknown';
+      if (!$exists) {
+        $class = 'phabricator-remarkup-mention-unknown';
+      } else if ($actual_users[$username]['isDisabled']) {
+        $class = 'phabricator-remarkup-mention-disabled';
+      } else {
+        $class = 'phabricator-remarkup-mention-exists';
+      }
 
       if ($exists) {
         $tag = phutil_render_tag(

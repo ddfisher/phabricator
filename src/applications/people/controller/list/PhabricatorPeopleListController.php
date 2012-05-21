@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,8 @@
  * limitations under the License.
  */
 
-class PhabricatorPeopleListController extends PhabricatorPeopleController {
+final class PhabricatorPeopleListController
+  extends PhabricatorPeopleController {
 
   public function processRequest() {
     $request = $this->getRequest();
@@ -36,22 +37,29 @@ class PhabricatorPeopleListController extends PhabricatorPeopleController {
     $pager->setCount($count);
     $pager->setURI($request->getRequestURI(), 'page');
 
-    $users = id(new PhabricatorUser())->loadAllWhere(
-      '1 = 1 ORDER BY id DESC LIMIT %d, %d',
-      $pager->getOffset(),
-      $pager->getPageSize());
+    $users = id(new PhabricatorPeopleQuery())
+      ->needPrimaryEmail(true)
+      ->executeWithPager($pager);
 
     $rows = array();
     foreach ($users as $user) {
-
-      $status = '';
-      if ($user->getIsDisabled()) {
-        $status = 'Disabled';
-      } else if ($user->getIsAdmin()) {
-        $status = 'Admin';
+      if ($user->getPrimaryEmail()->getIsVerified()) {
+        $email = 'Verified';
       } else {
-        $status = '-';
+        $email = 'Unverified';
       }
+
+      $status = array();
+      if ($user->getIsDisabled()) {
+        $status[] = 'Disabled';
+      }
+      if ($user->getIsAdmin()) {
+        $status[] = 'Admin';
+      }
+      if ($user->getIsSystemAgent()) {
+        $status[] = 'System Agent';
+      }
+      $status = implode(', ', $status);
 
       $rows[] = array(
         phabricator_date($user->getDateCreated(), $viewer),
@@ -64,6 +72,7 @@ class PhabricatorPeopleListController extends PhabricatorPeopleController {
           phutil_escape_html($user->getUserName())),
         phutil_escape_html($user->getRealName()),
         $status,
+        $email,
         phutil_render_tag(
           'a',
           array(
@@ -81,7 +90,8 @@ class PhabricatorPeopleListController extends PhabricatorPeopleController {
         'Time',
         'Username',
         'Real Name',
-        'Status',
+        'Roles',
+        'Email',
         '',
       ));
     $table->setColumnClasses(
@@ -91,6 +101,7 @@ class PhabricatorPeopleListController extends PhabricatorPeopleController {
         'pri',
         'wide',
         null,
+        null,
         'action',
       ));
     $table->setColumnVisibility(
@@ -99,6 +110,7 @@ class PhabricatorPeopleListController extends PhabricatorPeopleController {
         true,
         true,
         true,
+        $is_admin,
         $is_admin,
         $is_admin,
       ));

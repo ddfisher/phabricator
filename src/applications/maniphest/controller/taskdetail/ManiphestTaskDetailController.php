@@ -19,7 +19,7 @@
 /**
  * @group maniphest
  */
-class ManiphestTaskDetailController extends ManiphestController {
+final class ManiphestTaskDetailController extends ManiphestController {
 
   private $id;
 
@@ -51,7 +51,11 @@ class ManiphestTaskDetailController extends ManiphestController {
       'taskID = %d ORDER BY id ASC',
       $task->getID());
 
-    $phids = array();
+    $commit_phids = PhabricatorEdgeQuery::loadDestinationPHIDs(
+      $task->getPHID(),
+      PhabricatorEdgeConfig::TYPE_TASK_HAS_COMMIT);
+
+    $phids = array_fill_keys($commit_phids, true);
     foreach ($transactions as $transaction) {
       foreach ($transaction->extractPHIDs() as $phid) {
         $phids[$phid] = true;
@@ -168,6 +172,15 @@ class ManiphestTaskDetailController extends ManiphestController {
       $dict['Revisions'] = $rev_links;
     }
 
+    if ($commit_phids) {
+      $commit_links = array();
+      foreach ($commit_phids as $phid) {
+        $commit_links[] = $handles[$phid]->renderLink();
+      }
+      $commit_links = implode('<br />', $commit_links);
+      $dict['Commits'] = $commit_links;
+    }
+
     $file_infos = idx($attached, PhabricatorPHIDConstants::PHID_TYPE_FILE);
     if ($file_infos) {
       $file_phids = array_keys($file_infos);
@@ -184,28 +197,6 @@ class ManiphestTaskDetailController extends ManiphestController {
       }
       $dict['Files'] = implode('', $views);
     }
-
-    $dict['Description'] =
-      '<div class="maniphest-task-description">'.
-        '<div class="phabricator-remarkup">'.
-          $engine->markupText($task->getDescription()).
-        '</div>'.
-      '</div>';
-
-    require_celerity_resource('maniphest-task-detail-css');
-
-    $table = array();
-    foreach ($dict as $key => $value) {
-      $table[] =
-        '<tr>'.
-          '<th>'.phutil_escape_html($key).':</th>'.
-          '<td>'.$value.'</td>'.
-        '</tr>';
-    }
-    $table =
-      '<table class="maniphest-task-properties">'.
-        implode("\n", $table).
-      '</table>';
 
     $context_bar = null;
 
@@ -253,6 +244,27 @@ class ManiphestTaskDetailController extends ManiphestController {
     $action->setClass('action-edit');
     $actions[] = $action;
 
+    require_celerity_resource('phabricator-flag-css');
+    $flag = PhabricatorFlagQuery::loadUserFlag($user, $task->getPHID());
+    if ($flag) {
+      $class = PhabricatorFlagColor::getCSSClass($flag->getColor());
+      $color = PhabricatorFlagColor::getColorName($flag->getColor());
+
+      $action = new AphrontHeadsupActionView();
+      $action->setClass('flag-clear '.$class);
+      $action->setURI('/flag/delete/'.$flag->getID().'/');
+      $action->setName('Remove '.$color.' Flag');
+      $action->setWorkflow(true);
+      $actions[] = $action;
+    } else {
+      $action = new AphrontHeadsupActionView();
+      $action->setClass('phabricator-flag-ghost');
+      $action->setURI('/flag/edit/'.$task->getPHID().'/');
+      $action->setName('Flag Task');
+      $action->setWorkflow(true);
+      $actions[] = $action;
+    }
+
     require_celerity_resource('phabricator-object-selector-css');
     require_celerity_resource('javelin-behavior-phabricator-object-selector');
 
@@ -287,20 +299,16 @@ class ManiphestTaskDetailController extends ManiphestController {
     $action_list = new AphrontHeadsupActionListView();
     $action_list->setActions($actions);
 
-    $panel =
-      '<div class="maniphest-panel">'.
-        $action_list->render().
-        '<div class="maniphest-task-detail-core">'.
-          '<h1>'.
-            '<span class="aphront-headsup-object-name">'.
-              phutil_escape_html('T'.$task->getID()).
-            '</span>'.
-            ' '.
-            phutil_escape_html($task->getTitle()).
-          '</h1>'.
-          $table.
-        '</div>'.
-      '</div>';
+    $headsup_panel = new AphrontHeadsupView();
+    $headsup_panel->setObjectName('T'.$task->getID());
+    $headsup_panel->setHeader($task->getTitle());
+    $headsup_panel->setActionList($action_list);
+    $headsup_panel->setProperties($dict);
+
+    $headsup_panel->appendChild(
+      '<div class="phabricator-remarkup">'.
+        $engine->markupText($task->getDescription()).
+      '</div>');
 
     $transaction_types = ManiphestTransactionType::getTransactionTypeMap();
     $resolution_types = ManiphestTaskStatus::getTaskStatusMap();
@@ -442,36 +450,42 @@ class ManiphestTaskDetailController extends ManiphestController {
       ManiphestTransactionType::TYPE_ATTACH   => 'file',
     );
 
-    Javelin::initBehavior('maniphest-transaction-controls', array(
-      'select' => 'transaction-action',
-      'controlMap' => $control_map,
-      'tokenizers' => array(
-        ManiphestTransactionType::TYPE_PROJECTS => array(
-          'id'       => 'projects-tokenizer',
-          'src'      => '/typeahead/common/projects/',
-          'ondemand' => PhabricatorEnv::getEnvConfig('tokenizer.ondemand'),
-        ),
-        ManiphestTransactionType::TYPE_OWNER => array(
-          'id'       => 'assign-tokenizer',
-          'src'      => '/typeahead/common/users/',
-          'value'    => $default_claim,
-          'limit'    => 1,
-          'ondemand' => PhabricatorEnv::getEnvConfig('tokenizer.ondemand'),
-        ),
-        ManiphestTransactionType::TYPE_CCS => array(
-          'id'       => 'cc-tokenizer',
-          'src'      => '/typeahead/common/mailable/',
-          'ondemand' => PhabricatorEnv::getEnvConfig('tokenizer.ondemand'),
-        ),
+    $tokenizer_map = array(
+      ManiphestTransactionType::TYPE_PROJECTS => array(
+        'id'          => 'projects-tokenizer',
+        'src'         => '/typeahead/common/projects/',
+        'ondemand'    => PhabricatorEnv::getEnvConfig('tokenizer.ondemand'),
+        'placeholder' => 'Type a project name...',
       ),
+      ManiphestTransactionType::TYPE_OWNER => array(
+        'id'          => 'assign-tokenizer',
+        'src'         => '/typeahead/common/users/',
+        'value'       => $default_claim,
+        'limit'       => 1,
+        'ondemand'    => PhabricatorEnv::getEnvConfig('tokenizer.ondemand'),
+        'placeholder' => 'Type a user name...',
+      ),
+      ManiphestTransactionType::TYPE_CCS => array(
+        'id'          => 'cc-tokenizer',
+        'src'         => '/typeahead/common/mailable/',
+        'ondemand'    => PhabricatorEnv::getEnvConfig('tokenizer.ondemand'),
+        'placeholder' => 'Type a user or mailing list...',
+      ),
+    );
+
+    Javelin::initBehavior('maniphest-transaction-controls', array(
+      'select'     => 'transaction-action',
+      'controlMap' => $control_map,
+      'tokenizers' => $tokenizer_map,
     ));
 
     Javelin::initBehavior('maniphest-transaction-preview', array(
-      'uri'     => '/maniphest/transaction/preview/'.$task->getID().'/',
-      'preview' => 'transaction-preview',
-      'comments' => 'transaction-comments',
-      'action'   => 'transaction-action',
-      'map'      => $control_map,
+      'uri'        => '/maniphest/transaction/preview/'.$task->getID().'/',
+      'preview'    => 'transaction-preview',
+      'comments'   => 'transaction-comments',
+      'action'     => 'transaction-action',
+      'map'        => $control_map,
+      'tokenizers' => $tokenizer_map,
     ));
 
     $comment_panel = new AphrontPanelView();
@@ -504,7 +518,7 @@ class ManiphestTaskDetailController extends ManiphestController {
     return $this->buildStandardPageResponse(
       array(
         $context_bar,
-        $panel,
+        $headsup_panel,
         $transaction_view,
         $comment_panel,
         $preview_panel,

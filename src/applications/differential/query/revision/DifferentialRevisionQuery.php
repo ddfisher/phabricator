@@ -38,10 +38,12 @@ final class DifferentialRevisionQuery {
   const STATUS_ANY        = 'status-any';
   const STATUS_OPEN       = 'status-open';
   const STATUS_ACCEPTED   = 'status-accepted';
-  const STATUS_COMMITTED  = 'status-committed';
+  const STATUS_CLOSED     = 'status-closed';    // NOTE: Same as 'committed'.
+  const STATUS_COMMITTED  = 'status-committed'; // TODO: Remove.
   const STATUS_ABANDONED  = 'status-abandoned';
 
   private $authors = array();
+  private $draftAuthors = array();
   private $ccs = array();
   private $reviewers = array();
   private $revIDs = array();
@@ -50,6 +52,7 @@ final class DifferentialRevisionQuery {
   private $subscribers = array();
   private $responsibles = array();
   private $branches = array();
+  private $arcanistProjectPHIDs = array();
 
   private $order            = 'order-modified';
   const ORDER_MODIFIED      = 'order-modified';
@@ -104,6 +107,18 @@ final class DifferentialRevisionQuery {
    */
   public function withAuthors(array $author_phids) {
     $this->authors = $author_phids;
+    return $this;
+  }
+
+  /**
+   * Filter results to revisions with comments authored bythe given PHIDs
+   *
+   * @param array List of PHIDs of authors
+   * @return this
+   * @task config
+   */
+  public function withDraftRepliesByAuthors(array $author_phids) {
+    $this->draftAuthors = $author_phids;
     return $this;
   }
 
@@ -232,6 +247,20 @@ final class DifferentialRevisionQuery {
 
 
   /**
+   * Filter results to only return revisions with a given set of arcanist
+   * projects.
+   *
+   * @param array List of project PHIDs.
+   * @return this
+   * @task config
+   */
+  public function withArcanistProjectPHIDs(array $arc_project_phids) {
+    $this->arcanistProjectPHIDs = $arc_project_phids;
+    return $this;
+  }
+
+
+  /**
    * Set result ordering. Provide a class constant, such as
    * ##DifferentialRevisionQuery::ORDER_CREATED##.
    *
@@ -355,12 +384,9 @@ final class DifferentialRevisionQuery {
         $this->loadCommitPHIDs($conn_r, $revisions);
       }
 
-      $need_active = $this->needActiveDiffs ||
-                     $this->branches;
-
+      $need_active = $this->needActiveDiffs;
       $need_ids = $need_active ||
                   $this->needDiffIDs;
-
 
       if ($need_ids) {
         $this->loadDiffIDs($conn_r, $revisions);
@@ -368,31 +394,6 @@ final class DifferentialRevisionQuery {
 
       if ($need_active) {
         $this->loadActiveDiffs($conn_r, $revisions);
-      }
-
-      if ($this->branches) {
-
-        // TODO: We could filter this in SQL instead and might get better
-        // performance in some cases.
-
-        $branch_map = array_fill_keys($this->branches, true);
-        foreach ($revisions as $key => $revision) {
-          $diff = $revision->getActiveDiff();
-          if (!$diff) {
-            unset($revisions[$key]);
-            continue;
-          }
-
-          // TODO: Old arc uploaded the wrong branch name for Mercurial (i.e.,
-          // with a trailing "\n"). Once the arc version gets bumped, do a
-          // migration and remove this.
-          $branch = trim($diff->getBranch());
-
-          if (!$diff || empty($branch_map[$branch])) {
-            unset($revisions[$key]);
-            continue;
-          }
-        }
       }
     }
 
@@ -418,7 +419,9 @@ final class DifferentialRevisionQuery {
         !$this->authors &&
         !$this->revIDs &&
         !$this->commitHashes &&
-        !$this->phids) {
+        !$this->phids &&
+        !$this->branches &&
+        !$this->arcanistProjectPHIDs) {
       return true;
     }
     return false;
@@ -561,6 +564,14 @@ final class DifferentialRevisionQuery {
         $this->responsibles);
     }
 
+    if ($this->draftAuthors) {
+      $joins[] = qsprintf(
+        $conn_r,
+        'JOIN %T inline_comment ON inline_comment.revisionID = r.id '.
+        'AND inline_comment.commentID is NULL',
+        id(new DifferentialInlineComment())->getTableName());
+    }
+
     $joins = implode(' ', $joins);
 
     return $joins;
@@ -594,6 +605,12 @@ final class DifferentialRevisionQuery {
         $this->authors);
     }
 
+    if ($this->draftAuthors) {
+      $where[] = qsprintf(
+        $conn_r,
+        'inline_comment.authorPHID IN (%Ls)',
+        $this->draftAuthors);
+    }
     if ($this->revIDs) {
       $where[] = qsprintf(
         $conn_r,
@@ -629,6 +646,20 @@ final class DifferentialRevisionQuery {
         $this->responsibles);
     }
 
+    if ($this->branches) {
+      $where[] = qsprintf(
+        $conn_r,
+        'r.branchName in (%Ls)',
+        $this->branches);
+    }
+
+    if ($this->arcanistProjectPHIDs) {
+      $where[] = qsprintf(
+        $conn_r,
+        'r.arcanistProjectPHID in (%Ls)',
+        $this->arcanistProjectPHIDs);
+    }
+
     switch ($this->status) {
       case self::STATUS_ANY:
         break;
@@ -651,11 +682,17 @@ final class DifferentialRevisionQuery {
           ));
         break;
       case self::STATUS_COMMITTED:
+        phlog(
+          "WARNING: DifferentialRevisionQuery using deprecated ".
+          "STATUS_COMMITTED constant. This will be removed soon. ".
+          "Use STATUS_CLOSED.");
+        // fallthrough
+      case self::STATUS_CLOSED:
         $where[] = qsprintf(
           $conn_r,
           'status IN (%Ld)',
           array(
-            ArcanistDifferentialRevisionStatus::COMMITTED,
+            ArcanistDifferentialRevisionStatus::CLOSED,
           ));
         break;
       case self::STATUS_ABANDONED:
@@ -723,6 +760,7 @@ final class DifferentialRevisionQuery {
   }
 
   private function loadRelationships($conn_r, array $revisions) {
+    assert_instances_of($revisions, 'DifferentialRevision');
     $relationships = queryfx_all(
       $conn_r,
       'SELECT * FROM %T WHERE revisionID in (%Ld) ORDER BY sequence',
@@ -739,6 +777,7 @@ final class DifferentialRevisionQuery {
   }
 
   private function loadCommitPHIDs($conn_r, array $revisions) {
+    assert_instances_of($revisions, 'DifferentialRevision');
     $commit_phids = queryfx_all(
       $conn_r,
       'SELECT * FROM %T WHERE revisionID IN (%Ld)',
@@ -753,6 +792,8 @@ final class DifferentialRevisionQuery {
   }
 
   private function loadDiffIDs($conn_r, array $revisions) {
+    assert_instances_of($revisions, 'DifferentialRevision');
+
     $diff_table = new DifferentialDiff();
 
     $diff_ids = queryfx_all(
@@ -771,6 +812,8 @@ final class DifferentialRevisionQuery {
   }
 
   private function loadActiveDiffs($conn_r, array $revisions) {
+    assert_instances_of($revisions, 'DifferentialRevision');
+
     $diff_table = new DifferentialDiff();
 
     $load_ids = array();

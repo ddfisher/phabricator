@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,10 @@
  * limitations under the License.
  */
 
-class DifferentialCCWelcomeMail extends DifferentialReviewRequestMail {
+final class DifferentialCCWelcomeMail extends DifferentialReviewRequestMail {
 
-  protected function renderSubject() {
-    $revision = $this->getRevision();
-    return 'Added to CC: '.$revision->getTitle();
+  protected function renderVarySubject() {
+    return '[Added to CC] '.$this->renderSubject();
   }
 
   protected function renderBody() {

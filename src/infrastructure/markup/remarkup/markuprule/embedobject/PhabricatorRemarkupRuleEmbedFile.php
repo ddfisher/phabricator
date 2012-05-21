@@ -19,7 +19,7 @@
 /**
  * @group markup
  */
-class PhabricatorRemarkupRuleEmbedFile
+final class PhabricatorRemarkupRuleEmbedFile
   extends PhutilRemarkupRule {
 
   public function apply($text) {
@@ -45,6 +45,7 @@ class PhabricatorRemarkupRuleEmbedFile
       'size'    => 'thumb',
       'layout'  => 'left',
       'float'   => false,
+      'name'    => null,
     );
 
     if (!empty($matches[2])) {
@@ -52,24 +53,40 @@ class PhabricatorRemarkupRuleEmbedFile
       $options = PhutilSimpleOptions::parse($matches[2]) + $options;
     }
 
+    $file_name = coalesce($options['name'], $file->getName());
+
+    if (!$file->isViewableImage() || $options['layout'] == 'link') {
+      // If a file isn't in image, just render a link to it.
+      $link = phutil_render_tag(
+        'a',
+        array(
+          'href'    => $file->getBestURI(),
+          'target'  => '_blank',
+          'class'   => 'phabricator-remarkup-embed-layout-link',
+        ),
+        phutil_escape_html($file_name));
+      return $this->getEngine()->storeText($link);
+    }
+
+    $attrs = array(
+      'class' => 'phabricator-remarkup-embed-image',
+    );
+
     switch ($options['size']) {
       case 'full':
-        $src_uri = $file->getBestURI();
+        $attrs['src'] = $file->getBestURI();
         $link = null;
         break;
       case 'thumb':
       default:
-        $src_uri = $file->getThumb160x120URI();
+        $attrs['src'] = $file->getThumb160x120URI();
+        $attrs['width'] = 160;
+        $attrs['height'] = 120;
         $link = $file->getBestURI();
         break;
     }
 
-    $embed = phutil_render_tag(
-      'img',
-      array(
-        'src' => $src_uri,
-        'class' => 'phabricator-remarkup-embed-image',
-      ));
+    $embed = phutil_render_tag('img', $attrs);
 
     if ($link) {
       $embed = phutil_render_tag(

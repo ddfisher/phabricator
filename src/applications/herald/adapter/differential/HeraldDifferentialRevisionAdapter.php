@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class HeraldDifferentialRevisionAdapter extends HeraldObjectAdapter {
+final class HeraldDifferentialRevisionAdapter extends HeraldObjectAdapter {
 
   protected $revision;
   protected $diff;
@@ -135,7 +135,7 @@ class HeraldDifferentialRevisionAdapter extends HeraldObjectAdapter {
 
     $diff = $this->diff;
 
-    return $changeset->getAbsoluteRepositoryPath($diff, $repository);
+    return $changeset->getAbsoluteRepositoryPath($repository, $diff);
   }
 
   protected function loadContentDictionary() {
@@ -217,14 +217,16 @@ class HeraldDifferentialRevisionAdapter extends HeraldObjectAdapter {
         return mpull($packages, 'getPHID');
       case HeraldFieldConfig::FIELD_AFFECTED_PACKAGE_OWNER:
         $packages = $this->loadAffectedPackages();
-        $owners = PhabricatorOwnersOwner::loadAllForPackages($packages);
-        return mpull($owners, 'getUserPHID');
+        return PhabricatorOwnersOwner::loadAffiliatedUserPHIDs(
+          mpull($packages, 'getID'));
       default:
         throw new Exception("Invalid field '{$field}'.");
     }
   }
 
   public function applyHeraldEffects(array $effects) {
+    assert_instances_of($effects, 'HeraldEffect');
+
     $result = array();
     if ($this->explicitCCs) {
       $effect = new HeraldEffect();
@@ -251,6 +253,11 @@ class HeraldDifferentialRevisionAdapter extends HeraldObjectAdapter {
             $effect,
             true,
             'OK, did nothing.');
+          break;
+        case HeraldActionConfig::ACTION_FLAG:
+          $result[] = parent::applyFlagEffect(
+            $effect,
+            $this->revision->getPHID());
           break;
         case HeraldActionConfig::ACTION_EMAIL:
         case HeraldActionConfig::ACTION_ADD_CC:

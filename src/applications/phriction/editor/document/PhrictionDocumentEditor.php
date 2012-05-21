@@ -37,7 +37,7 @@ final class PhrictionDocumentEditor {
   }
 
   public static function newForSlug($slug) {
-    $slug = PhrictionDocument::normalizeSlug($slug);
+    $slug = PhabricatorSlug::normalize($slug);
     $document = id(new PhrictionDocument())->loadOneWhere(
       'slug = %s',
       $slug);
@@ -51,7 +51,7 @@ final class PhrictionDocumentEditor {
     }
 
     if (!$content) {
-      $default_title = PhrictionDocument::getDefaultSlugTitle($slug);
+      $default_title = PhabricatorSlug::getDefaultTitle($slug);
       $content = new PhrictionContent();
       $content->setSlug($slug);
       $content->setTitle($default_title);

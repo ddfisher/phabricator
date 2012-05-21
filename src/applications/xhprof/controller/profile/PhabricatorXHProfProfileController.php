@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class PhabricatorXHProfProfileController
+final class PhabricatorXHProfProfileController
   extends PhabricatorXHProfController {
 
   private $phid;
@@ -51,6 +51,7 @@ class PhabricatorXHProfProfileController
       $view->setSymbol($symbol);
     } else {
       $view = new PhabricatorXHProfProfileTopLevelView();
+      $view->setFile($file);
       $view->setLimit(100);
     }
 

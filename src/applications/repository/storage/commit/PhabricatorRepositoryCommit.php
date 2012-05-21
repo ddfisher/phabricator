@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class PhabricatorRepositoryCommit extends PhabricatorRepositoryDAO {
+final class PhabricatorRepositoryCommit extends PhabricatorRepositoryDAO {
 
   protected $repositoryID;
   protected $phid;
@@ -27,6 +27,16 @@ class PhabricatorRepositoryCommit extends PhabricatorRepositoryDAO {
   protected $auditStatus = PhabricatorAuditCommitStatusConstants::NONE;
 
   private $commitData;
+  private $isUnparsed;
+
+  public function setIsUnparsed($is_unparsed) {
+    $this->isUnparsed = $is_unparsed;
+    return $this;
+  }
+
+  public function getIsUnparsed() {
+    return $this->isUnparsed;
+  }
 
   public function getConfiguration() {
     return array(
@@ -86,6 +96,8 @@ class PhabricatorRepositoryCommit extends PhabricatorRepositoryDAO {
    * triggers.
    */
   public function updateAuditStatus(array $requests) {
+    assert_instances_of($requests, 'PhabricatorRepositoryAuditRequest');
+
     $any_concern = false;
     $any_accept = false;
     $any_need = false;

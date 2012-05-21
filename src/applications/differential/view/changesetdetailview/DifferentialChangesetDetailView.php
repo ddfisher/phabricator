@@ -16,11 +16,11 @@
  * limitations under the License.
  */
 
-class DifferentialChangesetDetailView extends AphrontView {
+final class DifferentialChangesetDetailView extends AphrontView {
 
   private $changeset;
   private $buttons = array();
-  private $revisionID;
+  private $editable;
   private $symbolIndex;
   private $id;
   private $vsChangesetID;
@@ -35,8 +35,8 @@ class DifferentialChangesetDetailView extends AphrontView {
     return $this;
   }
 
-  public function setRevisionID($revision_id) {
-    $this->revisionID = $revision_id;
+  public function setEditable($editable) {
+    $this->editable = $editable;
     return $this;
   }
 
@@ -65,15 +65,11 @@ class DifferentialChangesetDetailView extends AphrontView {
     require_celerity_resource('differential-changeset-view-css');
     require_celerity_resource('syntax-highlighting-css');
 
-    if ($this->revisionID) {
-      $edit = true;
-    } else {
-      $edit = false;
-    }
+    Javelin::initBehavior('phabricator-oncopy', array());
 
     $changeset = $this->changeset;
     $class = 'differential-changeset';
-    if (!$edit) {
+    if (!$this->editable) {
       $class .= ' differential-changeset-immutable';
     }
 

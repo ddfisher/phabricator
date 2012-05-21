@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,13 +29,8 @@ final class DiffusionMercurialDiffQuery extends DiffusionDiffQuery {
     // TODO: This side effect is kind of skethcy.
     $drequest->setCommit($effective_commit);
 
-    $path = $drequest->getPath();
-
-    list($raw_diff) = $repository->execxLocalCommand(
-      'diff -U %d --git --change %s -- %s',
-      65535,
-      $effective_commit,
-      $path);
+    $query = DiffusionRawDiffQuery::newFromDiffusionRequest($drequest);
+    $raw_diff = $query->loadRawDiff();
 
     $parser = new ArcanistDiffParser();
 
@@ -51,10 +46,10 @@ final class DiffusionMercurialDiffQuery extends DiffusionDiffQuery {
     $changesets = $diff->getChangesets();
     $changeset = reset($changesets);
 
-    $this->renderingReference =
-      $drequest->getBranchURIComponent($drequest->getBranch()).
-      $drequest->getPath().';'.
-      $drequest->getCommit();
+    $this->renderingReference = $drequest->generateURI(
+      array(
+        'action' => 'rendering-ref',
+      ));
 
     return $changeset;
   }

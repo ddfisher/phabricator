@@ -19,7 +19,8 @@
 /**
  * @group conduit
  */
-class PhabricatorConduitTokenController extends PhabricatorConduitController {
+final class PhabricatorConduitTokenController
+  extends PhabricatorConduitController {
 
   public function processRequest() {
 
@@ -56,7 +57,6 @@ class PhabricatorConduitTokenController extends PhabricatorConduitController {
       '<p class="aphront-form-instructions">arc will then complete the '.
       'install process for you.</p>');
 
-    $this->setFilter('token');
     $this->setShowSideNav(false);
 
     return $this->buildStandardPageResponse(

@@ -19,7 +19,7 @@
 /**
  * @group conduit
  */
-class PhabricatorConduitAPIController
+final class PhabricatorConduitAPIController
   extends PhabricatorConduitController {
 
   public function shouldRequireLogin() {
@@ -113,6 +113,7 @@ class PhabricatorConduitAPIController
 
       $allow_unguarded_writes = false;
       $auth_error = null;
+      $conduit_username = '-';
       if ($method_handler->shouldRequireAuthentication()) {
         $metadata['scope'] = $method_handler->getRequiredScope();
         $auth_error = $this->authenticateUser($api_request, $metadata);
@@ -123,6 +124,22 @@ class PhabricatorConduitAPIController
         if (isset($metadata['actAsUser'])) {
           $this->actAsUser($api_request, $metadata['actAsUser']);
         }
+
+        if ($auth_error === null) {
+          $conduit_user = $api_request->getUser();
+          if ($conduit_user && $conduit_user->getPHID()) {
+            $conduit_username = $conduit_user->getUsername();
+          }
+        }
+      }
+
+      $access_log = PhabricatorAccessLog::getLog();
+      if ($access_log) {
+        $access_log->setData(
+          array(
+            'u' => $conduit_username,
+            'm' => $method,
+          ));
       }
 
       if ($method_handler->shouldAllowUnguardedWrites()) {
@@ -244,8 +261,9 @@ class PhabricatorConduitAPIController
 
     if ($request->getUser()->getPHID()) {
       $request->validateCSRF();
-      $api_request->setUser($request->getUser());
-      return null;
+      return $this->validateAuthenticatedUser(
+        $api_request,
+        $request->getUser());
     }
 
     // handle oauth
@@ -286,8 +304,9 @@ class PhabricatorConduitAPIController
           'Access token is for invalid user.',
         );
       }
-      $api_request->setUser($user);
-      return null;
+      return $this->validateAuthenticatedUser(
+        $api_request,
+        $user);
     }
 
     // Handle sessionless auth. TOOD: This is super messy.
@@ -310,8 +329,9 @@ class PhabricatorConduitAPIController
           'Authentication is invalid.',
         );
       }
-      $api_request->setUser($user);
-      return null;
+      return $this->validateAuthenticatedUser(
+        $api_request,
+        $user);
     }
 
     $session_key = idx($metadata, 'sessionKey');
@@ -347,7 +367,36 @@ class PhabricatorConduitAPIController
       );
     }
 
-    $api_request->setUser($user);
+    return $this->validateAuthenticatedUser(
+      $api_request,
+      $user);
+  }
+
+  private function validateAuthenticatedUser(
+    ConduitAPIRequest $request,
+    PhabricatorUser $user) {
+
+    if ($user->getIsDisabled()) {
+      return array(
+        'ERR-USER-DISABLED',
+        'User is disabled.');
+    }
+
+    if (PhabricatorEnv::getEnvConfig('auth.require-email-verification')) {
+      $email = $user->loadPrimaryEmail();
+      if (!$email) {
+        return array(
+          'ERR-USER-NOEMAIL',
+          'User has no primary email address.');
+      }
+      if (!$email->getIsVerified()) {
+        return array(
+          'ERR-USER-UNVERIFIED',
+          'User has unverified email address.');
+      }
+    }
+
+    $request->setUser($user);
     return null;
   }
 

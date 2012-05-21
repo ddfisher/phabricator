@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,7 +72,7 @@
  *
  * @group storage
  */
-function qsprintf($conn, $pattern/*, ... */) {
+function qsprintf(AphrontDatabaseConnection $conn, $pattern/*, ... */) {
   $args = func_get_args();
   array_shift($args);
   return xsprintf('xsprintf_query', $conn, $args);
@@ -81,7 +81,7 @@ function qsprintf($conn, $pattern/*, ... */) {
 /**
  * @group storage
  */
-function vqsprintf($conn, $pattern, array $argv) {
+function vqsprintf(AphrontDatabaseConnection $conn, $pattern, array $argv) {
   array_unshift($argv, $pattern);
   return xsprintf('xsprintf_query', $conn, $argv);
 }
@@ -264,6 +264,7 @@ function _qsprintf_check_type($value, $type, $query) {
       break;
     default:
       _qsprintf_check_scalar_type($value, $type, $query);
+      break;
   }
 }
 

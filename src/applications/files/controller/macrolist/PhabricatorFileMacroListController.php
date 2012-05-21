@@ -16,30 +16,38 @@
  * limitations under the License.
  */
 
-class PhabricatorFileMacroListController extends PhabricatorFileController {
+final class PhabricatorFileMacroListController
+  extends PhabricatorFileController {
+
   public function processRequest() {
 
     $request = $this->getRequest();
 
-    $pager = new AphrontPagerView();
-    $pager->setOffset($request->getInt('page'));
-
     $macro_table = new PhabricatorFileImageMacro();
-    $macros = $macro_table->loadAllWhere(
-      '1 = 1 ORDER BY id DESC LIMIT %d, %d',
-      $pager->getOffset(),
-      $pager->getPageSize());
+    if ($request->getStr('name') !== null) {
+      $macros = $macro_table->loadAllWhere(
+        'name LIKE %~',
+        $request->getStr('name'));
+    } else {
+      $pager = new AphrontPagerView();
+      $pager->setOffset($request->getInt('page'));
 
-    // Get an exact count since the size here is reasonably going to be a few
-    // thousand at most in any reasonable case.
-    $count = queryfx_one(
-      $macro_table->establishConnection('r'),
-      'SELECT COUNT(*) N FROM %T',
-      $macro_table->getTableName());
-    $count = $count['N'];
+      $macros = $macro_table->loadAllWhere(
+        '1 = 1 ORDER BY id DESC LIMIT %d, %d',
+        $pager->getOffset(),
+        $pager->getPageSize());
 
-    $pager->setCount($count);
-    $pager->setURI($request->getRequestURI(), 'page');
+      // Get an exact count since the size here is reasonably going to be a few
+      // thousand at most in any reasonable case.
+      $count = queryfx_one(
+        $macro_table->establishConnection('r'),
+        'SELECT COUNT(*) N FROM %T',
+        $macro_table->getTableName());
+      $count = $count['N'];
+
+      $pager->setCount($count);
+      $pager->setURI($request->getRequestURI(), 'page');
+    }
 
     $file_phids = mpull($macros, 'getFilePHID');
 
@@ -57,7 +65,8 @@ class PhabricatorFileMacroListController extends PhabricatorFileController {
     $rows = array();
     foreach ($macros as $macro) {
       $file_phid = $macro->getFilePHID();
-      $file = $files_map[$file_phid];
+      $file = idx($files_map, $file_phid);
+
       $author_link = isset($author_phids[$file_phid])
         ? $handles[$author_phids[$file_phid]]->renderLink()
         : null;
@@ -74,13 +83,13 @@ class PhabricatorFileMacroListController extends PhabricatorFileController {
         phutil_render_tag(
           'a',
           array(
-            'href'    => $file->getBestURI(),
+            'href'    => $file ? $file->getBestURI() : null,
             'target'  => '_blank',
           ),
           phutil_render_tag(
             'img',
             array(
-              'src' => $file->getBestURI(),
+              'src' => $file ? $file->getBestURI() : null,
             ))),
         javelin_render_tag(
           'a',
@@ -109,15 +118,40 @@ class PhabricatorFileMacroListController extends PhabricatorFileController {
         'action',
       ));
 
+    $filter_form = id(new AphrontFormView())
+      ->setMethod('GET')
+      ->setAction('/file/macro/')
+      ->setUser($request->getUser())
+      ->appendChild(
+        id(new AphrontFormTextControl())
+          ->setName('name')
+          ->setLabel('Name')
+          ->setValue($request->getStr('name')))
+      ->appendChild(
+        id(new AphrontFormSubmitControl())
+          ->setValue('Filter Image Macros'));
+
+    $filter_view = new AphrontListFilterView();
+    $filter_view->appendChild($filter_form);
+    $filter_view->addButton(
+      phutil_render_tag(
+        'a',
+        array(
+          'href'  => '/file/macro/edit/',
+          'class' => 'green button',
+        ),
+        'New Image Macro'));
+
     $panel = new AphrontPanelView();
     $panel->appendChild($table);
-
     $panel->setHeader('Image Macros');
-    $panel->setCreateButton('New Image Macro', '/file/macro/edit/');
-    $panel->appendChild($pager);
+    if ($request->getStr('name') === null) {
+      $panel->appendChild($pager);
+    }
 
     $side_nav = new PhabricatorFileSideNavView();
     $side_nav->setSelectedFilter('all_macros');
+    $side_nav->appendChild($filter_view);
     $side_nav->appendChild($panel);
 
     return $this->buildStandardPageResponse(

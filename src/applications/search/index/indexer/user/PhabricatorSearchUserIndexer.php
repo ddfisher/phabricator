@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,14 @@
 /**
  * @group search
  */
-class PhabricatorSearchUserIndexer
+final class PhabricatorSearchUserIndexer
   extends PhabricatorSearchDocumentIndexer {
 
   public static function indexUser(PhabricatorUser $user) {
     $doc = new PhabricatorSearchAbstractDocument();
     $doc->setPHID($user->getPHID());
     $doc->setDocumentType(PhabricatorPHIDConstants::PHID_TYPE_USER);
-    $doc->setDocumentTitle($user->getUserName().'('.$user->getRealName().')');
+    $doc->setDocumentTitle($user->getUserName().' ('.$user->getRealName().')');
     $doc->setDocumentCreated($user->getDateCreated());
     $doc->setDocumentModified($user->getDateModified());
 

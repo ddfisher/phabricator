@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class HeraldCommitAdapter extends HeraldObjectAdapter {
+final class HeraldCommitAdapter extends HeraldObjectAdapter {
 
   protected $diff;
   protected $revision;
@@ -190,6 +190,7 @@ class HeraldCommitAdapter extends HeraldObjectAdapter {
   }
 
   public function applyHeraldEffects(array $effects) {
+    assert_instances_of($effects, 'HeraldEffect');
 
     $result = array();
     foreach ($effects as $effect) {
@@ -217,6 +218,15 @@ class HeraldCommitAdapter extends HeraldObjectAdapter {
             }
             $this->auditMap[$phid][] = $effect->getRuleID();
           }
+          $result[] = new HeraldApplyTranscript(
+            $effect,
+            true,
+            'Triggered an audit.');
+          break;
+        case HeraldActionConfig::ACTION_FLAG:
+          $result[] = parent::applyFlagEffect(
+            $effect,
+            $this->commit->getPHID());
           break;
         default:
           throw new Exception("No rules to handle action '{$action}'.");

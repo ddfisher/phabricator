@@ -19,7 +19,7 @@
 /**
  * @group maniphest
  */
-class ManiphestTaskEditController extends ManiphestController {
+final class ManiphestTaskEditController extends ManiphestController {
 
   private $id;
 
@@ -214,11 +214,13 @@ class ManiphestTaskEditController extends ManiphestController {
         }
 
         if ($transactions) {
+          $is_new = !$task->getID();
+
           $event = new PhabricatorEvent(
             PhabricatorEventType::TYPE_MANIPHEST_WILLEDITTASK,
             array(
               'task'          => $task,
-              'new'           => !$task->getID(),
+              'new'           => $is_new,
               'transactions'  => $transactions,
             ));
           $event->setUser($user);
@@ -231,7 +233,19 @@ class ManiphestTaskEditController extends ManiphestController {
           $editor = new ManiphestTransactionEditor();
           $editor->setAuxiliaryFields($aux_fields);
           $editor->applyTransactions($task, $transactions);
+
+          $event = new PhabricatorEvent(
+            PhabricatorEventType::TYPE_MANIPHEST_DIDEDITTASK,
+            array(
+              'task'          => $task,
+              'new'           => $is_new,
+              'transactions'  => $transactions,
+            ));
+          $event->setUser($user);
+          $event->setAphrontRequest($request);
+          PhutilEventEngine::dispatchEvent($event);
         }
+
 
         if ($parent_task) {
           $type_task = PhabricatorPHIDConstants::PHID_TYPE_TASK;
@@ -263,6 +277,15 @@ class ManiphestTaskEditController extends ManiphestController {
           ->setURI($redirect_uri);
       }
     } else {
+      if ($aux_fields) {
+        $task->loadAndAttachAuxiliaryAttributes();
+        foreach ($aux_fields as $aux_field) {
+          $aux_key = $aux_field->getAuxiliaryKey();
+          $value = $task->getAuxiliaryAttribute($aux_key);
+          $aux_field->setValueFromStorage($value);
+        }
+      }
+
       if (!$task->getID()) {
         $task->setCCPHIDs(array(
           $user->getPHID(),
@@ -273,6 +296,19 @@ class ManiphestTaskEditController extends ManiphestController {
             $task->setCCPHIDs($template_task->getCCPHIDs());
             $task->setProjectPHIDs($template_task->getProjectPHIDs());
             $task->setOwnerPHID($template_task->getOwnerPHID());
+
+            if ($aux_fields) {
+              $template_task->loadAndAttachAuxiliaryAttributes();
+              foreach ($aux_fields as $aux_field) {
+                if (!$aux_field->shouldCopyWhenCreatingSimilarTask()) {
+                  continue;
+                }
+
+                $aux_key = $aux_field->getAuxiliaryKey();
+                $value = $template_task->getAuxiliaryAttribute($aux_key);
+                $aux_field->setValueFromStorage($value);
+              }
+            }
           }
         }
       }
@@ -390,6 +426,7 @@ class ManiphestTaskEditController extends ManiphestController {
           ->setLabel('Assigned To')
           ->setName('assigned_to')
           ->setValue($assigned_value)
+          ->setUser($user)
           ->setDatasource('/typeahead/common/users/')
           ->setLimit(1))
       ->appendChild(
@@ -397,6 +434,7 @@ class ManiphestTaskEditController extends ManiphestController {
           ->setLabel('CC')
           ->setName('cc')
           ->setValue($cc_value)
+          ->setUser($user)
           ->setDatasource('/typeahead/common/mailable/'))
       ->appendChild(
         id(new AphrontFormSelectControl())
@@ -422,16 +460,6 @@ class ManiphestTaskEditController extends ManiphestController {
           ->setDatasource('/typeahead/common/projects/'));
 
     if ($aux_fields) {
-
-      if (!$request->isFormPost()) {
-        $task->loadAndAttachAuxiliaryAttributes();
-        foreach ($aux_fields as $aux_field) {
-          $aux_key = $aux_field->getAuxiliaryKey();
-          $value = $task->getAuxiliaryAttribute($aux_key);
-          $aux_field->setValueFromStorage($value);
-        }
-      }
-
       foreach ($aux_fields as $aux_field) {
         if ($aux_field->isRequired() &&
             !$aux_field->getError() &&

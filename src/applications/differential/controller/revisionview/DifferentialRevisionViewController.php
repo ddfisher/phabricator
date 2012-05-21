@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class DifferentialRevisionViewController extends DifferentialController {
+final class DifferentialRevisionViewController extends DifferentialController {
 
   private $revisionID;
 
@@ -68,6 +68,7 @@ class DifferentialRevisionViewController extends DifferentialController {
       $target,
       array(
         'local:commits',
+        'arc:unit',
       ));
 
     list($changesets, $vs_map, $rendering_references) =
@@ -173,7 +174,9 @@ class DifferentialRevisionViewController extends DifferentialController {
           phutil_render_tag(
             'a',
             array(
-              'href' => $request_uri->alter('large', 'true'),
+              'href' => $request_uri
+                ->alter('large', 'true')
+                ->setFragment('differential-review-toc'),
             ),
             'Show All Files Inline').
         "</strong>");
@@ -235,11 +238,20 @@ class DifferentialRevisionViewController extends DifferentialController {
     $comment_view->setVersusDiffID($diff_vs);
 
     $changeset_view = new DifferentialChangesetListView();
-    $changeset_view->setChangesets($visible_changesets);
-    $changeset_view->setEditable(!$viewer_is_anonymous);
-    $changeset_view->setStandaloneViews(true);
+    $changeset_view->setChangesets($changesets);
+    $changeset_view->setVisibleChangesets($visible_changesets);
+
+    if (!$viewer_is_anonymous) {
+      $changeset_view->setInlineCommentControllerURI(
+        '/differential/comment/inline/edit/'.$revision->getID().'/');
+    }
+
+    $changeset_view->setStandaloneURI('/differential/changeset/');
+    $changeset_view->setRawFileURIs(
+      '/differential/changeset/?view=old',
+      '/differential/changeset/?view=new');
+
     $changeset_view->setUser($user);
-    $changeset_view->setRevision($revision);
     $changeset_view->setDiff($target);
     $changeset_view->setRenderingReferences($rendering_references);
     $changeset_view->setVsMap($vs_map);
@@ -260,18 +272,35 @@ class DifferentialRevisionViewController extends DifferentialController {
     $local_view->setUser($user);
     $local_view->setLocalCommits(idx($props, 'local:commits'));
 
+    if ($repository) {
+      $other_revisions = $this->loadOtherRevisions(
+        $changesets,
+        $target,
+        $repository);
+    } else {
+      $other_revisions = array();
+    }
+
+    $other_view = null;
+    if ($other_revisions) {
+      $other_view = $this->renderOtherRevisions($other_revisions);
+    }
+
     $toc_view = new DifferentialDiffTableOfContentsView();
     $toc_view->setChangesets($changesets);
+    $toc_view->setVisibleChangesets($visible_changesets);
+    $toc_view->setRenderingReferences($rendering_references);
+    $toc_view->setUnitTestData(idx($props, 'arc:unit', array()));
     if ($repository) {
       $toc_view->setRepository($repository);
     }
     $toc_view->setDiff($target);
     $toc_view->setUser($user);
-    $toc_view->setStandaloneViewLink(empty($visible_changesets));
     $toc_view->setVsMap($vs_map);
     $toc_view->setRevisionID($revision->getID());
     $toc_view->setWhitespace($whitespace);
 
+    $comment_form = null;
     if (!$viewer_is_anonymous) {
       $draft = id(new PhabricatorDraft())->loadOneWhere(
         'authorPHID = %s AND draftKey = %s',
@@ -285,6 +314,7 @@ class DifferentialRevisionViewController extends DifferentialController {
 
       $comment_form = new DifferentialAddCommentView();
       $comment_form->setRevision($revision);
+      $comment_form->setAuxFields($aux_fields);
       $comment_form->setActions($this->getRevisionCommentActions($revision));
       $comment_form->setActionURI('/differential/comment/save/');
       $comment_form->setUser($user);
@@ -297,18 +327,18 @@ class DifferentialRevisionViewController extends DifferentialController {
       array(
         'haunt' => $pane_id,
       ));
+    Javelin::initBehavior('differential-user-select');
 
     $page_pane = id(new DifferentialPrimaryPaneView())
       ->setLineWidthFromChangesets($changesets)
       ->setID($pane_id)
-      ->appendChild($reviewer_warning)
       ->appendChild(
-        $revision_detail->render().
         $comment_view->render().
         $diff_history->render().
         $warning.
         $local_view->render().
         $toc_view->render().
+        $other_view.
         $changeset_view->render());
     if ($comment_form) {
       $page_pane->appendChild($comment_form->render());
@@ -320,7 +350,11 @@ class DifferentialRevisionViewController extends DifferentialController {
       $this->generateChronologicalKey());
 
     return $this->buildStandardPageResponse(
-      $page_pane,
+      array(
+        $reviewer_warning,
+        $revision_detail,
+        $page_pane,
+      ),
       array(
         'title' => 'D'.$revision->getID().' '.$revision->getTitle(),
       ));
@@ -353,7 +387,8 @@ class DifferentialRevisionViewController extends DifferentialController {
   }
 
   private function getRevisionActions(DifferentialRevision $revision) {
-    $viewer_phid = $this->getRequest()->getUser()->getPHID();
+    $user = $this->getRequest()->getUser();
+    $viewer_phid = $user->getPHID();
     $viewer_is_owner = ($revision->getAuthorPHID() == $viewer_phid);
     $viewer_is_reviewer = in_array($viewer_phid, $revision->getReviewers());
     $viewer_is_cc = in_array($viewer_phid, $revision->getCCPHIDs());
@@ -373,6 +408,28 @@ class DifferentialRevisionViewController extends DifferentialController {
     }
 
     if (!$viewer_is_anonymous) {
+
+      require_celerity_resource('phabricator-flag-css');
+
+      $flag = PhabricatorFlagQuery::loadUserFlag($user, $revision_phid);
+      if ($flag) {
+        $class = PhabricatorFlagColor::getCSSClass($flag->getColor());
+        $color = PhabricatorFlagColor::getColorName($flag->getColor());
+        $links[] = array(
+          'class' => 'flag-clear '.$class,
+          'href'  => '/flag/delete/'.$flag->getID().'/',
+          'name'  => phutil_escape_html('Remove '.$color.' Flag'),
+          'sigil' => 'workflow',
+        );
+      } else {
+        $links[] = array(
+          'class' => 'flag-add phabricator-flag-ghost',
+          'href'  => '/flag/edit/'.$revision_phid.'/',
+          'name'  => 'Flag Revision',
+          'sigil' => 'workflow',
+        );
+      }
+
       if (!$viewer_is_owner && !$viewer_is_reviewer) {
         $action = $viewer_is_cc ? 'rem' : 'add';
         $links[] = array(
@@ -407,11 +464,13 @@ class DifferentialRevisionViewController extends DifferentialController {
         );
       }
 
-      $links[] = array(
-        'class' => 'transcripts-metamta',
-        'name'  => 'MetaMTA Transcripts',
-        'href'  => "/mail/?phid={$revision_phid}",
-      );
+      if ($user->getIsAdmin()) {
+        $links[] = array(
+          'class' => 'transcripts-metamta',
+          'name'  => 'MetaMTA Transcripts',
+          'href'  => "/mail/?phid={$revision_phid}",
+        );
+      }
 
       $links[] = array(
         'class' => 'transcripts-herald',
@@ -428,17 +487,16 @@ class DifferentialRevisionViewController extends DifferentialController {
     $actions = array(
       DifferentialAction::ACTION_COMMENT => true,
     );
-    $admin_actions = array();
 
     $viewer = $this->getRequest()->getUser();
     $viewer_phid = $viewer->getPHID();
-    $viewer_is_admin =  $viewer->getIsAdmin();
     $viewer_is_owner = ($viewer_phid == $revision->getAuthorPHID());
     $viewer_is_reviewer = in_array($viewer_phid, $revision->getReviewers());
     $viewer_did_accept = ($viewer_phid === $revision->loadReviewedBy());
+    $status = $revision->getStatus();
 
     if ($viewer_is_owner) {
-      switch ($revision->getStatus()) {
+      switch ($status) {
         case ArcanistDifferentialRevisionStatus::NEEDS_REVIEW:
           $actions[DifferentialAction::ACTION_ABANDON] = true;
           $actions[DifferentialAction::ACTION_RETHINK] = true;
@@ -451,35 +509,36 @@ class DifferentialRevisionViewController extends DifferentialController {
           $actions[DifferentialAction::ACTION_ABANDON] = true;
           $actions[DifferentialAction::ACTION_REQUEST] = true;
           $actions[DifferentialAction::ACTION_RETHINK] = true;
+          $actions[DifferentialAction::ACTION_CLOSE] = true;
           break;
-        case ArcanistDifferentialRevisionStatus::COMMITTED:
+        case ArcanistDifferentialRevisionStatus::CLOSED:
           break;
         case ArcanistDifferentialRevisionStatus::ABANDONED:
           $actions[DifferentialAction::ACTION_RECLAIM] = true;
           break;
       }
     } else {
-      switch ($revision->getStatus()) {
+      switch ($status) {
         case ArcanistDifferentialRevisionStatus::NEEDS_REVIEW:
-          $admin_actions[DifferentialAction::ACTION_ABANDON] = $viewer_is_admin;
           $actions[DifferentialAction::ACTION_ACCEPT] = true;
           $actions[DifferentialAction::ACTION_REJECT] = true;
           $actions[DifferentialAction::ACTION_RESIGN] = $viewer_is_reviewer;
           break;
         case ArcanistDifferentialRevisionStatus::NEEDS_REVISION:
-          $admin_actions[DifferentialAction::ACTION_ABANDON] = $viewer_is_admin;
           $actions[DifferentialAction::ACTION_ACCEPT] = true;
           $actions[DifferentialAction::ACTION_RESIGN] = $viewer_is_reviewer;
           break;
         case ArcanistDifferentialRevisionStatus::ACCEPTED:
-          $admin_actions[DifferentialAction::ACTION_ABANDON] = $viewer_is_admin;
           $actions[DifferentialAction::ACTION_REJECT] = true;
           $actions[DifferentialAction::ACTION_RESIGN] =
             $viewer_is_reviewer && !$viewer_did_accept;
           break;
-        case ArcanistDifferentialRevisionStatus::COMMITTED:
+        case ArcanistDifferentialRevisionStatus::CLOSED:
         case ArcanistDifferentialRevisionStatus::ABANDONED:
           break;
+      }
+      if ($status != ArcanistDifferentialRevisionStatus::CLOSED) {
+        $actions[DifferentialAction::ACTION_CLAIM] = true;
       }
     }
 
@@ -487,21 +546,17 @@ class DifferentialRevisionViewController extends DifferentialController {
     $actions[DifferentialAction::ACTION_ADDCCS] = true;
 
     $actions = array_keys(array_filter($actions));
-    $admin_actions = array_keys(array_filter($admin_actions));
     $actions_dict = array();
-
     foreach ($actions as $action) {
       $actions_dict[$action] = DifferentialAction::getActionVerb($action);
-    }
-    foreach ($admin_actions as $action) {
-      $actions_dict[$action] =
-        '(Admin) ' . DifferentialAction::getActionVerb($action);
     }
 
     return $actions_dict;
   }
 
   private function loadInlineComments(array $comments, array &$changesets) {
+    assert_instances_of($comments, 'DifferentialComment');
+    assert_instances_of($changesets, 'DifferentialChangeset');
 
     $inline_comments = array();
 
@@ -541,7 +596,12 @@ class DifferentialRevisionViewController extends DifferentialController {
     return $inline_comments;
   }
 
-  private function loadChangesetsAndVsMap(array $diffs, $diff_vs, $target) {
+  private function loadChangesetsAndVsMap(
+    array $diffs,
+    $diff_vs,
+    DifferentialDiff $target) {
+    assert_instances_of($diffs, 'DifferentialDiff');
+
     $load_ids = array();
     if ($diff_vs) {
       $load_ids[] = $diff_vs;
@@ -599,6 +659,8 @@ class DifferentialRevisionViewController extends DifferentialController {
     foreach ($aux_fields as $key => $aux_field) {
       if (!$aux_field->shouldAppearOnRevisionView()) {
         unset($aux_fields[$key]);
+      } else {
+        $aux_field->setUser($this->getRequest()->getUser());
       }
     }
 
@@ -651,6 +713,7 @@ class DifferentialRevisionViewController extends DifferentialController {
     DifferentialDiff $target,
     PhabricatorRepositoryArcanistProject $arc_project,
     array $visible_changesets) {
+    assert_instances_of($visible_changesets, 'DifferentialChangeset');
 
     $engine = PhabricatorSyntaxHighlighter::newEngine();
 
@@ -679,5 +742,68 @@ class DifferentialRevisionViewController extends DifferentialController {
     return $symbol_indexes;
   }
 
+  private function loadOtherRevisions(
+    array $changesets,
+    DifferentialDiff $target,
+    PhabricatorRepository $repository) {
+    assert_instances_of($changesets, 'DifferentialChangeset');
+
+    $paths = array();
+    foreach ($changesets as $changeset) {
+      $paths[] = $changeset->getAbsoluteRepositoryPath(
+        $repository,
+        $target);
+    }
+
+    if (!$paths) {
+      return array();
+    }
+
+    $path_map = id(new DiffusionPathIDQuery($paths))->loadPathIDs();
+
+    if (!$path_map) {
+      return array();
+    }
+
+    $query = id(new DifferentialRevisionQuery())
+      ->withStatus(DifferentialRevisionQuery::STATUS_OPEN)
+      ->setOrder(DifferentialRevisionQuery::ORDER_PATH_MODIFIED)
+      ->setLimit(10)
+      ->needRelationships(true);
+
+    foreach ($path_map as $path => $path_id) {
+      $query->withPath($repository->getID(), $path_id);
+    }
+
+    $results = $query->execute();
+
+    // Strip out *this* revision.
+    foreach ($results as $key => $result) {
+      if ($result->getID() == $this->revisionID) {
+        unset($results[$key]);
+      }
+    }
+
+    return $results;
+  }
+
+  private function renderOtherRevisions(array $revisions) {
+    assert_instances_of($revisions, 'DifferentialRevision');
+
+    $view = id(new DifferentialRevisionListView())
+      ->setRevisions($revisions)
+      ->setFields(DifferentialRevisionListView::getDefaultFields())
+      ->setUser($this->getRequest()->getUser());
+
+    $phids = $view->getRequiredHandlePHIDs();
+    $handles = id(new PhabricatorObjectHandleData($phids))->loadHandles();
+    $view->setHandles($handles);
+
+    return
+      '<div class="differential-panel">'.
+        '<h1>Open Revisions Affecting These Files</h1>'.
+        $view->render().
+      '</div>';
+  }
 
 }

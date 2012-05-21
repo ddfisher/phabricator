@@ -17,8 +17,24 @@
  */
 
 $__start__ = microtime(true);
+$access_log = null;
 
 error_reporting(E_ALL | E_STRICT);
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && !$_POST &&
+    isset($_REQUEST['__file__'])) {
+  $size = ini_get('post_max_size');
+  phabricator_fatal(
+    "Request size exceeds PHP 'post_max_size' ('{$size}').");
+}
+
+$required_version = '5.2.3';
+if (version_compare(PHP_VERSION, $required_version) < 0) {
+  phabricator_fatal_config_error(
+    "You are running PHP version '".PHP_VERSION."', which is older than ".
+    "the minimum version, '{$required_version}'. Update to at least ".
+    "'{$required_version}'.");
+}
 
 phabricator_detect_insane_memory_limit();
 
@@ -36,11 +52,6 @@ if (!$env) {
     "The 'PHABRICATOR_ENV' environmental variable is not defined. Modify ".
     "your httpd.conf to include 'SetEnv PHABRICATOR_ENV <env>', where '<env>' ".
     "is one of 'development', 'production', or a custom environment.");
-}
-
-if (!function_exists('mysql_connect')) {
-  phabricator_fatal_config_error(
-    "The PHP MySQL extension is not installed. This extension is required.");
 }
 
 if (!isset($_REQUEST['__path__'])) {
@@ -68,6 +79,18 @@ try {
   phutil_require_module('phabricator', 'infrastructure/env');
   PhabricatorEnv::setEnvConfig($conf);
 
+  // This is the earliest we can get away with this, we need env config first.
+  PhabricatorAccessLog::init();
+  $access_log = PhabricatorAccessLog::getLog();
+  if ($access_log) {
+    $access_log->setData(
+      array(
+        'R' => idx($_SERVER, 'HTTP_REFERER', '-'),
+        'r' => idx($_SERVER, 'REMOTE_ADDR', '-'),
+        'M' => idx($_SERVER, 'REQUEST_METHOD', '-'),
+      ));
+  }
+
   phutil_require_module('phabricator', 'aphront/console/plugin/xhprof/api');
   DarkConsoleXHProfPluginAPI::hookProfiler();
 
@@ -94,7 +117,12 @@ foreach (PhabricatorEnv::getEnvConfig('load-libraries') as $library) {
 }
 
 if (PhabricatorEnv::getEnvConfig('phabricator.setup')) {
-  PhabricatorSetup::runSetup();
+  try {
+    PhabricatorSetup::runSetup();
+  } catch (Exception $ex) {
+    echo "EXCEPTION!\n";
+    echo $ex;
+  }
   return;
 }
 
@@ -106,9 +134,7 @@ $path = $_REQUEST['__path__'];
 switch ($host) {
   default:
     $config_key = 'aphront.default-application-configuration-class';
-    $config_class = PhabricatorEnv::getEnvConfig($config_key);
-    PhutilSymbolLoader::loadClass($config_class);
-    $application = newv($config_class, array());
+    $application = PhabricatorEnv::newObjectFromConfig($config_key);
     break;
 }
 
@@ -123,8 +149,27 @@ PhabricatorEventEngine::initialize();
 
 $application->setRequest($request);
 list($controller, $uri_data) = $application->buildController();
+
+if ($access_log) {
+  $access_log->setData(
+    array(
+      'U' => (string)$request->getRequestURI()->getPath(),
+      'C' => get_class($controller),
+    ));
+}
+
 try {
   $response = $controller->willBeginExecution();
+
+  if ($access_log) {
+    if ($request->getUser() && $request->getUser()->getPHID()) {
+      $access_log->setData(
+        array(
+          'u' => $request->getUser()->getUserName(),
+        ));
+    }
+  }
+
   if (!$response) {
     $controller->willProcessRequest($uri_data);
     $response = $controller->processRequest();
@@ -142,6 +187,9 @@ try {
   $response_string = $response->buildResponseString();
 } catch (Exception $ex) {
   $write_guard->dispose();
+  if ($access_log) {
+    $access_log->write();
+  }
   phabricator_fatal('[Rendering Exception] '.$ex->getMessage());
 }
 
@@ -180,6 +228,15 @@ if (isset($_REQUEST['__profile__']) &&
 
 $sink->writeData($response_string);
 
+if ($access_log) {
+  $access_log->setData(
+    array(
+      'c' => $response->getHTTPResponseCode(),
+      'T' => (int)(1000000 * (microtime(true) - $__start__)),
+    ));
+  $access_log->write();
+}
+
 /**
  * @group aphront
  */
@@ -192,11 +249,14 @@ function setup_aphront_basics() {
     $root = $_SERVER['PHUTIL_LIBRARY_ROOT'];
   }
 
-  ini_set('include_path', $libraries_root.':'.ini_get('include_path'));
+  ini_set(
+    'include_path',
+    $libraries_root.PATH_SEPARATOR.ini_get('include_path'));
   @include_once $root.'libphutil/src/__phutil_library_init__.php';
   if (!@constant('__LIBPHUTIL__')) {
-    echo "ERROR: Unable to load libphutil. Update your PHP 'include_path' to ".
-         "include the parent directory of libphutil/.\n";
+    echo "ERROR: Unable to load libphutil. Put libphutil/ next to ".
+         "phabricator/, or update your PHP 'include_path' to include ".
+         "the parent directory of libphutil/.\n";
     exit(1);
   }
 
@@ -220,7 +280,7 @@ function phabricator_detect_bad_base_uri() {
     case 'https':
       break;
     default:
-      phabricator_fatal_config_error(
+      return phabricator_fatal_config_error(
         "'phabricator.base-uri' is set to '{$conf}', which is invalid. ".
         "The URI must start with 'http://' or 'https://'.");
   }
@@ -295,6 +355,16 @@ function phabricator_shutdown() {
 }
 
 function phabricator_fatal($msg) {
+
+  global $access_log;
+  if ($access_log) {
+    $access_log->setData(
+      array(
+        'c' => 500,
+      ));
+    $access_log->write();
+  }
+
   header(
     'Content-Type: text/plain; charset=utf-8',
     $replace = true,
@@ -305,3 +375,4 @@ function phabricator_fatal($msg) {
 
   exit(1);
 }
+

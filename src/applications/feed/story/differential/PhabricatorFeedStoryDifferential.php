@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class PhabricatorFeedStoryDifferential extends PhabricatorFeedStory {
+final class PhabricatorFeedStoryDifferential extends PhabricatorFeedStory {
 
   public function getRequiredHandlePHIDs() {
     $data = $this->getStoryData();
@@ -38,8 +38,6 @@ class PhabricatorFeedStoryDifferential extends PhabricatorFeedStory {
 
     $author_phid = $data->getAuthorPHID();
 
-    $objects = $this->getObjects();
-
     $view = new PhabricatorFeedStoryView();
 
     $revision_phid = $data->getValue('revision_phid');
@@ -56,7 +54,7 @@ class PhabricatorFeedStoryDifferential extends PhabricatorFeedStory {
     $action = $data->getValue('action');
     switch ($action) {
       case DifferentialAction::ACTION_CREATE:
-      case DifferentialAction::ACTION_COMMIT:
+      case DifferentialAction::ACTION_CLOSE:
         $full_size = true;
         break;
       default:

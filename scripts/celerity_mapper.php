@@ -53,6 +53,10 @@ $package_spec = array(
     'phabricator-paste-file-upload',
     'phabricator-menu-item',
     'phabricator-dropdown-menu',
+    'javelin-behavior-phabricator-oncopy',
+    'phabricator-tooltip',
+    'javelin-behavior-phabricator-tooltips',
+    'phabricator-prefab',
   ),
   'core.pkg.css' => array(
     'phabricator-core-css',
@@ -76,11 +80,15 @@ $package_spec = array(
     'syntax-highlighting-css',
     'aphront-pager-view-css',
     'phabricator-transaction-view-css',
+    'aphront-tooltip-css',
+    'aphront-headsup-view-css',
+    'phabricator-flag-css',
+    'aphront-error-view-css',
   ),
   'differential.pkg.css' => array(
     'differential-core-view-css',
     'differential-changeset-view-css',
-    'differential-revision-detail-css',
+    'differential-results-table-css',
     'differential-revision-history-css',
     'differential-table-of-contents-css',
     'differential-revision-comment-css',
@@ -90,6 +98,7 @@ $package_spec = array(
     'aphront-headsup-action-list-view-css',
     'phabricator-content-source-view-css',
     'differential-local-commits-view-css',
+    'inline-comment-summary-css',
   ),
   'differential.pkg.js' => array(
     'phabricator-drag-and-drop-file-upload',
@@ -107,6 +116,7 @@ $package_spec = array(
     'javelin-behavior-aphront-drag-and-drop',
     'javelin-behavior-aphront-drag-and-drop-textarea',
     'javelin-behavior-phabricator-object-selector',
+    'javelin-behavior-repository-crossreference',
 
     'differential-inline-comment-editor',
     'javelin-behavior-differential-dropdown-menus',
@@ -114,18 +124,25 @@ $package_spec = array(
   ),
   'diffusion.pkg.css' => array(
     'diffusion-commit-view-css',
+    'diffusion-icons-css',
+  ),
+  'diffusion.pkg.js' => array(
+    'javelin-behavior-diffusion-pull-lastmodified',
+    'javelin-behavior-diffusion-commit-graph',
+    'javelin-behavior-audit-preview',
   ),
   'maniphest.pkg.css' => array(
     'maniphest-task-summary-css',
     'maniphest-transaction-detail-css',
-    'maniphest-task-detail-css',
     'aphront-attached-file-view-css',
+    'phabricator-project-tag-css',
   ),
   'maniphest.pkg.js' => array(
     'javelin-behavior-maniphest-batch-selector',
     'javelin-behavior-maniphest-transaction-controls',
     'javelin-behavior-maniphest-transaction-preview',
     'javelin-behavior-maniphest-transaction-expand',
+    'javelin-behavior-maniphest-subpriority-editor',
   ),
 );
 
@@ -145,7 +162,43 @@ phutil_require_module('phutil', 'parser/docblock');
 
 $root = Filesystem::resolvePath($argv[1]);
 
-echo "Finding static resources...\n";
+$resource_hash = PhabricatorEnv::getEnvConfig('celerity.resource-hash');
+$runtime_map = array();
+
+echo "Finding raw static resources...\n";
+$raw_files = id(new FileFinder($root))
+  ->withType('f')
+  ->withSuffix('png')
+  ->withSuffix('jpg')
+  ->withSuffix('gif')
+  ->withSuffix('swf')
+  ->withFollowSymlinks(true)
+  ->setGenerateChecksums(true)
+  ->find();
+
+echo "Processing ".count($raw_files)." files";
+foreach ($raw_files as $path => $hash) {
+  echo ".";
+  $path = '/'.Filesystem::readablePath($path, $root);
+  $type = CelerityResourceTransformer::getResourceType($path);
+
+  $hash = md5($hash.$path.$resource_hash);
+  $uri  = '/res/'.substr($hash, 0, 8).$path;
+
+  $runtime_map[$path] = array(
+    'hash' => $hash,
+    'uri'  => $uri,
+    'disk' => $path,
+    'type' => $type,
+  );
+}
+echo "\n";
+
+$xformer = id(new CelerityResourceTransformer())
+  ->setMinify(false)
+  ->setRawResourceMap($runtime_map);
+
+echo "Finding transformable static resources...\n";
 $files = id(new FileFinder($root))
   ->withType('f')
   ->withSuffix('js')
@@ -156,26 +209,31 @@ $files = id(new FileFinder($root))
 
 echo "Processing ".count($files)." files";
 
-$resource_hash = PhabricatorEnv::getEnvConfig('celerity.resource-hash');
-
 $file_map = array();
-foreach ($files as $path => $hash) {
+foreach ($files as $path => $raw_hash) {
   echo ".";
-  $name = '/'.Filesystem::readablePath($path, $root);
-  $file_map[$name] = array(
-    'hash' => md5($hash.$name.$resource_hash),
+  $path = '/'.Filesystem::readablePath($path, $root);
+  $data = Filesystem::readFile($root.$path);
+
+  $data = $xformer->transformResource($path, $data);
+  $hash = md5($data);
+  $hash = md5($hash.$path.$resource_hash);
+
+  $file_map[$path] = array(
+    'hash' => $hash,
     'disk' => $path,
   );
 }
 echo "\n";
 
-$runtime_map = array();
 $resource_graph = array();
 $hash_map = array();
 
 $parser = new PhutilDocblockParser();
 foreach ($file_map as $path => $info) {
-  $data = Filesystem::readFile($info['disk']);
+  $type = CelerityResourceTransformer::getResourceType($path);
+
+  $data = Filesystem::readFile($root.$info['disk']);
   $matches = array();
   $ok = preg_match('@/[*][*].*?[*]/@s', $data, $matches);
   if (!$ok) {
@@ -191,18 +249,17 @@ foreach ($file_map as $path => $info) {
   $provides = array_filter($provides);
   $requires = array_filter($requires);
 
+  if (!$provides) {
+    // Tests and documentation-only JS is permitted to @provide no targets.
+    continue;
+  }
+
   if (count($provides) > 1) {
-    // NOTE: Documentation-only JS is permitted to @provide no targets.
     throw new Exception(
       "File {$path} must @provide at most one Celerity target.");
   }
 
   $provides = reset($provides);
-
-  $type = 'js';
-  if (preg_match('/\.css$/', $path)) {
-    $type = 'css';
-  }
 
   $uri = '/res/'.substr($info['hash'], 0, 8).$path;
 
@@ -272,7 +329,7 @@ $runtime_map = var_export($runtime_map, true);
 $runtime_map = preg_replace('/\s+$/m', '', $runtime_map);
 $runtime_map = preg_replace('/array \(/', 'array(', $runtime_map);
 
-ksort($package_map['packages']);
+$package_map['packages'] = isort($package_map['packages'], 'name');
 ksort($package_map['reverse']);
 $package_map = var_export($package_map, true);
 $package_map = preg_replace('/\s+$/m', '', $package_map);

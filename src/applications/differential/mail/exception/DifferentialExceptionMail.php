@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class DifferentialExceptionMail extends DifferentialMail {
+final class DifferentialExceptionMail extends DifferentialMail {
 
   public function __construct(
     DifferentialRevision $revision,
@@ -34,6 +34,10 @@ class DifferentialExceptionMail extends DifferentialMail {
 
   protected function renderSubject() {
     return "Exception: unable to process your mail request.";
+  }
+
+  protected function renderVarySubject() {
+    return $this->renderSubject();
   }
 
   protected function buildBody() {

@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,8 @@
  * limitations under the License.
  */
 
-class PhabricatorFileDropUploadController extends PhabricatorFileController {
+final class PhabricatorFileDropUploadController
+  extends PhabricatorFileController {
 
   public function processRequest() {
     $request = $this->getRequest();
@@ -28,7 +29,7 @@ class PhabricatorFileDropUploadController extends PhabricatorFileController {
     $data = file_get_contents('php://input');
     $name = $request->getStr('name');
 
-    $file = PhabricatorFile::newFromFileData(
+    $file = PhabricatorFile::newFromXHRUpload(
       $data,
       array(
         'name' => $request->getStr('name'),

@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class PhabricatorRepositoryMercurialCommitChangeParserWorker
+final class PhabricatorRepositoryMercurialCommitChangeParserWorker
   extends PhabricatorRepositoryCommitChangeParserWorker {
 
   protected function parseCommit(
@@ -103,8 +103,9 @@ class PhabricatorRepositoryMercurialCommitChangeParserWorker
 
     $away = array();
     foreach ($changes as $path => $change) {
-      if ($path['targetPath']) {
-        $away[$path['targetPath']][] = $path;
+      $target_path = $change['targetPath'];
+      if ($target_path) {
+        $away[$target_path][] = $path;
       }
     }
 

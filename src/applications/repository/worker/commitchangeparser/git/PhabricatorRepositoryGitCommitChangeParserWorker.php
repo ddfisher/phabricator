@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class PhabricatorRepositoryGitCommitChangeParserWorker
+final class PhabricatorRepositoryGitCommitChangeParserWorker
   extends PhabricatorRepositoryCommitChangeParserWorker {
 
   protected function parseCommit(
@@ -30,12 +30,38 @@ class PhabricatorRepositoryGitCommitChangeParserWorker
       return;
     }
 
-    // NOTE: "--pretty=format: " is to disable log output, we only want the
-    // part we get from "--raw".
-    list($raw) = $repository->execxLocalCommand(
-      'log -n1 -M -C -B --find-copies-harder --raw -t '.
-        '--abbrev=40 --pretty=format: %s',
+    // Check if the commit has parents. We're testing to see whether it is the
+    // first commit in history (in which case we must use "git log") or some
+    // other commit (in which case we can use "git diff"). We'd rather use
+    // "git diff" because it has the right behavior for merge commits, but
+    // it requires the commit to have a parent that we can diff against. The
+    // first commit doesn't, so "commit^" is not a valid ref.
+    list($parents) = $repository->execxLocalCommand(
+      'log -n1 --format=%s %s',
+      '%P',
       $commit->getCommitIdentifier());
+
+    $use_log = !strlen(trim($parents));
+    if ($use_log) {
+      // This is the first commit so we need to use "log". We know it's not a
+      // merge commit because it couldn't be merging anything, so this is safe.
+
+      // NOTE: "--pretty=format: " is to disable diff output, we only want the
+      // part we get from "--raw".
+      list($raw) = $repository->execxLocalCommand(
+        'log -n1 -M -C -B --find-copies-harder --raw -t '.
+          '--pretty=format: --abbrev=40 %s',
+        $commit->getCommitIdentifier());
+    } else {
+      // Otherwise, we can use "diff", which will give us output for merges.
+      // We diff against the first parent, as this is generally the expectation
+      // and results in sensible behavior.
+      list($raw) = $repository->execxLocalCommand(
+        'diff -n1 -M -C -B --find-copies-harder --raw -t '.
+          '--abbrev=40 %s^1 %s',
+        $commit->getCommitIdentifier(),
+        $commit->getCommitIdentifier());
+    }
 
     $changes = array();
     $move_away = array();
@@ -47,7 +73,7 @@ class PhabricatorRepositoryGitCommitChangeParserWorker
       }
       list($old_mode, $new_mode,
            $old_hash, $new_hash,
-           $more_stuff) = preg_split('/ +/', $line);
+           $more_stuff) = preg_split('/ +/', $line, 5);
 
       // We may only have two pieces here.
       list($action, $src_path, $dst_path) = array_merge(
@@ -63,12 +89,21 @@ class PhabricatorRepositoryGitCommitChangeParserWorker
       $old_mode = intval($old_mode, 8);
       $new_mode = intval($new_mode, 8);
 
-      $file_type = DifferentialChangeType::FILE_NORMAL;
-      if ($new_mode & 040000) {
-        $file_type = DifferentialChangeType::FILE_DIRECTORY;
-      } else if ($new_mode & 0120000) {
-        $file_type = DifferentialChangeType::FILE_SYMLINK;
+      switch ($new_mode & 0160000) {
+        case 0160000:
+          $file_type = DifferentialChangeType::FILE_SUBMODULE;
+          break;
+        case 0120000:
+          $file_type = DifferentialChangeType::FILE_SYMLINK;
+          break;
+        case 0040000:
+          $file_type = DifferentialChangeType::FILE_DIRECTORY;
+          break;
+        default:
+          $file_type = DifferentialChangeType::FILE_NORMAL;
+          break;
       }
+
 
       // TODO: We can detect binary changes as git does, through a combination
       // of running 'git check-attr' for stuff like 'binary', 'merge' or 'diff',

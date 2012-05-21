@@ -19,7 +19,7 @@
 /**
  * @group phriction
  */
-class PhrictionDocumentController
+final class PhrictionDocumentController
   extends PhrictionController {
 
   private $slug;
@@ -33,7 +33,7 @@ class PhrictionDocumentController
     $request = $this->getRequest();
     $user = $request->getUser();
 
-    $slug = PhrictionDocument::normalizeSlug($this->slug);
+    $slug = PhabricatorSlug::normalize($this->slug);
     if ($slug != $this->slug) {
       $uri = PhrictionDocument::getSlugURI($slug);
       // Canonicalize pages to their one true URI.
@@ -50,21 +50,25 @@ class PhrictionDocumentController
     $version_note = null;
 
     if (!$document) {
-      $create_uri = '/phriction/edit/?slug='.$slug;
 
-      $page_content =
-        '<div class="phriction-content">'.
-          '<em>No content here!</em><br />'.
-          'No document found at <tt>'.phutil_escape_html($slug).'</tt>. '.
-          'You can <strong>'.
-          phutil_render_tag(
-            'a',
-            array(
-              'href' => $create_uri,
-            ),
-            'create a new document').'</strong>.'.
-        '</div>';
-      $page_title = 'Page Not Found';
+      if (PhrictionDocument::isProjectSlug($slug)) {
+        $project = id(new PhabricatorProject())->loadOneWhere(
+          'phrictionSlug = %s',
+          PhrictionDocument::getProjectSlugIdentifier($slug));
+        if (!$project) {
+          return new Aphront404Response();
+        }
+      }
+      $create_uri = '/phriction/edit/?slug='.$slug;
+      $create_sentence =
+        'You can <strong>'.
+        phutil_render_tag(
+          'a',
+          array(
+            'href' => $create_uri,
+          ),
+          'create a new document').
+          '</strong>.';
       $button = phutil_render_tag(
         'a',
         array(
@@ -72,6 +76,14 @@ class PhrictionDocumentController
           'class' => 'green button',
         ),
         'Create Page');
+
+      $page_content =
+        '<div class="phriction-content">'.
+          '<em>No content here!</em><br />'.
+          'No document found at <tt>'.phutil_escape_html($slug).'</tt>. '.
+          $create_sentence.
+        '</div>';
+      $page_title = 'Page Not Found';
       $buttons = $button;
     } else {
       $version = $request->getInt('v');
@@ -214,7 +226,7 @@ class PhrictionDocumentController
   private function renderBreadcrumbs($slug) {
 
     $ancestor_handles = array();
-    $ancestral_slugs = PhrictionDocument::getSlugAncestry($slug);
+    $ancestral_slugs = PhabricatorSlug::getAncestry($slug);
     $ancestral_slugs[] = $slug;
     if ($ancestral_slugs) {
       $empty_slugs = array_fill_keys($ancestral_slugs, null);
@@ -236,7 +248,7 @@ class PhrictionDocumentController
           $ancestor_handles[] = $handles[$ancestors[$slug]->getPHID()];
         } else {
           $handle = new PhabricatorObjectHandle();
-          $handle->setName(PhrictionDocument::getDefaultSlugTitle($slug));
+          $handle->setName(PhabricatorSlug::getDefaultTitle($slug));
           $handle->setURI(PhrictionDocument::getSlugURI($slug));
           $ancestor_handles[] = $handle;
         }
@@ -270,8 +282,8 @@ class PhrictionDocumentController
     $conn = $document_dao->establishConnection('r');
 
     $limit = 50;
-    $d_child = PhrictionDocument::getSlugDepth($slug) + 1;
-    $d_grandchild = PhrictionDocument::getSlugDepth($slug) + 2;
+    $d_child = PhabricatorSlug::getDepth($slug) + 1;
+    $d_grandchild = PhabricatorSlug::getDepth($slug) + 2;
 
     // Select children and grandchildren.
     $children = queryfx_all(
@@ -326,7 +338,7 @@ class PhrictionDocumentController
       } else {
         unset($children[$key]);
         if ($show_grandchildren) {
-          $ancestors = PhrictionDocument::getSlugAncestry($child['slug']);
+          $ancestors = PhabricatorSlug::getAncestry($child['slug']);
           $grandchildren[end($ancestors)][] = $child;
         }
       }
@@ -339,7 +351,7 @@ class PhrictionDocumentController
         $children[] = array(
           'slug'    => $slug,
           'depth'   => $d_child,
-          'title'   => PhrictionDocument::getDefaultSlugTitle($slug),
+          'title'   => PhabricatorSlug::getDefaultTitle($slug),
           'empty'   => true,
         );
       }

@@ -16,7 +16,8 @@
  * limitations under the License.
  */
 
-class PhabricatorEmailLoginController extends PhabricatorAuthController {
+final class PhabricatorEmailLoginController
+  extends PhabricatorAuthController {
 
   public function shouldRequireLogin() {
     return false;
@@ -56,9 +57,16 @@ class PhabricatorEmailLoginController extends PhabricatorAuthController {
         // it expensive to fish for valid email addresses while giving the user
         // a better error if they goof their email.
 
-        $target_user = id(new PhabricatorUser())->loadOneWhere(
-          'email = %s',
+        $target_email = id(new PhabricatorUserEmail())->loadOneWhere(
+          'address = %s',
           $email);
+
+        $target_user = null;
+        if ($target_email) {
+          $target_user = id(new PhabricatorUser())->loadOneWhere(
+            'phid = %s',
+            $target_email->getUserPHID());
+        }
 
         if (!$target_user) {
           $errors[] = "There is no account associated with that email address.";
@@ -66,7 +74,7 @@ class PhabricatorEmailLoginController extends PhabricatorAuthController {
         }
 
         if (!$errors) {
-          $uri = $target_user->getEmailLoginURI();
+          $uri = $target_user->getEmailLoginURI($target_email);
           if ($is_serious) {
             $body = <<<EOBODY
 You can use this link to reset your Phabricator password:

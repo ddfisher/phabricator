@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class PhabricatorPasteViewController extends PhabricatorPasteController {
+final class PhabricatorPasteViewController extends PhabricatorPasteController {
 
   private $id;
 
@@ -29,7 +29,11 @@ class PhabricatorPasteViewController extends PhabricatorPasteController {
     $request = $this->getRequest();
     $user = $request->getUser();
 
-    $paste = id(new PhabricatorPaste())->load($this->id);
+    $paste = id(new PhabricatorPasteQuery())
+      ->setViewer($user)
+      ->withPasteIDs(array($this->id))
+      ->executeOne();
+
     if (!$paste) {
       return new Aphront404Response();
     }
@@ -44,13 +48,13 @@ class PhabricatorPasteViewController extends PhabricatorPasteController {
     $corpus = $this->buildCorpus($paste, $file);
     $paste_panel = new AphrontPanelView();
 
+    $author_phid = $paste->getAuthorPHID();
+    $header = 'Viewing Paste '.$paste->getID().' by '.
+      PhabricatorObjectHandleData::loadOneHandle($author_phid)->renderLink();
     if (strlen($paste->getTitle())) {
-      $paste_panel->setHeader(
-        'Viewing Paste '.$paste->getID().' - '.
-        phutil_escape_html($paste->getTitle()));
-    } else {
-      $paste_panel->setHeader('Viewing Paste '.$paste->getID());
+      $header .= ' - '.phutil_escape_html($paste->getTitle());
     }
+    $paste_panel->setHeader($header);
 
     $paste_panel->setWidth(AphrontPanelView::WIDTH_FULL);
     $paste_panel->addButton(
@@ -142,7 +146,11 @@ class PhabricatorPasteViewController extends PhabricatorPasteController {
 
     $text_list = explode("\n", $source);
 
+    Javelin::initBehavior('phabricator-oncopy', array());
     $rows = $this->buildDisplayRows($text_list);
+
+    // TODO: Split the "one-up source listing" view into its own class and
+    // share it properly between Paste and Diffusion.
 
     $corpus_table = phutil_render_tag(
       'table',
@@ -178,8 +186,17 @@ class PhabricatorPasteViewController extends PhabricatorPasteController {
           'href' => '#'.$anchor,
         ),
         $n);
-      $rows[] = '<tr id="'.$anchor.'"><th>'.$link.'</th>'.
-        '<td style="white-space: pre-wrap;">'.$line.'</td></tr>';
+      $link = phutil_render_tag(
+        'th',
+        array(
+          'class' => 'diffusion-line-link',
+        ),
+        $link);
+      $rows[] = '<tr id="'.$anchor.'">'.$link.
+        '<td style="white-space: pre-wrap;">'.
+        // NOTE: See the 'phabricator-oncopy' behavior.
+        "\xE2\x80\x8B".
+        $line.'</td></tr>';
       ++$n;
     }
 

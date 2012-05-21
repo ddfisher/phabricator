@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class DifferentialCommentMail extends DifferentialMail {
+final class DifferentialCommentMail extends DifferentialMail {
 
   protected $changedByCommit;
 
@@ -35,6 +35,8 @@ class DifferentialCommentMail extends DifferentialMail {
     DifferentialComment $comment,
     array $changesets,
     array $inline_comments) {
+    assert_instances_of($changesets, 'DifferentialChangeset');
+    assert_instances_of($inline_comments, 'PhabricatorInlineCommentInterface');
 
     $this->setRevision($revision);
     $this->setActorHandle($actor);
@@ -53,14 +55,14 @@ class DifferentialCommentMail extends DifferentialMail {
       case DifferentialAction::ACTION_ADDCCS:
         $tags[] = MetaMTANotificationType::TYPE_DIFFERENTIAL_CC;
         break;
-      case DifferentialAction::ACTION_COMMIT:
-        $tags[] = MetaMTANotificationType::TYPE_DIFFERENTIAL_COMMITTED;
+      case DifferentialAction::ACTION_CLOSE:
+        $tags[] = MetaMTANotificationType::TYPE_DIFFERENTIAL_CLOSED;
         break;
     }
 
     if (strlen(trim($comment->getContent()))) {
       switch ($action) {
-        case DifferentialAction::ACTION_COMMIT:
+        case DifferentialAction::ACTION_CLOSE:
           // Commit comments are auto-generated and not especially interesting,
           // so don't tag them as having a comment.
           break;
@@ -73,13 +75,9 @@ class DifferentialCommentMail extends DifferentialMail {
     return $tags;
   }
 
-  protected function renderSubject() {
+  protected function renderVarySubject() {
     $verb = ucwords($this->getVerb());
-    $revision = $this->getRevision();
-    $title = $revision->getTitle();
-    $id = $revision->getID();
-    $subject = "[{$verb}] D{$id}: {$title}";
-    return $subject;
+    return "[{$verb}] ".$this->renderSubject();
   }
 
   protected function getVerb() {
@@ -181,7 +179,7 @@ class DifferentialCommentMail extends DifferentialMail {
       }
     }
 
-    if ($status == ArcanistDifferentialRevisionStatus::COMMITTED) {
+    if ($status == ArcanistDifferentialRevisionStatus::CLOSED) {
       $phids = $revision->loadCommitPHIDs();
       if ($phids) {
         $handles = id(new PhabricatorObjectHandleData($phids))->loadHandles();

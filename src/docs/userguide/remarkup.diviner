@@ -18,7 +18,7 @@ formatting text in Remarkup.
 
 These are inline styles, and can be applied to most text:
 
-  **bold** //italic// ##monospaced## `monospaced`
+  **bold** //italic// ##monospaced## `monospaced` ~~deleted~~
   D123 T123 rX123           # Link to Objects
   {D123} {T123}             # Link to Objects (Full Name)
   {F123}                    # Embed Images
@@ -47,9 +47,10 @@ Format **basic text styles** like this:
   //italic text//
   ##monospaced text##
   `monospaced text`
+  ~~deleted text~~
 
-Those produce **bold text**, //italic text//, ##monospaced text## and
-`monospaced text`, respectively.
+Those produce **bold text**, //italic text//, ##monospaced text##,
+`monospaced text` and ~~deleted text~~, respectively.
 
 = Layout =
 
@@ -265,7 +266,7 @@ You can also generate full-name references to some objects by using braces:
   {T123}        # Link to Maniphest task T123 with the full name
 
 These references will also show when an object changes state (for instance, a
-task is closed or a revision is committed).
+task or revision is closed).
 
 = Quoting Text =
 
@@ -295,10 +296,13 @@ You can set file display options like this:
 
 Valid options are:
 
-  - **layout** left (default), center, right, inline
+  - **layout** left (default), center, right, inline, link (render a link
+    instead of a thumbnail for images)
   - **float** If layout is set to left or right, the image will be floated so
     text wraps around it.
   - **size** thumb (default), full
+  - **name** with `layout=link` or for non-images, use this name for the link
+    text
 
 = Embedding Media =
 
@@ -318,8 +322,8 @@ enabling them.
 You can upload image macros (Files -> Image Macros) which will replace text
 strings with the image you specify. For instance, you could upload an image of a
 dancing banana to create a macro named "peanutbutterjellytime", and then any
-time you type that string it will be replaced with the image of a dancing
-banana.
+time you type that string on a separate line it will be replaced with the image
+of a dancing banana.
 
 = Mentioning Users =
 

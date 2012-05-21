@@ -16,11 +16,7 @@
  * limitations under the License.
  */
 
-class HeraldTestConsoleController extends HeraldController {
-
-  public function getFilter() {
-    return 'test';
-  }
+final class HeraldTestConsoleController extends HeraldController {
 
   public function processRequest() {
 
@@ -136,11 +132,16 @@ class HeraldTestConsoleController extends HeraldController {
     $panel->setWidth(AphrontPanelView::WIDTH_FULL);
     $panel->appendChild($form);
 
-    return $this->buildStandardPageResponse(
+    $nav = $this->renderNav();
+    $nav->selectFilter('test');
+    $nav->appendChild(
       array(
         $error_view,
         $panel,
-      ),
+      ));
+
+    return $this->buildStandardPageResponse(
+      $nav,
       array(
         'title' => 'Test Console',
         'tab' => 'test',

@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 
 final class DifferentialAction {
 
-  const ACTION_COMMIT         = 'commit';
+  const ACTION_CLOSE          = 'commit';
   const ACTION_COMMENT        = 'none';
   const ACTION_ACCEPT         = 'accept';
   const ACTION_REJECT         = 'reject';
@@ -33,6 +33,7 @@ final class DifferentialAction {
   const ACTION_CREATE         = 'create';
   const ACTION_ADDREVIEWERS   = 'add_reviewers';
   const ACTION_ADDCCS         = 'add_ccs';
+  const ACTION_CLAIM          = 'claim';
 
   public static function getActionPastTenseVerb($action) {
     static $verbs = array(
@@ -41,7 +42,7 @@ final class DifferentialAction {
       self::ACTION_REJECT         => 'requested changes to',
       self::ACTION_RETHINK        => 'planned changes to',
       self::ACTION_ABANDON        => 'abandoned',
-      self::ACTION_COMMIT         => 'committed',
+      self::ACTION_CLOSE          => 'closed',
       self::ACTION_REQUEST        => 'requested a review of',
       self::ACTION_RECLAIM        => 'reclaimed',
       self::ACTION_UPDATE         => 'updated',
@@ -51,6 +52,7 @@ final class DifferentialAction {
       self::ACTION_CREATE         => 'created',
       self::ACTION_ADDREVIEWERS   => 'added reviewers to',
       self::ACTION_ADDCCS         => 'added CCs to',
+      self::ACTION_CLAIM          => 'commandeered',
     );
 
     if (!empty($verbs[$action])) {
@@ -72,6 +74,8 @@ final class DifferentialAction {
       self::ACTION_RESIGN         => 'Resign as Reviewer',
       self::ACTION_ADDREVIEWERS   => 'Add Reviewers',
       self::ACTION_ADDCCS         => 'Add CCs',
+      self::ACTION_CLOSE          => 'Close Revision',
+      self::ACTION_CLAIM          => 'Commandeer Revision',
     );
 
     if (!empty($verbs[$action])) {

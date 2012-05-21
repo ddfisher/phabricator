@@ -33,6 +33,7 @@ abstract class DifferentialReviewRequestMail extends DifferentialMail {
     DifferentialRevision $revision,
     PhabricatorObjectHandle $actor,
     array $changesets) {
+    assert_instances_of($changesets, 'DifferentialChangeset');
 
     $this->setRevision($revision);
     $this->setActorHandle($actor);
@@ -55,9 +56,11 @@ abstract class DifferentialReviewRequestMail extends DifferentialMail {
         $body[] = null;
       }
 
-      $body[] = 'TEST PLAN';
-      $body[] = $this->formatText($revision->getTestPlan());
-      $body[] = null;
+      if ($revision->getTestPlan() != '') {
+        $body[] = 'TEST PLAN';
+        $body[] = $this->formatText($revision->getTestPlan());
+        $body[] = null;
+      }
     } else {
       if (strlen($this->getComments())) {
         $body[] = $this->formatText($this->getComments());
@@ -67,6 +70,17 @@ abstract class DifferentialReviewRequestMail extends DifferentialMail {
 
     $body[] = $this->renderRevisionDetailLink();
     $body[] = null;
+
+    $task_phids = $this->getManiphestTaskPHIDs();
+    if ($task_phids) {
+      $handles = id(new PhabricatorObjectHandleData($task_phids))
+        ->loadHandles();
+      $body[] = 'MANIPHEST TASKS';
+      foreach ($handles as $handle) {
+        $body[] = '  '.PhabricatorEnv::getProductionURI($handle->getURI());
+      }
+      $body[] = null;
+    }
 
     $changesets = $this->getChangesets();
     if ($changesets) {
@@ -95,7 +109,8 @@ abstract class DifferentialReviewRequestMail extends DifferentialMail {
 
     if (PhabricatorEnv::getEnvConfig('metamta.differential.attach-patches')) {
 
-      $revision_id = $this->getRevision()->getID();
+      $revision = $this->getRevision();
+      $revision_id = $revision->getID();
 
       $diffs = $revision->loadDiffs();
       $diff_number = count($diffs);
@@ -108,6 +123,16 @@ abstract class DifferentialReviewRequestMail extends DifferentialMail {
     }
 
     return $attachments;
+  }
+
+  public function loadFileByPHID($phid) {
+    $file = id(new PhabricatorFile())->loadOneWhere(
+      'phid = %s',
+      $phid);
+    if (!$file) {
+      return null;
+    }
+    return $file->loadFileData();
   }
 
   private function buildPatch() {
@@ -130,6 +155,8 @@ abstract class DifferentialReviewRequestMail extends DifferentialMail {
       $changes[] = ArcanistDiffChange::newFromDictionary($changedict);
     }
     $bundle = ArcanistBundle::newFromChanges($changes);
+
+    $bundle->setLoadFileDataCallback(array($this, 'loadFileByPHID'));
 
     $format = PhabricatorEnv::getEnvConfig('metamta.differential.patch-format');
     switch ($format) {

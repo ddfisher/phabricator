@@ -31,6 +31,7 @@ abstract class ManiphestAuxiliaryFieldSpecification {
 
   public function setLabel($val) {
     $this->label = $val;
+    return $this;
   }
 
   public function getLabel() {
@@ -39,6 +40,7 @@ abstract class ManiphestAuxiliaryFieldSpecification {
 
   public function setAuxiliaryKey($val) {
     $this->auxiliaryKey = $val;
+    return $this;
   }
 
   public function getAuxiliaryKey() {
@@ -47,6 +49,7 @@ abstract class ManiphestAuxiliaryFieldSpecification {
 
   public function setCaption($val) {
     $this->caption = $val;
+    return $this;
   }
 
   public function getCaption() {
@@ -55,6 +58,7 @@ abstract class ManiphestAuxiliaryFieldSpecification {
 
   public function setValue($val) {
     $this->value = $val;
+    return $this;
   }
 
   public function getValue() {
@@ -69,9 +73,9 @@ abstract class ManiphestAuxiliaryFieldSpecification {
     return false;
   }
 
-  public function setType($val)
-  {
+  public function setType($val) {
     $this->type = $val;
+    return $this;
   }
 
   public function getType() {
@@ -84,6 +88,20 @@ abstract class ManiphestAuxiliaryFieldSpecification {
 
   public function renderForDetailView() {
     return phutil_escape_html($this->getValue());
+  }
+
+
+  /**
+   * When the user creates a task, the UI prompts them to "Create another
+   * similar task". This copies some fields (e.g., Owner and CCs) but not other
+   * fields (e.g., description). If this custom field should also be copied,
+   * return true from this method.
+   *
+   * @return bool True to copy the default value from the template task when
+   *              creating a new similar task.
+   */
+  public function shouldCopyWhenCreatingSimilarTask() {
+    return false;
   }
 
 

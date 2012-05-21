@@ -32,27 +32,14 @@ class AphrontDefaultApplicationConfiguration
 
   public function getURIMap() {
     return $this->getResourceURIMapRules() + array(
-      '/(?:(?P<filter>jump)/)?' =>
+      '/(?:(?P<filter>(?:jump|apps))/)?' =>
         'PhabricatorDirectoryMainController',
       '/(?:(?P<filter>feed)/)' => array(
         'public/' => 'PhabricatorFeedPublicStreamController',
         '(?:(?P<subfilter>[^/]+)/)?' =>
           'PhabricatorDirectoryMainController',
       ),
-      '/directory/' => array(
-        '(?P<id>\d+)/'
-          => 'PhabricatorDirectoryCategoryViewController',
-        'edit/'
-          => 'PhabricatorDirectoryEditController',
-        'item/edit/(?:(?P<id>\d+)/)?'
-          => 'PhabricatorDirectoryItemEditController',
-        'item/delete/(?P<id>\d+)/'
-          => 'PhabricatorDirectoryItemDeleteController',
-        'category/edit/(?:(?P<id>\d+)/)?'
-          => 'PhabricatorDirectoryCategoryEditController',
-        'category/delete/(?P<id>\d+)/'
-          => 'PhabricatorDirectoryCategoryDeleteController',
-      ),
+      '/F(?P<id>\d+)' => 'PhabricatorFileShortcutController',
       '/file/' => array(
         '' => 'PhabricatorFileListController',
         'filter/(?P<filter>\w+)/' => 'PhabricatorFileListController',
@@ -89,7 +76,7 @@ class AphrontDefaultApplicationConfiguration
       '/p/(?P<username>\w+)/(?:(?P<page>\w+)/)?'
         => 'PhabricatorPeopleProfileController',
       '/conduit/' => array(
-        '' => 'PhabricatorConduitConsoleController',
+        '' => 'PhabricatorConduitListController',
         'method/(?P<method>[^/]+)/' => 'PhabricatorConduitConsoleController',
         'log/' => 'PhabricatorConduitLogController',
         'log/view/(?P<view>[^/]+)/' => 'PhabricatorConduitLogController',
@@ -146,6 +133,7 @@ class AphrontDefaultApplicationConfiguration
         'etoken/(?P<token>\w+)/' => 'PhabricatorEmailTokenController',
         'refresh/' => 'PhabricatorRefreshCSRFController',
         'validate/' => 'PhabricatorLoginValidateController',
+        'mustverify/' => 'PhabricatorMustVerifyEmailController',
       ),
 
       '/logout/' => 'PhabricatorLogoutController',
@@ -196,10 +184,8 @@ class AphrontDefaultApplicationConfiguration
         'task/' => array(
           'create/' => 'ManiphestTaskEditController',
           'edit/(?P<id>\d+)/' => 'ManiphestTaskEditController',
-          'descriptionchange/(?P<id>\d+)/' =>
+          'descriptionchange/(?:(?P<id>\d+)/)?' =>
             'ManiphestTaskDescriptionChangeController',
-          'descriptiondiff/' =>
-            'ManiphestTaskDescriptionDiffController',
           'descriptionpreview/' =>
             'ManiphestTaskDescriptionPreviewController',
         ),
@@ -208,6 +194,12 @@ class AphrontDefaultApplicationConfiguration
           'preview/(?P<id>\d+)/' => 'ManiphestTransactionPreviewController',
         ),
         'export/(?P<key>[^/]+)/' => 'ManiphestExportController',
+        'subpriority/' => 'ManiphestSubpriorityController',
+        'custom/' => array(
+          '' => 'ManiphestSavedQueryListController',
+          'edit/(?:(?P<id>\d+)/)?' => 'ManiphestSavedQueryEditController',
+          'delete/(?P<id>\d+)/'   => 'ManiphestSavedQueryDeleteController',
+        ),
       ),
 
       '/T(?P<id>\d+)' => 'ManiphestTaskDetailController',
@@ -249,31 +241,17 @@ class AphrontDefaultApplicationConfiguration
         '' => 'DiffusionHomeController',
         '(?P<callsign>[A-Z]+)/' => array(
           '' => 'DiffusionRepositoryController',
-          'repository/'.
-            '(?P<path>[^/]+)/'
-              => 'DiffusionRepositoryController',
-          'change/'.
-            '(?P<path>.*?)'.
-            '(?:[;](?P<commit>[a-z0-9]+))?'
-              => 'DiffusionChangeController',
-          'history/'.
-            '(?P<path>.*?)'.
-            '(?:[;](?P<commit>[a-z0-9]+))?'
-              => 'DiffusionHistoryController',
-          'browse/'.
-            '(?P<path>.*?)'.
-            '(?:[;](?P<commit>[a-z0-9]+))?'.
-            '(?:[$](?P<line>\d+(?:-\d+)?))?'
-              => 'DiffusionBrowseController',
-          'diff/'.
-            '(?P<path>.*?)'.
-            '(?:[;](?P<commit>[a-z0-9]+))?'
-              => 'DiffusionDiffController',
-          'lastmodified/'.
-            '(?P<path>.*?)'.
-            '(?:[;](?P<commit>[a-z0-9]+))?'
-              => 'DiffusionLastModifiedController',
+
+          'repository/(?P<dblob>.*)'    => 'DiffusionRepositoryController',
+          'change/(?P<dblob>.*)'        => 'DiffusionChangeController',
+          'history/(?P<dblob>.*)'       => 'DiffusionHistoryController',
+          'browse/(?P<dblob>.*)'        => 'DiffusionBrowseController',
+          'lastmodified/(?P<dblob>.*)'  => 'DiffusionLastModifiedController',
+          'diff/'                       => 'DiffusionDiffController',
+          'tags/(?P<dblob>.*)'          => 'DiffusionTagListController',
+          'branches/(?P<dblob>.*)'      => 'DiffusionBranchTableController',
         ),
+        'inline/(?P<phid>[^/]+)/' => 'DiffusionInlineCommentController',
         'services/' => array(
           'path/' => array(
             'complete/' => 'DiffusionPathCompleteController',
@@ -281,6 +259,7 @@ class AphrontDefaultApplicationConfiguration
           ),
         ),
         'symbol/(?P<name>[^/]+)/' => 'DiffusionSymbolController',
+        'external/' => 'DiffusionExternalController',
       ),
 
       '/daemon/' => array(
@@ -299,19 +278,14 @@ class AphrontDefaultApplicationConfiguration
 
       '/herald/' => array(
         '' => 'HeraldHomeController',
-        'view/(?P<view>[^/]+)/' => array(
-          '' => 'HeraldHomeController',
-          '(?P<global>global)/' => 'HeraldHomeController'
-        ),
-        'new/(?:(?P<type>[^/]+)/)?' => 'HeraldNewController',
+        'view/(?P<content_type>[^/]+)/(?:(?P<rule_type>[^/]+)/)?'
+          => 'HeraldHomeController',
+        'new/(?:(?P<type>[^/]+)/(?:(?P<rule_type>[^/]+)/)?)?'
+          => 'HeraldNewController',
         'rule/(?:(?P<id>\d+)/)?' => 'HeraldRuleController',
-        'history/(?P<id>\d+)/' => 'HeraldRuleEditHistoryController',
+        'history/(?:(?P<id>\d+)/)?' => 'HeraldRuleEditHistoryController',
         'delete/(?P<id>\d+)/' => 'HeraldDeleteController',
         'test/' => 'HeraldTestConsoleController',
-        'all/' => array(
-          '' => 'HeraldAllRulesController',
-          'view/(?P<view>[^/]+)/' => 'HeraldAllRulesController',
-        ),
         'transcript/' => 'HeraldTranscriptListController',
         'transcript/(?P<id>\d+)/(?:(?P<filter>\w+)/)?'
           => 'HeraldTranscriptController',
@@ -401,6 +375,28 @@ class AphrontDefaultApplicationConfiguration
         'diff/(?P<id>\d+)/' => 'PhrictionDiffController',
       ),
 
+      '/phame/' => array(
+        ''                          => 'PhamePostListController',
+        'post/' => array(
+          ''                        => 'PhamePostListController',
+          'delete/(?P<phid>[^/]+)/' => 'PhamePostDeleteController',
+          'edit/(?P<phid>[^/]+)/'   => 'PhamePostEditController',
+          'new/'                    => 'PhamePostEditController',
+          'preview/'                => 'PhamePostPreviewController',
+          'view/(?P<phid>[^/]+)/'   => 'PhamePostViewController',
+        ),
+        'draft/' => array(
+          ''                        => 'PhameDraftListController',
+          'new/'                    => 'PhamePostEditController',
+        ),
+        'posts/' => array(
+          ''                        => 'PhamePostListController',
+          '(?P<bloggername>\w+)/'   => 'PhamePostListController',
+          '(?P<bloggername>\w+)/(?P<phametitle>.+/)'
+                                    => 'PhamePostViewController',
+        ),
+      ),
+
       '/calendar/' => array(
         '' => 'PhabricatorCalendarBrowseController',
       ),
@@ -415,6 +411,7 @@ class AphrontDefaultApplicationConfiguration
           'edit/(?P<id>\d+)/' => 'DrydockhostEditController',
         ),
         'lease/' => 'DrydockLeaseListController',
+        'log/' => 'DrydockLogController',
       ),
 
       '/chatlog/' => array(
@@ -427,13 +424,31 @@ class AphrontDefaultApplicationConfiguration
       '/aphlict/' => 'PhabricatorAphlictTestPageController',
       '/notifications/' => 'PhabricatorNotificationsTestPageController',
       '/notifications/custom/' => 'PhabricatorCustomNotificationController',
+
+      '/flag/' => array(
+        '' => 'PhabricatorFlagListController',
+        'view/(?P<view>[^/]+)/' => 'PhabricatorFlagListController',
+        'edit/(?P<phid>[^/]+)/' => 'PhabricatorFlagEditController',
+        'delete/(?P<id>\d+)/' => 'PhabricatorFlagDeleteController',
+      ),
+
+      '/phortune/' => array(
+        'stripe/' => array(
+          'testpaymentform/' => 'PhortuneStripeTestPaymentFormController',
+        ),
+      ),
+
+      '/emailverify/(?P<code>[^/]+)/' =>
+        'PhabricatorEmailVerificationController',
     );
   }
 
   protected function getResourceURIMapRules() {
     return array(
       '/res/' => array(
-        '(?P<package>pkg/)?(?P<hash>[a-f0-9]{8})/(?P<path>.+\.(?:css|js))'
+        '(?P<package>pkg/)?'.
+        '(?P<hash>[a-f0-9]{8})/'.
+        '(?P<path>.+\.(?:css|js|jpg|png|swf|gif))'
           => 'CelerityResourceController',
       ),
     );
@@ -447,6 +462,79 @@ class AphrontDefaultApplicationConfiguration
   }
 
   public function handleException(Exception $ex) {
+    $request = $this->getRequest();
+
+    // For Conduit requests, return a Conduit response.
+    if ($request->isConduit()) {
+      $response = new ConduitAPIResponse();
+      $response->setErrorCode(get_class($ex));
+      $response->setErrorInfo($ex->getMessage());
+
+      return id(new AphrontJSONResponse())
+        ->setContent($response->toDictionary());
+    }
+
+    // For non-workflow requests, return a Ajax response.
+    if ($request->isAjax() && !$request->isJavelinWorkflow()) {
+      $response = new AphrontAjaxResponse();
+      $response->setError(
+        array(
+          'code' => get_class($ex),
+          'info' => $ex->getMessage(),
+        ));
+      return $response;
+    }
+
+    $is_serious = PhabricatorEnv::getEnvConfig('phabricator.serious-business');
+
+    $user = $request->getUser();
+    if (!$user) {
+      // If we hit an exception very early, we won't have a user.
+      $user = new PhabricatorUser();
+    }
+
+    if ($ex instanceof PhabricatorPolicyException) {
+      $content =
+        '<div class="aphront-policy-exception">'.
+          phutil_escape_html($ex->getMessage()).
+        '</div>';
+
+      $dialog = new AphrontDialogView();
+      $dialog
+        ->setTitle(
+            $is_serious
+              ? 'Access Denied'
+              : "You Shall Not Pass")
+        ->setClass('aphront-access-dialog')
+        ->setUser($user)
+        ->appendChild($content);
+
+      if ($this->getRequest()->isAjax()) {
+        $dialog->addCancelButton('/', 'Close');
+      } else {
+        $dialog->addCancelButton('/', $is_serious ? 'OK' : 'Away With Thee');
+      }
+
+      $response = new AphrontDialogResponse();
+      $response->setDialog($dialog);
+      return $response;
+    }
+
+    if ($ex instanceof AphrontUsageException) {
+      $error = new AphrontErrorView();
+      $error->setTitle(phutil_escape_html($ex->getTitle()));
+      $error->appendChild(phutil_escape_html($ex->getMessage()));
+
+      $view = new PhabricatorStandardPageView();
+      $view->setRequest($this->getRequest());
+      $view->appendChild($error);
+
+      $response = new AphrontWebpageResponse();
+      $response->setContent($view->render());
+
+      return $response;
+    }
+
 
     // Always log the unhandled exception.
     phlog($ex);
@@ -455,7 +543,7 @@ class AphrontDefaultApplicationConfiguration
     $message  = phutil_escape_html($ex->getMessage());
 
     if (PhabricatorEnv::getEnvConfig('phabricator.show-stack-traces')) {
-      $trace = $this->renderStackTrace($ex->getTrace());
+      $trace = $this->renderStackTrace($ex->getTrace(), $user);
     } else {
       $trace = null;
     }
@@ -465,12 +553,6 @@ class AphrontDefaultApplicationConfiguration
         '<div class="exception-message">'.$message.'</div>'.
         $trace.
       '</div>';
-
-    $user = $this->getRequest()->getUser();
-    if (!$user) {
-      // If we hit an exception very early, we won't have a user.
-      $user = new PhabricatorUser();
-    }
 
     $dialog = new AphrontDialogView();
     $dialog
@@ -534,20 +616,17 @@ class AphrontDefaultApplicationConfiguration
       ));
   }
 
-  private function renderStackTrace($trace) {
+  private function renderStackTrace($trace, PhabricatorUser $user) {
 
     $libraries = PhutilBootloader::getInstance()->getAllLibraries();
 
     // TODO: Make this configurable?
-    $host = 'https://secure.phabricator.com';
+    $path = 'https://secure.phabricator.com/diffusion/%s/browse/master/src/';
 
-    $browse = array(
-      'arcanist' =>
-        $host.'/diffusion/ARC/browse/origin:master/src/',
-      'phutil' =>
-        $host.'/diffusion/PHU/browse/origin:master/src/',
-      'phabricator' =>
-        $host.'/diffusion/P/browse/origin:master/src/',
+    $callsigns = array(
+      'arcanist' => 'ARC',
+      'phutil' => 'PHU',
+      'phabricator' => 'P',
     );
 
     $rows = array();
@@ -574,14 +653,25 @@ class AphrontDefaultApplicationConfiguration
       }
 
       if ($file) {
-        if (isset($browse[$lib])) {
+        if (isset($callsigns[$lib])) {
+          $attrs = array('title' => $file);
+          try {
+            $attrs['href'] = $user->loadEditorLink(
+              '/src/'.$relative,
+              $part['line'],
+              $callsigns[$lib]);
+          } catch (Exception $ex) {
+            // The database can be inaccessible.
+          }
+          if (empty($attrs['href'])) {
+            $attrs['href'] = sprintf($path, $callsigns[$lib]).
+              str_replace(DIRECTORY_SEPARATOR, '/', $relative).
+              '$'.$part['line'];
+            $attrs['target'] = '_blank';
+          }
           $file_name = phutil_render_tag(
             'a',
-            array(
-              'href' => $browse[$lib].$relative.'$'.$part['line'],
-              'title' => $file,
-              'target' => '_blank',
-            ),
+            $attrs,
             phutil_escape_html($relative));
         } else {
           $file_name = phutil_render_tag(

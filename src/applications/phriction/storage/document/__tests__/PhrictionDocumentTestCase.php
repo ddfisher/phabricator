@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,59 +19,7 @@
 /**
  * @group phriction
  */
-class PhrictionDocumentTestCase extends PhabricatorTestCase {
-
-  public function testSlugNormalization() {
-    $slugs = array(
-      ''                  => '/',
-      '/'                 => '/',
-      '//'                => '/',
-      '&&&'               => '/',
-      '/derp/'            => 'derp/',
-      'derp'              => 'derp/',
-      'derp//derp'        => 'derp/derp/',
-      'DERP//DERP'        => 'derp/derp/',
-      'a B c'             => 'a_b_c/',
-    );
-
-    foreach ($slugs as $slug => $normal) {
-      $this->assertEqual(
-        $normal,
-        PhrictionDocument::normalizeSlug($slug),
-        "Normalization of '{$slug}'");
-    }
-  }
-
-  public function testSlugAncestry() {
-    $slugs = array(
-      '/'                   => array(),
-      'pokemon/'            => array('/'),
-      'pokemon/squirtle/'   => array('/', 'pokemon/'),
-    );
-
-    foreach ($slugs as $slug => $ancestry) {
-      $this->assertEqual(
-        $ancestry,
-        PhrictionDocument::getSlugAncestry($slug),
-        "Ancestry of '{$slug}'");
-    }
-  }
-
-  public function testSlugDepth() {
-    $slugs = array(
-      '/'       => 0,
-      'a/'      => 1,
-      'a/b/'    => 2,
-      'a////b/' => 2,
-    );
-
-    foreach ($slugs as $slug => $depth) {
-      $this->assertEqual(
-        $depth,
-        PhrictionDocument::getSlugDepth($slug),
-        "Depth of '{$slug}'");
-    }
-  }
+final class PhrictionDocumentTestCase extends PhabricatorTestCase {
 
   public function testProjectSlugs() {
     $slugs = array(

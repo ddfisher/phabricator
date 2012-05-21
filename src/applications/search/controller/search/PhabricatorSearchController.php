@@ -19,7 +19,9 @@
 /**
  * @group search
  */
-class PhabricatorSearchController extends PhabricatorSearchBaseController {
+final class PhabricatorSearchController
+  extends PhabricatorSearchBaseController {
+
   private $key;
 
   public function willProcessRequest(array $data) {
@@ -42,7 +44,14 @@ class PhabricatorSearchController extends PhabricatorSearchBaseController {
 
       if ($request->isFormPost()) {
         $query_str = $request->getStr('query');
-        $response = PhabricatorJumpNavHandler::jumpPostResponse($query_str);
+
+        $pref_jump = PhabricatorUserPreferences::PREFERENCE_SEARCHBAR_JUMP;
+        if ($request->getStr('jump') != 'no' &&
+            $user && $user->loadPreferences()->getPreference($pref_jump, 1)) {
+          $response = PhabricatorJumpNavHandler::jumpPostResponse($query_str);
+        } else {
+          $response = null;
+        }
         if ($response) {
           return $response;
         } else {
@@ -104,16 +113,9 @@ class PhabricatorSearchController extends PhabricatorSearchBaseController {
       }
     }
 
-    $more = PhabricatorEnv::getEnvConfig('search.more-document-types', array());
-
     $options = array(
       '' => 'All Documents',
-      PhabricatorPHIDConstants::PHID_TYPE_DREV => 'Differential Revisions',
-      PhabricatorPHIDConstants::PHID_TYPE_CMIT => 'Repository Commits',
-      PhabricatorPHIDConstants::PHID_TYPE_TASK => 'Maniphest Tasks',
-      PhabricatorPHIDConstants::PHID_TYPE_WIKI => 'Phriction Documents',
-      PhabricatorPHIDConstants::PHID_TYPE_USER => 'Phabricator Users',
-    ) + $more;
+    ) + PhabricatorSearchAbstractDocument::getSupportedTypes();
 
     $status_options = array(
       0 => 'Open and Closed Documents',
@@ -148,6 +150,14 @@ class PhabricatorSearchController extends PhabricatorSearchBaseController {
     $search_form
       ->setUser($user)
       ->setAction('/search/')
+      ->appendChild(
+        phutil_render_tag(
+          'input',
+          array(
+            'type' => 'hidden',
+            'name' => 'jump',
+            'value' => 'no',
+          )))
       ->appendChild(
         id(new AphrontFormTextControl())
           ->setLabel('Search')
@@ -209,9 +219,42 @@ class PhabricatorSearchController extends PhabricatorSearchBaseController {
 
       $engine = PhabricatorSearchEngineSelector::newSelector()->newEngine();
       $results = $engine->executeSearch($query);
-      $results = ipull($results, 'phid');
-
       $results = $pager->sliceResults($results);
+
+      if (!$request->getInt('page')) {
+        $jump = null;
+        $query_str = $query->getQuery();
+        $match = null;
+        if (preg_match('/^r([A-Z]+)(\S*)$/', $query_str, $match)) {
+          $repository = id(new PhabricatorRepository())
+            ->loadOneWhere('callsign = %s', $match[1]);
+          if ($match[2] == '') {
+            $jump = $repository;
+          } else if ($repository) {
+            $jump = id(new PhabricatorRepositoryCommit())->loadOneWhere(
+              'repositoryID = %d AND commitIdentifier = %s',
+              $repository->getID(),
+              $match[2]);
+            if (!$jump) {
+              try {
+                $jump = id(new PhabricatorRepositoryCommit())->loadOneWhere(
+                  'repositoryID = %d AND commitIdentifier LIKE %>',
+                  $repository->getID(),
+                  $match[2]);
+              } catch (AphrontQueryCountException $ex) {
+                // Ambiguous, no jump.
+              }
+            }
+          }
+        } else if (preg_match('/^d(\d+)$/i', $query_str, $match)) {
+          $jump = id(new DifferentialRevision())->load($match[1]);
+        } else if (preg_match('/^t(\d+)$/i', $query_str, $match)) {
+          $jump = id(new ManiphestTask())->load($match[1]);
+        }
+        if ($jump) {
+          array_unshift($results, $jump->getPHID());
+        }
+      }
 
       if ($results) {
 
@@ -223,7 +266,7 @@ class PhabricatorSearchController extends PhabricatorSearchBaseController {
           $view = new PhabricatorSearchResultView();
           $view->setHandle($handle);
           $view->setQuery($query);
-          $view->setObject($objects[$phid]);
+          $view->setObject(idx($objects, $phid));
           $results[] = $view->render();
         }
         $results =

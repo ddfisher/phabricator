@@ -23,6 +23,8 @@ final class DifferentialInlineCommentEditView extends AphrontView {
   private $uri;
   private $title;
   private $onRight;
+  private $number;
+  private $length;
 
   public function addHiddenInput($key, $value) {
     $this->inputs[] = array($key, $value);
@@ -50,6 +52,16 @@ final class DifferentialInlineCommentEditView extends AphrontView {
     return $this;
   }
 
+  public function setNumber($number) {
+    $this->number = $number;
+    return $this;
+  }
+
+  public function setLength($length) {
+    $this->length = $length;
+    return $this;
+  }
+
   public function render() {
     if (!$this->uri) {
       throw new Exception("Call setSubmitURI() before render()!");
@@ -58,7 +70,7 @@ final class DifferentialInlineCommentEditView extends AphrontView {
       throw new Exception("Call setUser() before render()!");
     }
 
-    $content = '<th></th><td>'.phabricator_render_form(
+    $content = phabricator_render_form(
       $this->user,
       array(
         'action'    => $this->uri,
@@ -66,13 +78,12 @@ final class DifferentialInlineCommentEditView extends AphrontView {
         'sigil'     => 'inline-edit-form',
       ),
       $this->renderInputs().
-      $this->renderBody()).'</td>';
-    $other = '<th></th><td></td>';
+      $this->renderBody());
 
     if ($this->onRight) {
-      $core = $other.$content;
+      $core = '<th></th><td></td><th></th><td colspan="2">'.$content.'</td>';
     } else {
-      $core = $content.$other;
+      $core = '<th></th><td>'.$content.'</td><th></th><td colspan="2"></td>';
     }
 
     return '<table><tr class="inline-comment-splint">'.$core.'</tr></table>';
@@ -107,19 +118,27 @@ final class DifferentialInlineCommentEditView extends AphrontView {
       'Cancel');
 
     $buttons = implode('', $buttons);
-    return
-      '<div class="differential-inline-comment-edit">'.
-        '<div class="differential-inline-comment-edit-title">'.
-          phutil_escape_html($this->title).
-        '</div>'.
-        '<div class="differential-inline-comment-edit-body">'.
-          $this->renderChildren().
-        '</div>'.
-        '<div class="differential-inline-comment-edit-buttons">'.
-          $buttons.
-          '<div style="clear: both;"></div>'.
-        '</div>'.
-      '</div>';
+    return javelin_render_tag(
+      'div',
+      array(
+        'class' => 'differential-inline-comment-edit',
+        'sigil' => 'differential-inline-comment',
+        'meta' => array(
+          'on_right' => $this->onRight,
+          'number' => $this->number,
+          'length' => $this->length,
+        ),
+      ),
+      '<div class="differential-inline-comment-edit-title">'.
+        phutil_escape_html($this->title).
+      '</div>'.
+      '<div class="differential-inline-comment-edit-body">'.
+        $this->renderChildren().
+      '</div>'.
+      '<div class="differential-inline-comment-edit-buttons">'.
+        $buttons.
+        '<div style="clear: both;"></div>'.
+      '</div>');
   }
 
 }

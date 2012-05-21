@@ -79,10 +79,12 @@ Technical Documentation}.
 = Testing Storage Engines =
 
 You can test that things are correctly configured by going to the Files
-application (##/files/##) and uploading files.
+application (##/file/##) and uploading files.
 
 = Next Steps =
 
 Continue by:
 
+  - configuring file size upload limits with
+    @{article:Configuring File Upload Limits}; or
   - returning to the @{article:Configuration Guide}.

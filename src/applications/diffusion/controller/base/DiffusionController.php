@@ -21,8 +21,10 @@ abstract class DiffusionController extends PhabricatorController {
   protected $diffusionRequest;
 
   public function willProcessRequest(array $data) {
-    $this->diffusionRequest = DiffusionRequest::newFromAphrontRequestDictionary(
-      $data);
+    if (isset($data['callsign'])) {
+      $drequest = DiffusionRequest::newFromAphrontRequestDictionary($data);
+      $this->diffusionRequest = $drequest;
+    }
   }
 
   public function setDiffusionRequest(DiffusionRequest $request) {
@@ -31,6 +33,9 @@ abstract class DiffusionController extends PhabricatorController {
   }
 
   protected function getDiffusionRequest() {
+    if (!$this->diffusionRequest) {
+      throw new Exception("No Diffusion request object!");
+    }
     return $this->diffusionRequest;
   }
 
@@ -73,37 +78,34 @@ abstract class DiffusionController extends PhabricatorController {
     }
 
     $drequest = $this->getDiffusionRequest();
-    $repository = $drequest->getRepository();
-    $callsign = $repository->getCallsign();
 
-    $branch_uri = $drequest->getBranchURIComponent($drequest->getBranch());
-    $path_uri = $branch_uri.$drequest->getPath();
+    foreach ($navs as $action => $name) {
+      $href = $drequest->generateURI(
+        array(
+          'action' => $action,
+        ));
 
-    $commit_uri = null;
-    $raw_commit = $drequest->getRawCommit();
-    if ($raw_commit) {
-      $commit_uri = ';'.$drequest->getCommitURIComponent($raw_commit);
-    }
-
-    foreach ($navs as $uri => $name) {
       $nav->addNavItem(
         phutil_render_tag(
           'a',
           array(
-            'href'  => "/diffusion/{$callsign}/{$uri}/{$path_uri}{$commit_uri}",
+            'href'  => $href,
             'class' =>
-              ($uri == $selected
+              ($action == $selected
                 ? 'aphront-side-nav-selected'
                 : null),
           ),
           $name));
     }
+
+    // TODO: URI encoding might need to be sorted out for this link.
+
     $nav->addNavItem(
       phutil_render_tag(
         'a',
         array(
           'href'  => '/owners/view/search/'.
-            '?repository='.phutil_escape_uri($callsign).
+            '?repository='.phutil_escape_uri($drequest->getCallsign()).
             '&path='.phutil_escape_uri('/'.$drequest->getPath()),
         ),
         'Search Owners'));
@@ -158,11 +160,25 @@ abstract class DiffusionController extends PhabricatorController {
   }
 
   private function buildCrumbList(array $spec = array()) {
-    $drequest = $this->getDiffusionRequest();
+
+    $spec = $spec + array(
+      'commit'  => null,
+      'tags'    => null,
+      'branches'    => null,
+      'view'    => null,
+    );
 
     $crumb_list = array();
 
-    $repository = $drequest->getRepository();
+    // On the home page, we don't have a DiffusionRequest.
+    if ($this->diffusionRequest) {
+      $drequest = $this->getDiffusionRequest();
+      $repository = $drequest->getRepository();
+    } else {
+      $drequest = null;
+      $repository = null;
+    }
+
     if ($repository) {
       $crumb_list[] = phutil_render_tag(
         'a',
@@ -178,16 +194,17 @@ abstract class DiffusionController extends PhabricatorController {
     $callsign = $repository->getCallsign();
     $repository_name = phutil_escape_html($repository->getName()).' Repository';
 
-    if (empty($spec['commit'])) {
+    if (!$spec['commit'] && !$spec['tags'] && !$spec['branches']) {
       $branch_name = $drequest->getBranch();
       if ($branch_name) {
         $repository_name .= ' ('.phutil_escape_html($branch_name).')';
       }
     }
 
-    if (empty($spec['view']) && empty($spec['commit'])) {
-      $crumb_list[] = $repository_name;
-      return $crumb_list;
+    if (!$spec['view'] && !$spec['commit']
+      && !$spec['tags'] && !$spec['branches']) {
+        $crumb_list[] = $repository_name;
+        return $crumb_list;
     }
 
     $crumb_list[] = phutil_render_tag(
@@ -198,7 +215,31 @@ abstract class DiffusionController extends PhabricatorController {
       $repository_name);
 
     $raw_commit = $drequest->getRawCommit();
-    if (isset($spec['commit'])) {
+
+    if ($spec['tags']) {
+      if ($spec['commit']) {
+        $crumb_list[] = "Tags for ".phutil_render_tag(
+          'a',
+          array(
+            'href' => $drequest->generateURI(
+              array(
+                'action' => 'commit',
+                'commit' => $raw_commit,
+              )),
+          ),
+          phutil_escape_html("r{$callsign}{$raw_commit}"));
+      } else {
+        $crumb_list[] = 'Tags';
+      }
+      return $crumb_list;
+    }
+
+    if ($spec['branches']) {
+      $crumb_list[] = 'Branches';
+      return $crumb_list;
+    }
+
+    if ($spec['commit']) {
       $crumb_list[] = "r{$callsign}{$raw_commit}";
       return $crumb_list;
     }
@@ -231,14 +272,9 @@ abstract class DiffusionController extends PhabricatorController {
         return $crumb_list;
     }
 
-    $branch_uri = $drequest->getBranchURIComponent($drequest->getBranch());
-    $view_root_uri = "/diffusion/{$callsign}/{$view}/{$branch_uri}";
-    $jump_href = $view_root_uri;
-
-    $view_tail_uri = null;
-    if ($raw_commit) {
-      $view_tail_uri = ';'.$drequest->getCommitURIComponent($raw_commit);
-    }
+    $uri_params = array(
+      'action' => $view,
+    );
 
     if (!strlen($path)) {
       $crumb_list[] = $view_name;
@@ -247,7 +283,10 @@ abstract class DiffusionController extends PhabricatorController {
       $crumb_list[] = phutil_render_tag(
         'a',
         array(
-          'href' => $view_root_uri.$view_tail_uri,
+          'href' => $drequest->generateURI(
+            array(
+              'path' => '',
+            ) + $uri_params),
         ),
         $view_name);
 
@@ -263,15 +302,16 @@ abstract class DiffusionController extends PhabricatorController {
         $path_sections[] = phutil_render_tag(
           'a',
           array(
-            'href' => $view_root_uri.$thus_far.$view_tail_uri,
+            'href' => $drequest->generateURI(
+              array(
+                'path' => $thus_far,
+              ) + $uri_params),
           ),
           phutil_escape_html($path_part));
       }
 
       $path_sections[] = phutil_escape_html($last);
       $path_sections = '/'.implode('/', $path_sections);
-
-      $jump_href = $view_root_uri.$thus_far.$last;
 
       $crumb_list[] = $path_sections;
     }
@@ -282,7 +322,10 @@ abstract class DiffusionController extends PhabricatorController {
       $jump_link = phutil_render_tag(
         'a',
         array(
-          'href' => $jump_href,
+          'href' => $drequest->generateURI(
+            array(
+              'commit' => '',
+            ) + $uri_params),
         ),
         'Jump to HEAD');
       $last_crumb .= " @ {$commit_link} ({$jump_link})";

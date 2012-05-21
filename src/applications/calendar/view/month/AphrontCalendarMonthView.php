@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,22 @@ final class AphrontCalendarMonthView extends AphrontView {
   private $user;
   private $month;
   private $year;
+  private $holidays = array();
+  private $events   = array();
 
   public function setUser(PhabricatorUser $user) {
     $this->user = $user;
+    return $this;
+  }
+
+  public function addEvent(AphrontCalendarEventView $event) {
+    $this->events[] = $event;
+    return $this;
+  }
+
+  public function setHolidays(array $holidays) {
+    assert_instances_of($holidays, 'PhabricatorCalendarHoliday');
+    $this->holidays = mpull($holidays, null, 'getDay');
     return $this;
   }
 
@@ -37,6 +50,8 @@ final class AphrontCalendarMonthView extends AphrontView {
       throw new Exception("Call setUser() before render()!");
     }
 
+    $events = msort($this->events, 'getEpochStart');
+
     $days = $this->getDatesInMonth();
 
     require_celerity_resource('aphront-calendar-view-css');
@@ -46,14 +61,71 @@ final class AphrontCalendarMonthView extends AphrontView {
 
     $markup = array();
 
+    $empty_box =
+      '<div class="aphront-calendar-day aphront-calendar-empty">'.
+      '</div>';
+
     for ($ii = 0; $ii < $empty; $ii++) {
-      $markup[] = null;
+      $markup[] = $empty_box;
     }
 
+    $show_events = array();
+
     foreach ($days as $day) {
+      $holiday = idx($this->holidays, $day->format('Y-m-d'));
+      $class = 'aphront-calendar-day';
+      $weekday = $day->format('w');
+      if ($holiday || $weekday == 0 || $weekday == 6) {
+        $class .= ' aphront-calendar-not-work-day';
+      }
+
+      $day->setTime(0, 0, 0);
+      $epoch_start = $day->format('U');
+
+      $day->setTime(24, 0, 0);
+      $epoch_end = $day->format('U');
+
+      if ($weekday == 0) {
+        $show_events = array();
+      } else {
+        $show_events = array_fill_keys(
+          array_keys($show_events),
+          '<div class="aphront-calendar-event aphront-calendar-event-empty">'.
+            '&nbsp;'.
+          '</div>');
+      }
+
+      foreach ($events as $event) {
+        if ($event->getEpochStart() >= $epoch_end) {
+          // This list is sorted, so we can stop looking.
+          break;
+        }
+        if ($event->getEpochStart() < $epoch_end &&
+            $event->getEpochEnd() > $epoch_start) {
+          $show_events[$event->getUserPHID()] = $this->renderEvent(
+            $event,
+            $day,
+            $epoch_start,
+            $epoch_end);
+        }
+      }
+
+      $holiday_markup = null;
+      if ($holiday) {
+        $name = phutil_escape_html($holiday->getName());
+        $holiday_markup =
+          '<div class="aphront-calendar-holiday" title="'.$name.'">'.
+            $name.
+          '</div>';
+      }
+
       $markup[] =
-        '<div class="aphront-calendar-day-of-month">'.
-          $day->format('j').
+        '<div class="'.$class.'">'.
+          '<div class="aphront-calendar-date-number">'.
+            $day->format('j').
+          '</div>'.
+          $holiday_markup.
+          implode("\n", $show_events).
         '</div>';
     }
 
@@ -62,7 +134,7 @@ final class AphrontCalendarMonthView extends AphrontView {
     foreach ($rows as $row) {
       $table[] = '<tr>';
       while (count($row) < 7) {
-        $row[] = null;
+        $row[] = $empty_box;
       }
       foreach ($row as $cell) {
         $table[] = '<td>'.$cell.'</td>';
@@ -128,4 +200,61 @@ final class AphrontCalendarMonthView extends AphrontView {
 
     return $days;
   }
+
+  private function renderEvent(
+    AphrontCalendarEventView $event,
+    DateTime $day,
+    $epoch_start,
+    $epoch_end) {
+
+    $user = $this->user;
+
+    $event_start = $event->getEpochStart();
+    $event_end   = $event->getEpochEnd();
+
+    $classes = array();
+    $when = array();
+
+    $classes[] = 'aphront-calendar-event';
+    if ($event_start < $epoch_start) {
+      $classes[] = 'aphront-calendar-event-continues-before';
+      $when[] = 'Started '.phabricator_datetime($event_start, $user);
+    } else {
+      $when[] = 'Starts at '.phabricator_time($event_start, $user);
+    }
+
+    if ($event_end > $epoch_end) {
+      $classes[] = 'aphront-calendar-event-continues-after';
+      $when[] = 'Ends '.phabricator_datetime($event_end, $user);
+    } else {
+      $when[] = 'Ends at '.phabricator_time($event_end, $user);
+    }
+
+    Javelin::initBehavior('phabricator-tooltips');
+
+    $info = $event->getName();
+    if ($event->getDescription()) {
+      $info .= "\n\n".$event->getDescription();
+    }
+
+    $text_div = javelin_render_tag(
+      'div',
+      array(
+        'sigil' => 'has-tooltip',
+        'meta'  => array(
+          'tip'   => $info."\n\n".implode("\n", $when),
+          'size'  => 240,
+        ),
+        'class' => 'aphront-calendar-event-text',
+      ),
+      phutil_escape_html(phutil_utf8_shorten($event->getName(), 32)));
+
+    return javelin_render_tag(
+      'div',
+      array(
+        'class' => implode(' ', $classes),
+      ),
+      $text_div);
+  }
+
 }

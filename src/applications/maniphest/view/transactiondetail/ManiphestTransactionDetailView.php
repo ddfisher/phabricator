@@ -19,7 +19,7 @@
 /**
  * @group maniphest
  */
-class ManiphestTransactionDetailView extends ManiphestView {
+final class ManiphestTransactionDetailView extends ManiphestView {
 
   private $transactions;
   private $handles;
@@ -36,6 +36,7 @@ class ManiphestTransactionDetailView extends ManiphestView {
   private $auxiliaryFields;
 
   public function setAuxiliaryFields(array $fields) {
+    assert_instances_of($fields, 'ManiphestAuxiliaryFieldSpecification');
     $this->auxiliaryFields = mpull($fields, null, 'getAuxiliaryKey');
     return $this;
   }
@@ -45,11 +46,13 @@ class ManiphestTransactionDetailView extends ManiphestView {
   }
 
   public function setTransactionGroup(array $transactions) {
+    assert_instances_of($transactions, 'ManiphestTransaction');
     $this->transactions = $transactions;
     return $this;
   }
 
   public function setHandles(array $handles) {
+    assert_instances_of($handles, 'PhabricatorObjectHandle');
     $this->handles = $handles;
     return $this;
   }
@@ -266,9 +269,9 @@ class ManiphestTransactionDetailView extends ManiphestView {
           PhabricatorPHIDConstants::PHID_TYPE_FILE,
         );
 
-        foreach ($attach_types as $type) {
-          $old = array_keys(idx($old_raw, $type, array()));
-          $new = array_keys(idx($new_raw, $type, array()));
+        foreach ($attach_types as $attach_type) {
+          $old = array_keys(idx($old_raw, $attach_type, array()));
+          $new = array_keys(idx($new_raw, $attach_type, array()));
           if ($old != $new) {
             break;
           }
@@ -285,7 +288,7 @@ class ManiphestTransactionDetailView extends ManiphestView {
         }
         $links = implode("\n", $links);
 
-        switch ($type) {
+        switch ($attach_type) {
           case PhabricatorPHIDConstants::PHID_TYPE_DREV:
             $title = 'ATTACHED REVISIONS';
             break;
@@ -355,13 +358,14 @@ class ManiphestTransactionDetailView extends ManiphestView {
         }
         break;
       case ManiphestTransactionType::TYPE_CCS:
-        if ($this->preview) {
+        $added   = array_diff($new, $old);
+        $removed = array_diff($old, $new);
+        // can only add in preview so just show placeholder if nothing to add
+        if ($this->preview && empty($added)) {
           $verb = 'Changed CC';
           $desc = 'changed CCs..';
           break;
         }
-        $added = array_diff($new, $old);
-        $removed = array_diff($old, $new);
         if ($added && !$removed) {
           $verb = 'Added CC';
           if (count($added) == 1) {
@@ -383,13 +387,14 @@ class ManiphestTransactionDetailView extends ManiphestView {
         }
         break;
       case ManiphestTransactionType::TYPE_PROJECTS:
-        if ($this->preview) {
+        $added   = array_diff($new, $old);
+        $removed = array_diff($old, $new);
+        // can only add in preview so just show placeholder if nothing to add
+        if ($this->preview && empty($added)) {
           $verb = 'Changed Projects';
           $desc = 'changed projects..';
           break;
         }
-        $added = array_diff($new, $old);
-        $removed = array_diff($old, $new);
         if ($added && !$removed) {
           $verb = 'Added Project';
           if (count($added) == 1) {
@@ -469,9 +474,9 @@ class ManiphestTransactionDetailView extends ManiphestView {
         foreach (array(
           PhabricatorPHIDConstants::PHID_TYPE_DREV,
           PhabricatorPHIDConstants::PHID_TYPE_TASK,
-          PhabricatorPHIDConstants::PHID_TYPE_FILE) as $type) {
-          $old = array_keys(idx($old_raw, $type, array()));
-          $new = array_keys(idx($new_raw, $type, array()));
+          PhabricatorPHIDConstants::PHID_TYPE_FILE) as $attach_type) {
+          $old = array_keys(idx($old_raw, $attach_type, array()));
+          $new = array_keys(idx($new_raw, $attach_type, array()));
           if ($old != $new) {
             break;
           }
@@ -483,7 +488,7 @@ class ManiphestTransactionDetailView extends ManiphestView {
         $add_desc = $this->renderHandles($added);
         $rem_desc = $this->renderHandles($removed);
 
-        switch ($type) {
+        switch ($attach_type) {
           case PhabricatorPHIDConstants::PHID_TYPE_DREV:
             $singular = 'Differential Revision';
             $plural = 'Differential Revisions';

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class PhabricatorProject extends PhabricatorProjectDAO {
+final class PhabricatorProject extends PhabricatorProjectDAO {
 
   protected $name;
   protected $phid;
@@ -63,6 +63,7 @@ class PhabricatorProject extends PhabricatorProjectDAO {
   }
 
   public function attachAffiliations(array $affiliations) {
+    assert_instances_of($affiliations, 'PhabricatorProjectAffiliation');
     $this->affiliations = $affiliations;
     return $this;
   }
@@ -81,7 +82,7 @@ class PhabricatorProject extends PhabricatorProjectDAO {
     // 'hack_slash' instead of 'hack/slash').
 
     $slug = str_replace('/', ' ', $slug);
-    $slug = PhrictionDocument::normalizeSlug($slug);
+    $slug = PhabricatorSlug::normalize($slug);
     $this->phrictionSlug = $slug;
     return $this;
   }

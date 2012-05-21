@@ -19,7 +19,7 @@
 /**
  * @group phriction
  */
-class PhrictionEditController
+final class PhrictionEditController
   extends PhrictionController {
 
   private $id;
@@ -54,7 +54,7 @@ class PhrictionEditController
 
     } else {
       $slug = $request->getStr('slug');
-      $slug = PhrictionDocument::normalizeSlug($slug);
+      $slug = PhabricatorSlug::normalize($slug);
       if (!$slug) {
         return new Aphront404Response();
       }
@@ -66,13 +66,21 @@ class PhrictionEditController
       if ($document) {
         $content = id(new PhrictionContent())->load($document->getContentID());
       } else {
+        if (PhrictionDocument::isProjectSlug($slug)) {
+          $project = id(new PhabricatorProject())->loadOneWhere(
+            'phrictionSlug = %s',
+            PhrictionDocument::getProjectSlugIdentifier($slug));
+          if (!$project) {
+            return new Aphront404Response();
+          }
+        }
         $document = new PhrictionDocument();
         $document->setSlug($slug);
 
         $content  = new PhrictionContent();
         $content->setSlug($slug);
 
-        $default_title = PhrictionDocument::getDefaultSlugTitle($slug);
+        $default_title = PhabricatorSlug::getDefaultTitle($slug);
         $content->setTitle($default_title);
       }
     }

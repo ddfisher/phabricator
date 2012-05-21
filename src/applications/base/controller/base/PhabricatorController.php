@@ -30,6 +30,15 @@ abstract class PhabricatorController extends AphrontController {
     return true;
   }
 
+  public function shouldRequireEmailVerification() {
+    $config_key = 'auth.require-email-verification';
+
+    $need_verify = PhabricatorEnv::getEnvConfig($config_key);
+    $need_login = $this->shouldRequireLogin();
+
+    return ($need_login && $need_verify);
+  }
+
   final public function willBeginExecution() {
 
     $request = $this->getRequest();
@@ -50,13 +59,6 @@ abstract class PhabricatorController extends AphrontController {
         $phsid);
       if ($info) {
         $user->loadFromArray($info);
-      } else {
-        // The session cookie is invalid, so clear it.
-        $request->clearCookie('phusr');
-        $request->clearCookie('phsid');
-        throw new Exception(
-          "Your login session is invalid. Try logging in again. If that ".
-          "doesn't work, clear your browser cookies.");
       }
     }
 
@@ -74,6 +76,20 @@ abstract class PhabricatorController extends AphrontController {
           PhabricatorEnv::getEnvConfig('darkconsole.always-on')) {
         $console = new DarkConsoleCore();
         $request->getApplicationConfiguration()->setConsole($console);
+      }
+    }
+
+    if ($this->shouldRequireEmailVerification()) {
+      $email = $user->loadPrimaryEmail();
+      if (!$email) {
+        throw new Exception(
+          "No primary email address associated with this account!");
+      }
+      if (!$email->getIsVerified()) {
+        $verify_controller = newv(
+          'PhabricatorMustVerifyEmailController',
+          array($request));
+        return $this->delegateToController($verify_controller);
       }
     }
 

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class PhabricatorSetup {
+final class PhabricatorSetup {
 
   public static function runSetup() {
     header("Content-Type: text/plain");
@@ -75,9 +75,12 @@ class PhabricatorSetup {
         $open_arcanist = false;
       }
 
-      $open_urandom = @fopen('/dev/urandom', 'r');
-      if (!$open_urandom) {
-        self::write("Unable to open /dev/urandom!\n");
+      $open_urandom = false;
+      try {
+        Filesystem::readRandomBytes(1);
+        $open_urandom = true;
+      } catch (FilesystemException $ex) {
+        self::write($ex->getMessage()."\n");
       }
 
       try {
@@ -233,8 +236,8 @@ class PhabricatorSetup {
     // unreasonable and we don't need it from Apache, so do an explicit test
     // for CLI availability.
     list($err, $stdout, $stderr) = exec_manual(
-      '%s/scripts/setup/pcntl_available.php',
-      $root);
+      'php %s',
+      "{$root}/scripts/setup/pcntl_available.php");
     if ($err) {
       self::writeFailure();
       self::write("Unable to execute scripts/setup/pcntl_available.php to ".
@@ -452,7 +455,7 @@ class PhabricatorSetup {
 
     self::writeHeader("MySQL DATABASE & STORAGE CONFIGURATION");
 
-    $conf = DatabaseConfigurationProvider::getConfiguration();
+    $conf = PhabricatorEnv::newObjectFromConfig('mysql.configuration-provider');
     $conn_user = $conf->getUser();
     $conn_pass = $conf->getPassword();
     $conn_host = $conf->getHost();
@@ -461,8 +464,8 @@ class PhabricatorSetup {
     if ($timeout > 5) {
       self::writeNote(
         "Your MySQL connect timeout is very high ({$timeout} seconds). ".
-        "Consider reducing it by setting 'mysql.connect_timeout' in your ".
-        "php.ini.");
+        "Consider reducing it to 5 or below by setting ".
+        "'mysql.connect_timeout' in your php.ini.");
     }
 
     self::write(" okay  Trying to connect to MySQL database ".
@@ -470,12 +473,15 @@ class PhabricatorSetup {
 
     ini_set('mysql.connect_timeout', 2);
 
-    $conn_raw = new AphrontMySQLDatabaseConnection(
+    $conn_raw = PhabricatorEnv::newObjectFromConfig(
+      'mysql.implementation',
       array(
-        'user'      => $conn_user,
-        'pass'      => $conn_pass,
-        'host'      => $conn_host,
-        'database'  => null,
+        array(
+          'user'      => $conn_user,
+          'pass'      => $conn_pass,
+          'host'      => $conn_host,
+          'database'  => null,
+        ),
       ));
 
     try {
@@ -492,37 +498,33 @@ class PhabricatorSetup {
       return;
     }
 
+    $engines = queryfx_all($conn_raw, 'SHOW ENGINES');
+    $engines = ipull($engines, 'Support', 'Engine');
+
+    $innodb = idx($engines, 'InnoDB');
+    if ($innodb != 'YES' && $innodb != 'DEFAULT') {
+      self::writeFailure();
+      self::write(
+        "Setup failure! The 'InnoDB' engine is not available. Enable ".
+        "InnoDB in your MySQL configuration. If you already created tables, ".
+        "MySQL incorrectly used some other engine. You need to convert ".
+        "them or drop and reinitialize them.");
+      return;
+    } else {
+      self::write(" okay  InnoDB is available.\n");
+    }
+
     $databases = queryfx_all($conn_raw, 'SHOW DATABASES');
-    $databases = ipull($databases, 'Database');
-    $databases = array_fill_keys($databases, true);
+    $databases = ipull($databases, 'Database', 'Database');
     if (empty($databases['phabricator_meta_data'])) {
       self::writeFailure();
       self::write(
-        "Setup failure! You haven't loaded the 'initialize.sql' file into ".
-        "MySQL. This file initializes necessary databases. See this guide for ".
-        "instructions:\n");
+        "Setup failure! You haven't run 'bin/storage upgrade'. See this ".
+        "article for instructions:\n");
       self::writeDoc('article/Configuration_Guide.html');
       return;
     } else {
       self::write(" okay  Databases have been initialized.\n");
-    }
-
-    $schema_version = queryfx_one(
-      $conn_raw,
-      'SELECT version FROM phabricator_meta_data.schema_version');
-    $schema_version = idx($schema_version, 'version', 'null');
-
-    $expect = PhabricatorSQLPatchList::getExpectedSchemaVersion();
-    if ($schema_version != $expect) {
-      self::writeFailure();
-      self::write(
-        "Setup failure! You haven't upgraded your database schema to the ".
-        "latest version. Expected version is '{$expect}', but your local ".
-        "version is '{$schema_version}'. See this guide for instructions:\n");
-      self::writeDoc('article/Upgrading_Schema.html');
-      return;
-    } else {
-      self::write(" okay  Database schema are up to date (v{$expect}).\n");
     }
 
     $index_min_length = queryfx_one(
@@ -734,6 +736,29 @@ class PhabricatorSetup {
       self::write("[OKAY] Mail configuration OKAY\n");
     }
 
+    self::writeHeader('CONFIG CLASSES');
+    foreach (PhabricatorEnv::getRequiredClasses() as $key => $instanceof) {
+      $config = PhabricatorEnv::getEnvConfig($key);
+      if (!$config) {
+        self::writeNote("'$key' is not set.");
+      } else {
+        try {
+          $r = new ReflectionClass($config);
+          if (!$r->isSubclassOf($instanceof)) {
+            throw new Exception(
+              "Config setting '$key' must be an instance of '$instanceof'.");
+          } else if (!$r->isInstantiable()) {
+            throw new Exception("Config setting '$key' must be instantiable.");
+          }
+        } catch (Exception $ex) {
+          self::writeFailure();
+          self::write("Setup failure! ".$ex->getMessage());
+          return;
+        }
+      }
+    }
+    self::write("[OKAY] Config classes OKAY\n");
+
     self::writeHeader('SUCCESS!');
     self::write(
       "Congratulations! Your setup seems mostly correct, or at least fairly ".
@@ -786,7 +811,7 @@ class PhabricatorSetup {
   public static function writeDoc($doc) {
     self::write(
       "\n".
-      '    http://phabricator.com/docs/phabricator/'.$doc.
+      '    http://www.phabricator.com/docs/phabricator/'.$doc.
       "\n\n");
   }
 

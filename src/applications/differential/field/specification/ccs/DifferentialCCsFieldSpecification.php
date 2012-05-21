@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,17 +34,7 @@ final class DifferentialCCsFieldSpecification
   }
 
   public function renderValueForRevisionView() {
-    $cc_phids = $this->getCCPHIDs();
-    if (!$cc_phids) {
-      return '<em>None</em>';
-    }
-
-    $links = array();
-    foreach ($cc_phids as $cc_phid) {
-      $links[] = $this->getHandle($cc_phid)->renderLink();
-    }
-
-    return implode(', ', $links);
+    return $this->renderUserList($this->getCCPHIDs());
   }
 
   private function getCCPHIDs() {
@@ -81,6 +71,7 @@ final class DifferentialCCsFieldSpecification
     return id(new AphrontFormTokenizerControl())
       ->setLabel('CC')
       ->setName('cc')
+      ->setUser($this->getUser())
       ->setDatasource('/typeahead/common/mailable/')
       ->setValue($cc_map);
   }
@@ -113,7 +104,10 @@ final class DifferentialCCsFieldSpecification
 
     $names = array();
     foreach ($this->ccs as $phid) {
-      $names[] = $this->getHandle($phid)->getName();
+      $handle = $this->getHandle($phid);
+      if ($handle->isComplete()) {
+        $names[] = $handle->getName();
+      }
     }
     return implode(', ', $names);
   }

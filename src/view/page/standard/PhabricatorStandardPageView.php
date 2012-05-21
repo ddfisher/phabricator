@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class PhabricatorStandardPageView extends AphrontPageView {
+final class PhabricatorStandardPageView extends AphrontPageView {
 
   private $baseURI;
   private $applicationName;
@@ -161,10 +161,18 @@ class PhabricatorStandardPageView extends AphrontPageView {
         'header'    => AphrontRequest::getCSRFHeaderName(),
         'current'   => $current_token,
       ));
+
+    $pref_shortcut = PhabricatorUserPreferences::PREFERENCE_SEARCH_SHORTCUT;
+    if ($user) {
+      $shortcut = $user->loadPreferences()->getPreference($pref_shortcut, 1);
+    } else {
+      $shortcut = 1;
+    }
     Javelin::initBehavior(
       'phabricator-keyboard-shortcuts',
       array(
         'helpURI' => '/help/keyboardshortcut/',
+        'search_shortcut' => $shortcut,
       ));
 
     if ($console) {
@@ -380,6 +388,19 @@ class PhabricatorStandardPageView extends AphrontPageView {
     $notification_indicator = '-';
 
     // --------------------                                  --------------------
+    $custom_logo = null;
+    $with_custom = null;
+    $custom_conf = PhabricatorEnv::getEnvConfig('phabricator.custom.logo');
+    if ($custom_conf) {
+      $with_custom = 'phabricator-logo-with-custom';
+      $custom_logo = phutil_render_tag(
+        'a',
+        array(
+          'class' => 'logo-custom',
+          'href' => $custom_conf,
+        ),
+        ' ');
+    }
 
     $header_chrome = null;
     $footer_chrome = null;
@@ -387,7 +408,10 @@ class PhabricatorStandardPageView extends AphrontPageView {
       $header_chrome =
         '<table class="phabricator-standard-header">'.
           '<tr>'.
-            '<td class="phabricator-logo"><a href="/"> </a></td>'.
+            '<td class="phabricator-logo '.$with_custom.'">'.
+              $custom_logo.
+              '<a class="logo-standard" href="/"> </a>'.
+            '</td>'.
             '<td>'.
               '<table class="phabricator-primary-navigation">'.
                 '<tr>'.

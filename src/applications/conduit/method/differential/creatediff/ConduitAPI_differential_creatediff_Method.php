@@ -19,7 +19,7 @@
 /**
  * @group conduit
  */
-class ConduitAPI_differential_creatediff_Method extends ConduitAPIMethod {
+final class ConduitAPI_differential_creatediff_Method extends ConduitAPIMethod {
 
   public function getMethodDescription() {
     return "Create a new Differential diff.";
@@ -76,7 +76,7 @@ class ConduitAPI_differential_creatediff_Method extends ConduitAPIMethod {
       $parent_rev = id(new DifferentialRevision())->load($parent_id);
       if ($parent_rev) {
         if ($parent_rev->getStatus() !=
-            ArcanistDifferentialRevisionStatus::COMMITTED) {
+            ArcanistDifferentialRevisionStatus::CLOSED) {
           $diff->setParentRevisionID($parent_id);
         }
       }

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class DifferentialDiffViewController extends DifferentialController {
+final class DifferentialDiffViewController extends DifferentialController {
 
   private $id;
 
@@ -105,7 +105,8 @@ class DifferentialDiffViewController extends DifferentialController {
     $changesets = msort($changesets, 'getSortKey');
 
     $table_of_contents = id(new DifferentialDiffTableOfContentsView())
-      ->setChangesets($changesets);
+      ->setChangesets($changesets)
+      ->setVisibleChangesets($changesets);
 
     $refs = array();
     foreach ($changesets as $changeset) {
@@ -114,7 +115,9 @@ class DifferentialDiffViewController extends DifferentialController {
 
     $details = id(new DifferentialChangesetListView())
       ->setChangesets($changesets)
+      ->setVisibleChangesets($changesets)
       ->setRenderingReferences($refs)
+      ->setStandaloneURI('/differential/changeset/')
       ->setUser($request->getUser());
 
 

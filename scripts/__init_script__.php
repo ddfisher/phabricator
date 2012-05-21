@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,10 @@ error_reporting(E_ALL | E_STRICT);
 ini_set('display_errors', 1);
 
 $include_path = ini_get('include_path');
-ini_set('include_path', $include_path.':'.dirname(__FILE__).'/../../');
-@include_once 'libphutil/src/__phutil_library_init__.php';
+ini_set(
+  'include_path',
+  $include_path.PATH_SEPARATOR.dirname(__FILE__).'/../../');
+@include_once 'libphutil/scripts/__init_script__.php';
 if (!@constant('__LIBPHUTIL__')) {
   echo "ERROR: Unable to load libphutil. Update your PHP 'include_path' to ".
        "include the parent directory of libphutil/.\n";
@@ -34,16 +36,23 @@ phutil_load_library(dirname(__FILE__).'/../src/');
 // are not vulnerable to CSRF.
 AphrontWriteGuard::allowDangerousUnguardedWrites(true);
 
-$include_path = ini_get('include_path');
-ini_set('include_path', $include_path.':'.dirname(__FILE__).'/../../');
-
 require_once dirname(dirname(__FILE__)).'/conf/__init_conf__.php';
 
 $env = isset($_SERVER['PHABRICATOR_ENV'])
   ? $_SERVER['PHABRICATOR_ENV']
   : getenv('PHABRICATOR_ENV');
 if (!$env) {
-  echo "Define PHABRICATOR_ENV before running this script.\n";
+  phutil_require_module('phutil', 'console');
+  echo phutil_console_wrap(
+    phutil_console_format(
+      "**ERROR**: PHABRICATOR_ENV Not Set\n\n".
+      "Define the __PHABRICATOR_ENV__ environment variable before running ".
+      "this script. You can do it on the command line like this:\n\n".
+      "  $ PHABRICATOR_ENV=__custom/myconfig__ %s ...\n\n".
+      "Replace __custom/myconfig__ with the path to your configuration file. ".
+      "For more information, see the 'Configuration Guide' in the ".
+      "Phabricator documentation.\n\n",
+      $argv[0]));
   exit(1);
 }
 

@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,24 +16,112 @@
  * limitations under the License.
  */
 
-
+/**
+ * @task edges  Managing Edges
+ * @task config Configuring Storage
+ */
 abstract class PhabricatorLiskDAO extends LiskDAO {
 
-  public function establishLiveConnection($mode) {
-    $conf_provider = PhabricatorEnv::getEnvConfig(
-      'mysql.configuration_provider', 'DatabaseConfigurationProvider');
-    PhutilSymbolLoader::loadClass($conf_provider);
-    $conf = newv($conf_provider, array($this, $mode));
+  private $edges = array();
+  private static $namespaceStack = array();
 
-    return new AphrontMySQLDatabaseConnection(
+
+/* -(  Managing Edges  )----------------------------------------------------- */
+
+
+  /**
+   * @task edges
+   */
+  public function attachEdges(array $edges) {
+    foreach ($edges as $type => $type_edges) {
+      $this->edges[$type] = $type_edges;
+    }
+    return $this;
+  }
+
+
+  /**
+   * @task edges
+   */
+  public function getEdges($type) {
+    $edges = idx($this->edges, $type);
+    if ($edges === null) {
+      throw new Exception("Call attachEdges() before getEdges()!");
+    }
+    return $edges;
+  }
+
+
+  /**
+   * @task edges
+   */
+  public function getEdgePHIDs($type) {
+    return ipull($this->getEdges($type), 'dst');
+  }
+
+
+/* -(  Configuring Storage  )------------------------------------------------ */
+
+  /**
+   * @task config
+   */
+  public static function pushStorageNamespace($namespace) {
+    self::$namespaceStack[] = $namespace;
+  }
+
+  /**
+   * @task config
+   */
+  public static function popStorageNamespace() {
+    array_pop(self::$namespaceStack);
+  }
+
+  /**
+   * @task config
+   */
+  public static function getDefaultStorageNamespace() {
+    return PhabricatorEnv::getEnvConfig('storage.default-namespace');
+  }
+
+  /**
+   * @task config
+   */
+  public static function getStorageNamespace() {
+    $namespace = end(self::$namespaceStack);
+    if (!strlen($namespace)) {
+      $namespace = self::getDefaultStorageNamespace();
+    }
+    if (!strlen($namespace)) {
+      throw new Exception("No storage namespace configured!");
+    }
+    return $namespace;
+  }
+
+  /**
+   * @task config
+   */
+  public function establishLiveConnection($mode) {
+    $namespace = self::getStorageNamespace();
+
+    $conf = PhabricatorEnv::newObjectFromConfig(
+      'mysql.configuration-provider',
+      array($this, $mode, $namespace));
+
+    return PhabricatorEnv::newObjectFromConfig(
+      'mysql.implementation',
       array(
-        'user'      => $conf->getUser(),
-        'pass'      => $conf->getPassword(),
-        'host'      => $conf->getHost(),
-        'database'  => $conf->getDatabase(),
+        array(
+          'user'      => $conf->getUser(),
+          'pass'      => $conf->getPassword(),
+          'host'      => $conf->getHost(),
+          'database'  => $conf->getDatabase(),
+        ),
       ));
   }
 
+  /**
+   * @task config
+   */
   public function getTableName() {
     $str = 'phabricator';
     $len = strlen($str);
@@ -54,5 +142,12 @@ abstract class PhabricatorLiskDAO extends LiskDAO {
     }
   }
 
+  /**
+   * @task config
+   */
   abstract public function getApplicationName();
+
+  protected function getConnectionNamespace() {
+    return self::getStorageNamespace().'_'.$this->getApplicationName();
+  }
 }

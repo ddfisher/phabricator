@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,43 +16,35 @@
  * limitations under the License.
  */
 
-// TODO: This has some minor code duplication vs the Git request that could be
-// shared.
-class DiffusionMercurialRequest extends DiffusionRequest {
+/**
+ * @group diffusion
+ */
+final class DiffusionMercurialRequest extends DiffusionRequest {
 
-  protected function initializeFromAphrontRequestDictionary(array $data) {
-    parent::initializeFromAphrontRequestDictionary($data);
+  protected function getSupportsBranches() {
+    return true;
+  }
 
-    $path = $this->path;
-    $parts = explode('/', $path);
+  protected function didInitialize() {
+    $repository = $this->getRepository();
 
-    $branch = array_shift($parts);
-    if ($branch != ':') {
-      $this->branch = $this->decodeBranchName($branch);
+    if (!Filesystem::pathExists($repository->getLocalPath())) {
+      $this->raiseCloneException();
     }
 
-    foreach ($parts as $key => $part) {
-      if ($part == '..') {
-        unset($parts[$key]);
-      }
-    }
-
-    $this->path = implode('/', $parts);
+    return;
   }
 
   public function getBranch() {
     if ($this->branch) {
       return $this->branch;
     }
-    if ($this->repository) {
-      return $this->repository->getDetail('default-branch', 'default');
-    }
-    throw new Exception("Unable to determine branch!");
-  }
 
-  public function getUriPath() {
-    return '/diffusion/'.$this->getCallsign().'/browse/'.
-      $this->getBranchURIComponent($this->branch).$this->path;
+    if ($this->repository) {
+      return $this->repository->getDefaultBranch();
+    }
+
+    throw new Exception("Unable to determine branch!");
   }
 
   public function getCommit() {
@@ -63,19 +55,17 @@ class DiffusionMercurialRequest extends DiffusionRequest {
   }
 
   public function getStableCommitName() {
-    return substr($this->stableCommitName, 0, 16);
-  }
-
-  public function getBranchURIComponent($branch) {
-    return $this->encodeBranchName($branch).'/';
-  }
-
-  private function decodeBranchName($branch) {
-    return str_replace(':', '/', $branch);
-  }
-
-  private function encodeBranchName($branch) {
-    return str_replace('/', ':', $branch);
+    if (!$this->stableCommitName) {
+      if ($this->commit) {
+        $this->stableCommitName = $this->commit;
+      } else {
+        list($this->stableCommitName) = $this->repository->execxLocalCommand(
+          'log --template=%s --rev %s',
+          '{node}',
+          $this->getBranch());
+      }
+    }
+    return $this->stableCommitName;
   }
 
 }

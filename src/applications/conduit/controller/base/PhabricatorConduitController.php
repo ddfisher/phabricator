@@ -45,24 +45,25 @@ abstract class PhabricatorConduitController extends PhabricatorController {
 
       $nav = new AphrontSideNavFilterView();
       $nav->setBaseURI(new PhutilURI('/conduit/'));
-      $first_filter = null;
       $method_filters = $this->getMethodFilters();
       foreach ($method_filters as $group => $methods) {
         $nav->addLabel($group);
         foreach ($methods as $method) {
           $method_name = $method['full_name'];
-          $nav->addFilter('method/'.$method_name,
-            $method_name);
-          if (!$first_filter) {
-            $first_filter = 'method/'.$method_name;
+
+          $display_name = $method_name;
+          switch ($method['status']) {
+            case ConduitAPIMethod::METHOD_STATUS_DEPRECATED:
+              $display_name = '('.$display_name.')';
+              break;
           }
+
+          $nav->addFilter('method/'.$method_name,
+            $display_name);
         }
         $nav->addSpacer();
       }
-      $nav->addLabel('Utilities');
-      $nav->addFilter('log', 'Logs');
-      $nav->addFilter('token', 'Token');
-      $nav->selectFilter($this->getFilter(), $first_filter);
+      $nav->selectFilter($this->getFilter());
       $nav->appendChild($view);
       $body = $nav;
     } else {
@@ -73,7 +74,6 @@ abstract class PhabricatorConduitController extends PhabricatorController {
     $response = new AphrontWebpageResponse();
     return $response->setContent($page->render());
   }
-
 
   private function getFilter() {
     return $this->filter;
@@ -103,23 +103,44 @@ abstract class PhabricatorConduitController extends PhabricatorController {
     return array_values(ipull($classes, 'name'));
   }
 
-
-  private function getMethodFilters() {
+  protected function getMethodFilters() {
     $classes = $this->getAllMethodImplementationClasses();
     $method_names = array();
     foreach ($classes as $method_class) {
       $method_name = ConduitAPIMethod::getAPIMethodNameFromClassName(
         $method_class);
-      $parts = explode('.', $method_name);
-      $method_names[] = array(
+      $group_name = head(explode('.', $method_name));
+
+      $method_object = newv($method_class, array());
+      $status = $method_object->getMethodStatus();
+
+      $key = sprintf(
+        '%02d %s %s',
+        $this->getOrderForMethodStatus($status),
+        $group_name,
+        $method_name);
+
+      $method_names[$key] = array(
         'full_name'   => $method_name,
-        'group_name'  => reset($parts),
+        'group_name'  => $group_name,
+        'status'      => $status,
+        'description' => $method_object->getMethodDescription(),
       );
     }
+    ksort($method_names);
     $method_names = igroup($method_names, 'group_name');
     ksort($method_names);
 
     return $method_names;
+  }
+
+  private function getOrderForMethodStatus($status) {
+    $map = array(
+      ConduitAPIMethod::METHOD_STATUS_STABLE      => 0,
+      ConduitAPIMethod::METHOD_STATUS_UNSTABLE    => 1,
+      ConduitAPIMethod::METHOD_STATUS_DEPRECATED  => 2,
+    );
+    return idx($map, $status, 0);
   }
 
 }

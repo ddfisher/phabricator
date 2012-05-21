@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ abstract class AphrontApplicationConfiguration {
 
   final public function setConsole($console) {
     $this->console = $console;
+    return $this;
   }
 
   final public function buildController() {
@@ -61,8 +62,12 @@ abstract class AphrontApplicationConfiguration {
         // If we failed to match anything but don't have a trailing slash, try
         // to add a trailing slash and issue a redirect if that resolves.
         list($controller_class, $uri_data) = $mapper->mapPath($path.'/');
-        if ($controller_class) {
-          return $this->buildRedirectController($path.'/');
+
+        // NOTE: For POST, just 404 instead of redirecting, since the redirect
+        // will be a GET without parameters.
+        if ($controller_class && !$request->isHTTPPost()) {
+          $uri = $request->getRequestURI()->setPath($path.'/');
+          return $this->buildRedirectController($uri);
         }
       }
 

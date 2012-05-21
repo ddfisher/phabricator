@@ -19,7 +19,8 @@
 /**
  * @group conduit
  */
-class ConduitAPI_differential_query_Method extends ConduitAPIMethod {
+final class ConduitAPI_differential_query_Method
+  extends ConduitAPIMethod {
 
   public function getMethodDescription() {
     return "Query Differential revisions which match certain criteria.";
@@ -33,7 +34,7 @@ class ConduitAPI_differential_query_Method extends ConduitAPIMethod {
       DifferentialRevisionQuery::STATUS_ANY,
       DifferentialRevisionQuery::STATUS_OPEN,
       DifferentialRevisionQuery::STATUS_ACCEPTED,
-      DifferentialRevisionQuery::STATUS_COMMITTED,
+      DifferentialRevisionQuery::STATUS_CLOSED,
     );
     $status_types = implode(', ', $status_types);
 
@@ -61,6 +62,7 @@ class ConduitAPI_differential_query_Method extends ConduitAPIMethod {
       'subscribers'       => 'optional list<phid>',
       'responsibleUsers'  => 'optional list<phid>',
       'branches'          => 'optional list<string>',
+      'arcanistProjects'  => 'optional list<string>',
     );
   }
 
@@ -88,6 +90,7 @@ class ConduitAPI_differential_query_Method extends ConduitAPIMethod {
     $subscribers        = $request->getValue('subscribers');
     $responsible_users  = $request->getValue('responsibleUsers');
     $branches           = $request->getValue('branches');
+    $arc_projects       = $request->getValue('arcanistProjects');
 
     $query = new DifferentialRevisionQuery();
     if ($authors) {
@@ -149,6 +152,19 @@ class ConduitAPI_differential_query_Method extends ConduitAPIMethod {
     }
     if ($branches) {
       $query->withBranches($branches);
+    }
+    if ($arc_projects) {
+      // This is sort of special-cased, but don't make arc do an extra round
+      // trip.
+      $projects = id(new PhabricatorRepositoryArcanistProject())
+        ->loadAllWhere(
+          'name in (%Ls)',
+          $arc_projects);
+      if (!$projects) {
+        return array();
+      }
+
+      $query->withArcanistProjectPHIDs(mpull($projects, 'getPHID'));
     }
 
     $query->needRelationships(true);

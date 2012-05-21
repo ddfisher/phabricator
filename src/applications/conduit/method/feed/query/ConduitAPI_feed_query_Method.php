@@ -21,8 +21,12 @@
  */
 final class ConduitAPI_feed_query_Method extends ConduitAPIMethod {
 
+  public function getMethodStatus() {
+    return self::METHOD_STATUS_UNSTABLE;
+  }
+
   public function getMethodDescription() {
-    return "(UNSTABLE!!) Query the feed for stories";
+    return "Query the feed for stories";
   }
 
   private function getDefaultLimit() {
@@ -89,16 +93,12 @@ final class ConduitAPI_feed_query_Method extends ConduitAPIMethod {
 
     if ($stories) {
       $handle_phids = array_mergev(mpull($stories, 'getRequiredHandlePHIDs'));
-      $object_phids = array_mergev(mpull($stories, 'getRequiredObjectPHIDs'));
       $handles = id(new PhabricatorObjectHandleData($handle_phids))
         ->loadHandles();
-      $objects = id(new PhabricatorObjectHandleData($object_phids))
-        ->loadObjects();
 
       foreach ($stories as $story) {
 
         $story->setHandles($handles);
-        $story->setObjects($objects);
 
         $story_data = $story->getStoryData();
 

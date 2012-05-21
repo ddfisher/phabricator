@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class DrydockResource extends DrydockDAO {
+final class DrydockResource extends DrydockDAO {
 
   protected $id;
   protected $phid;
@@ -28,7 +28,6 @@ class DrydockResource extends DrydockDAO {
   protected $attributes   = array();
   protected $capabilities = array();
   protected $ownerPHID;
-
 
   private $blueprint;
 
@@ -49,6 +48,11 @@ class DrydockResource extends DrydockDAO {
 
   public function getAttribute($key, $default = null) {
     return idx($this->attributes, $key, $default);
+  }
+
+  public function setAttribute($key, $value) {
+    $this->attributes[$key] = $value;
+    return $this;
   }
 
   public function getCapability($key, $default = null) {

@@ -19,7 +19,7 @@
 /**
  * @group console
  */
-class DarkConsoleServicesPlugin extends DarkConsolePlugin {
+final class DarkConsoleServicesPlugin extends DarkConsolePlugin {
 
   protected $observations;
 
@@ -55,7 +55,9 @@ class DarkConsoleServicesPlugin extends DarkConsolePlugin {
       // For each SELECT query, go issue an EXPLAIN on it so we can flag stuff
       // causing table scans, etc.
       if (preg_match('/^\s*SELECT\b/i', $entry['query'])) {
-        $conn = new AphrontMySQLDatabaseConnection($entry['config']);
+        $conn = PhabricatorEnv::newObjectFromConfig(
+          'mysql.implementation',
+          array($entry['config']));
         try {
           $explain = queryfx_all(
             $conn,
@@ -89,6 +91,10 @@ class DarkConsoleServicesPlugin extends DarkConsolePlugin {
               case 'ref':
                 $cur_badness = 3;
                 $cur_reason = 'Ref';
+                break;
+              case 'fulltext':
+                $cur_badness = 3;
+                $cur_reason = 'Fulltext';
                 break;
               case 'ALL':
                 if (preg_match('/Using where/', $table['Extra'])) {
@@ -239,6 +245,10 @@ class DarkConsoleServicesPlugin extends DarkConsolePlugin {
           break;
         case 'conduit':
           $info = $row['method'];
+          $info = phutil_escape_html($info);
+          break;
+        case 'http':
+          $info = $row['uri'];
           $info = phutil_escape_html($info);
           break;
         default:

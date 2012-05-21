@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@
 /**
  * @group search
  */
-class PhabricatorSearchSelectController
-  extends PhabricatorSearchController {
+final class PhabricatorSearchSelectController
+  extends PhabricatorSearchBaseController {
 
   private $type;
 
@@ -54,10 +54,13 @@ class PhabricatorSearchSelectController
         break;
     }
 
+    $query->setParameter('exclude', $request->getStr('exclude'));
+    $query->setParameter('limit', 100);
+
     $engine = PhabricatorSearchEngineSelector::newSelector()->newEngine();
     $results = $engine->executeSearch($query);
 
-    $phids = array_fill_keys(ipull($results, 'phid'), true);
+    $phids = array_fill_keys($results, true);
     $phids += $this->queryObjectNames($query_str);
 
     $phids = array_keys($phids);
@@ -78,10 +81,10 @@ class PhabricatorSearchSelectController
     $pattern = null;
     switch ($this->type) {
       case PhabricatorPHIDConstants::PHID_TYPE_TASK:
-        $pattern = '/\bT(\d+)\b/';
+        $pattern = '/\bT(\d+)\b/i';
         break;
       case PhabricatorPHIDConstants::PHID_TYPE_DREV:
-        $pattern = '/\bD(\d+)\b/';
+        $pattern = '/\bD(\d+)\b/i';
         break;
     }
 

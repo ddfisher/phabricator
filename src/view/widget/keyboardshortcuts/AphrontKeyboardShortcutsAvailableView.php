@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,13 @@
  * limitations under the License.
  */
 
-class AphrontKeyboardShortcutsAvailableView extends AphrontView {
+final class AphrontKeyboardShortcutsAvailableView extends AphrontView {
 
   public function render() {
     return
-      '<table class="keyboard-shortcuts-available">'.
-        '<tr>'.
-          '<th>Press <strong>?</strong> to show keyboard shortcuts.</th>'.
-          '<td></td>'.
-        '</tr>'.
-      '</table>';
+      '<div class="keyboard-shortcuts-available">'.
+        'Press <strong>?</strong> to show keyboard shortcuts.'.
+      '</div>';
   }
 
 }

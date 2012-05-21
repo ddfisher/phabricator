@@ -93,18 +93,24 @@ abstract class PhabricatorRepositoryCommitMessageParserWorker
           $revision->getID(),
           $commit->getPHID());
 
-        if ($revision->getStatus() !=
-            ArcanistDifferentialRevisionStatus::COMMITTED) {
+        $status_closed = ArcanistDifferentialRevisionStatus::CLOSED;
+        $should_close = ($revision->getStatus() != $status_closed) &&
+                        (!$repository->getDetail('disable-autoclose', false));
+
+        if ($should_close) {
+          $revision->setDateCommitted($commit->getEpoch());
+
           $message = null;
           $committer = $data->getCommitDetail('authorPHID');
           if (!$committer) {
             $committer = $revision->getAuthorPHID();
-            $message = 'Change committed by '.$data->getAuthorName().'.';
+            $message = 'Closed by '.$data->getAuthorName().'.';
           }
           $editor = new DifferentialCommentEditor(
             $revision,
             $committer,
-            DifferentialAction::ACTION_COMMIT);
+            DifferentialAction::ACTION_CLOSE);
+          $editor->setIsDaemonWorkflow(true);
           $editor->setMessage($message)->save();
         }
       }
@@ -116,9 +122,10 @@ abstract class PhabricatorRepositoryCommitMessageParserWorker
    * This function identifies the "best" revision from such a set.  Typically,
    * there is only one revision found.   Otherwise, we try to pick an accepted
    * revision first, followed by an open revision, and otherwise we go with a
-   * committed or abandoned revision as a last resort.
+   * closed or abandoned revision as a last resort.
    */
   private function identifyBestRevision(array $revisions) {
+    assert_instances_of($revisions, 'DifferentialRevision');
     // get the simplest, common case out of the way
     if (count($revisions) == 1) {
       return reset($revisions);
@@ -141,7 +148,7 @@ abstract class PhabricatorRepositoryCommitMessageParserWorker
         // default is a wtf? here
         default:
         case ArcanistDifferentialRevisionStatus::ABANDONED:
-        case ArcanistDifferentialRevisionStatus::COMMITTED:
+        case ArcanistDifferentialRevisionStatus::CLOSED:
           $third_choice[] = $revision;
           break;
       }
@@ -164,6 +171,7 @@ abstract class PhabricatorRepositoryCommitMessageParserWorker
    * updated time.   This is ostensibly the most recent revision.
    */
   private function identifyMostRecentRevision(array $revisions) {
+    assert_instances_of($revisions, 'DifferentialRevision');
     $revisions = msort($revisions, 'getDateModified');
     return end($revisions);
   }

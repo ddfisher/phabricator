@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class DiffusionSymbolController extends DiffusionController {
+final class DiffusionSymbolController extends DiffusionController {
 
   private $name;
 
@@ -65,11 +65,23 @@ class DiffusionSymbolController extends DiffusionController {
     // For PHP builtins, jump to php.net documentation.
     if ($request->getBool('jump') && count($symbols) == 0) {
       if ($request->getStr('lang') == 'php') {
-        if ($request->getStr('type') == 'function') {
-          if (in_array($this->name, idx(get_defined_functions(), 'internal'))) {
-            return id(new AphrontRedirectResponse())
-              ->setURI('http://www.php.net/'.$this->name);
-          }
+        switch ($request->getStr('type')) {
+          case 'function':
+            $functions = get_defined_functions();
+            if (in_array($this->name, $functions['internal'])) {
+              return id(new AphrontRedirectResponse())
+                ->setURI('http://www.php.net/function.'.$this->name);
+            }
+            break;
+          case 'class':
+            if (class_exists($this->name, false) ||
+                interface_exists($this->name, false)) {
+              if (id(new ReflectionClass($this->name))->isInternal()) {
+                return id(new AphrontRedirectResponse())
+                  ->setURI('http://www.php.net/class.'.$this->name);
+              }
+            }
+            break;
         }
       }
     }
@@ -133,7 +145,6 @@ class DiffusionSymbolController extends DiffusionController {
         '',
         '',
         '',
-        'n'
       ));
     $table->setNoDataString(
       "No matching symbol could be found in any indexed project.");

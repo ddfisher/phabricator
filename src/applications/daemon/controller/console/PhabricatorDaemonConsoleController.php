@@ -16,7 +16,8 @@
  * limitations under the License.
  */
 
-class PhabricatorDaemonConsoleController extends PhabricatorDaemonController {
+final class PhabricatorDaemonConsoleController
+  extends PhabricatorDaemonController {
 
   public function processRequest() {
     $logs = id(new PhabricatorDaemonLog())->loadAllWhere(
@@ -157,9 +158,9 @@ class PhabricatorDaemonConsoleController extends PhabricatorDaemonController {
     return $this->buildStandardPageResponse(
       array(
         $daemon_panel,
-        $leased_panel,
-        $queued_panel,
         $cursor_panel,
+        $queued_panel,
+        $leased_panel,
       ),
       array(
         'title' => 'Console',

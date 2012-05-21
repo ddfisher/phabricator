@@ -19,13 +19,12 @@
 /**
  * @group storage
  */
-class AphrontIsolatedDatabaseConnection extends AphrontDatabaseConnection {
+final class AphrontIsolatedDatabaseConnection
+  extends AphrontDatabaseConnection {
 
   private $configuration;
   private static $nextInsertID;
   private $insertID;
-  private static $nextTransactionKey = 1;
-  private $transactionKey;
 
   private $transcript = array();
 
@@ -37,8 +36,6 @@ class AphrontIsolatedDatabaseConnection extends AphrontDatabaseConnection {
       // collisions and make them distinctive.
       self::$nextInsertID = 55555000000 + mt_rand(0, 1000);
     }
-
-    $this->transactionKey = 'iso-xaction-'.(self::$nextTransactionKey++);
   }
 
   public function escapeString($string) {
@@ -67,10 +64,6 @@ class AphrontIsolatedDatabaseConnection extends AphrontDatabaseConnection {
 
   public function getAffectedRows() {
     return $this->affectedRows;
-  }
-
-  public function getTransactionKey() {
-    return $this->transactionKey;
   }
 
   public function selectAllResults() {

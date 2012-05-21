@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class PhabricatorObjectHandleData {
+final class PhabricatorObjectHandleData {
 
   private $phids;
 
@@ -24,14 +24,19 @@ class PhabricatorObjectHandleData {
     $this->phids = array_unique($phids);
   }
 
+  public static function loadOneHandle($phid) {
+    $handles = id(new PhabricatorObjectHandleData(array($phid)))->loadHandles();
+    return $handles[$phid];
+  }
+
   public function loadObjects() {
     $types = array();
     foreach ($this->phids as $phid) {
-      $type = $this->lookupType($phid);
+      $type = phid_get_type($phid);
       $types[$type][] = $phid;
     }
 
-    $objects = array_fill_keys($this->phids, null);
+    $objects = array();
     foreach ($types as $type => $phids) {
       switch ($type) {
         case PhabricatorPHIDConstants::PHID_TYPE_USER:
@@ -93,11 +98,7 @@ class PhabricatorObjectHandleData {
 
   public function loadHandles() {
 
-    $types = array();
-    foreach ($this->phids as $phid) {
-      $type = $this->lookupType($phid);
-      $types[$type][] = $phid;
-    }
+    $types = phid_group_by_type($this->phids);
 
     $handles = array();
 
@@ -148,6 +149,16 @@ class PhabricatorObjectHandleData {
             $images = mpull($images, 'getBestURI', 'getPHID');
           }
 
+          // TODO: This probably should not be part of Handles anymore, only
+          // MetaMTA actually uses it.
+          $emails = id(new PhabricatorUserEmail())->loadAllWhere(
+            'userPHID IN (%Ls) AND isPrimary = 1',
+            $phids);
+          $emails = mpull($emails, 'getAddress', 'getUserPHID');
+
+          $statuses = id(new PhabricatorUserStatus())->loadCurrentStatuses(
+            $phids);
+
           foreach ($phids as $phid) {
             $handle = new PhabricatorObjectHandle();
             $handle->setPHID($phid);
@@ -158,16 +169,23 @@ class PhabricatorObjectHandleData {
               $user = $users[$phid];
               $handle->setName($user->getUsername());
               $handle->setURI('/p/'.$user->getUsername().'/');
-              $handle->setEmail($user->getEmail());
+              $handle->setEmail(idx($emails, $phid));
               $handle->setFullName(
                 $user->getUsername().' ('.$user->getRealName().')');
               $handle->setAlternateID($user->getID());
               $handle->setComplete(true);
-              $handle->setDisabled($user->getIsDisabled());
+              if (isset($statuses[$phid])) {
+                $handle->setStatus($statuses[$phid]->getTextStatus());
+              }
+              $handle->setDisabled($user->getIsDisabled() ||
+                                   $user->getIsSystemAgent());
 
               $img_uri = idx($images, $user->getProfileImagePHID());
               if ($img_uri) {
                 $handle->setImageURI($img_uri);
+              } else {
+                $handle->setImageURI(
+                  PhabricatorUser::getDefaultProfileImageURI());
               }
             }
             $handles[$phid] = $handle;
@@ -221,7 +239,7 @@ class PhabricatorObjectHandleData {
               $handle->setComplete(true);
 
               $status = $rev->getStatus();
-              if (($status == ArcanistDifferentialRevisionStatus::COMMITTED) ||
+              if (($status == ArcanistDifferentialRevisionStatus::CLOSED) ||
                   ($status == ArcanistDifferentialRevisionStatus::ABANDONED)) {
                 $closed = PhabricatorObjectHandleStatus::STATUS_CLOSED;
                 $handle->setStatus($closed);
@@ -264,22 +282,9 @@ class PhabricatorObjectHandleData {
               // In case where the repository for the commit was deleted,
               // we don't have have info about the repository anymore.
               if ($repository) {
-                $vcs = $repository->getVersionControlSystem();
-
-                $type_git = PhabricatorRepositoryType::REPOSITORY_TYPE_GIT;
-                $type_hg = PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL;
-
-                $is_git = ($vcs == $type_git);
-                $is_hg = ($vcs == $type_hg);
-                if ($is_git || $is_hg) {
-                  $short_identifier = substr($commit_identifier, 0, 12);
-                } else {
-                  $short_identifier = $commit_identifier;
-                }
-
-                $handle->setName('r'.$callsign.$short_identifier);
+                $name = $repository->formatCommitName($commit_identifier);
+                $handle->setName($name);
               } else {
-
                 $handle->setName('Commit '.'r'.$callsign.$commit_identifier);
               }
 
@@ -492,13 +497,4 @@ class PhabricatorObjectHandleData {
 
     return $handles;
   }
-
-  private function lookupType($phid) {
-    $matches = null;
-    if (preg_match('/^PHID-([^-]{4})-/', $phid, $matches)) {
-      return $matches[1];
-    }
-    return PhabricatorPHIDConstants::PHID_TYPE_UNKNOWN;
-  }
-
 }

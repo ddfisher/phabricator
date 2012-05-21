@@ -16,7 +16,8 @@
  * limitations under the License.
  */
 
-class PhabricatorUserSettingsController extends PhabricatorPeopleController {
+final class PhabricatorUserSettingsController
+  extends PhabricatorPeopleController {
 
   private $page;
   private $pages;
@@ -61,6 +62,9 @@ class PhabricatorUserSettingsController extends PhabricatorPeopleController {
         $delegate = new PhabricatorUserPreferenceSettingsPanelController(
           $request);
         break;
+      case 'search':
+        $delegate = new PhabricatorUserSearchSettingsPanelController($request);
+        break;
       default:
         $delegate = new PhabricatorUserOAuthSettingsPanelController($request);
         $delegate->setOAuthProvider($oauth_providers[$this->page]);
@@ -90,7 +94,7 @@ class PhabricatorUserSettingsController extends PhabricatorPeopleController {
       ->addFilter('profile', 'Profile')
       ->addSpacer()
       ->addLabel('Email')
-      ->addFilter('email', 'Email Address')
+      ->addFilter('email', 'Email Addresses')
       ->addFilter('emailpref', 'Email Preferences')
       ->addSpacer()
       ->addLabel('Authentication');
@@ -109,6 +113,7 @@ class PhabricatorUserSettingsController extends PhabricatorPeopleController {
     $sidenav->addSpacer();
     $sidenav->addLabel('Application Settings');
     $sidenav->addFilter('preferences', 'Display Preferences');
+    $sidenav->addFilter('search', 'Search Preferences');
 
     $items = array();
     foreach ($oauth_providers as $provider) {

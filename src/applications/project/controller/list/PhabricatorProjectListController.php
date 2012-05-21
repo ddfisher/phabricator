@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class PhabricatorProjectListController
+final class PhabricatorProjectListController
   extends PhabricatorProjectController {
 
   private $filter;
@@ -36,7 +36,8 @@ class PhabricatorProjectListController
       ->addFilter('owned',    'Owned')
       ->addSpacer()
       ->addLabel('All')
-      ->addFilter('all',      'All Projects');
+      ->addFilter('all',      'All Projects')
+      ->addFilter('allactive','Active Projects');
     $this->filter = $nav->selectFilter($this->filter, 'active');
 
     $pager = new AphrontPagerView();
@@ -54,7 +55,7 @@ class PhabricatorProjectListController
 
     switch ($this->filter) {
       case 'active':
-        $table_header = 'Active Projects';
+        $table_header = 'Your Projects';
         $query->setMembers(array($view_phid));
         $query->withStatus(PhabricatorProjectQuery::STATUS_ACTIVE);
         break;
@@ -63,6 +64,10 @@ class PhabricatorProjectListController
         $query->setOwners(array($view_phid));
         $query->withStatus($status_filter);
         break;
+      case 'allactive':
+        $status_filter = PhabricatorProjectQuery::STATUS_ACTIVE;
+        $table_header = 'Active Projects';
+        // fallthrough
       case 'all':
         $table_header = 'All Projects';
         $query->withStatus($status_filter);

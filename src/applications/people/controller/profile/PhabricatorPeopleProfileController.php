@@ -16,7 +16,8 @@
  * limitations under the License.
  */
 
-class PhabricatorPeopleProfileController extends PhabricatorPeopleController {
+final class PhabricatorPeopleProfileController
+  extends PhabricatorPeopleController {
 
   private $username;
   private $page;
@@ -115,19 +116,23 @@ class PhabricatorPeopleProfileController extends PhabricatorPeopleController {
         throw new Exception("Unknown page '{$this->page}'!");
     }
 
-    $src_phid = $user->getProfileImagePHID();
-    $file = id(new PhabricatorFile())->loadOneWhere('phid = %s', $src_phid);
-    if ($file) {
-      $picture = $file->getBestURI();
-    } else {
-      $picture = null;
-    }
+    $picture = $user->loadProfileImageURI();
 
     $header = new PhabricatorProfileHeaderView();
     $header
       ->setProfilePicture($picture)
       ->setName($user->getUserName().' ('.$user->getRealName().')')
       ->setDescription($profile->getTitle());
+
+    if ($user->getIsDisabled()) {
+      $header->setStatus('Disabled');
+    } else {
+      $statuses = id(new PhabricatorUserStatus())->loadCurrentStatuses(
+        array($user->getPHID()));
+      if ($statuses) {
+        $header->setStatus(reset($statuses)->getStatusDescription($viewer));
+      }
+    }
 
     $header->appendChild($nav);
     $nav->appendChild(

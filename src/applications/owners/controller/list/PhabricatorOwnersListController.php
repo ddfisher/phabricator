@@ -16,7 +16,8 @@
  * limitations under the License.
  */
 
-class PhabricatorOwnersListController extends PhabricatorOwnersController {
+final class PhabricatorOwnersListController
+  extends PhabricatorOwnersController {
 
   protected $view;
 
@@ -170,7 +171,7 @@ class PhabricatorOwnersListController extends PhabricatorOwnersController {
           ->setValue($request->getStr('name')))
       ->appendChild(
         id(new AphrontFormTokenizerControl())
-          ->setDatasource('/typeahead/common/users/')
+          ->setDatasource('/typeahead/common/usersorprojects/')
           ->setLimit(1)
           ->setName('owner')
           ->setLabel('Owner')
@@ -203,6 +204,7 @@ class PhabricatorOwnersListController extends PhabricatorOwnersController {
   }
 
   private function renderPackageTable(array $packages, $header, $nodata) {
+    assert_instances_of($packages, 'PhabricatorOwnersPackage');
 
     if ($packages) {
       $package_ids = mpull($packages, 'getID');
@@ -219,19 +221,30 @@ class PhabricatorOwnersListController extends PhabricatorOwnersController {
       foreach ($owners as $owner) {
         $phids[$owner->getUserPHID()] = true;
       }
-      foreach ($paths as $path) {
-        $phids[$path->getRepositoryPHID()] = true;
-      }
       $phids = array_keys($phids);
-
       $handles = id(new PhabricatorObjectHandleData($phids))->loadHandles();
 
-      $owners = mgroup($owners, 'getPackageID');
-      $paths = mgroup($paths, 'getPackageID');
+      $repository_phids = array();
+      foreach ($paths as $path) {
+        $repository_phids[$path->getRepositoryPHID()] = true;
+      }
+
+      if ($repository_phids) {
+        $repositories = id(new PhabricatorRepository())->loadAllWhere(
+          'phid in (%Ls)',
+          array_keys($repository_phids));
+      } else {
+        $repositories = array();
+      }
+
+      $repositories = mpull($repositories, null, 'getPHID');
+      $owners       = mgroup($owners, 'getPackageID');
+      $paths        = mgroup($paths, 'getPackageID');
     } else {
-      $handles = array();
-      $owners = array();
-      $paths = array();
+      $handles      = array();
+      $repositories = array();
+      $owners       = array();
+      $paths        = array();
     }
 
     $rows = array();
@@ -248,13 +261,22 @@ class PhabricatorOwnersListController extends PhabricatorOwnersController {
 
       $pkg_paths = idx($paths, $package->getID(), array());
       foreach ($pkg_paths as $key => $path) {
-        $repo = $handles[$path->getRepositoryPHID()]->getName();
+        $repo = $repositories[$path->getRepositoryPHID()];
+        $drequest = DiffusionRequest::newFromDictionary(
+          array(
+            'repository' => $repo,
+            'path'       => $path->getPath(),
+          ));
+        $href = $drequest->generateURI(
+          array(
+            'action' => 'browse',
+          ));
         $pkg_paths[$key] =
-          '<strong>'.phutil_escape_html($repo).'</strong> '.
+          '<strong>'.phutil_escape_html($repo->getName()).'</strong> '.
           phutil_render_tag(
             'a',
             array(
-              'href' => '/diffusion/'.$repo.'/browse/:'.$path->getPath(),
+              'href' => (string) $href,
             ),
             phutil_escape_html($path->getPath()));
       }
@@ -272,7 +294,7 @@ class PhabricatorOwnersListController extends PhabricatorOwnersController {
         phutil_render_tag(
           'a',
           array(
-            'href' => '/owners/related/package/?phid='.$package->getPHID(),
+            'href' => '/audit/view/packagecommits/?phid='.$package->getPHID(),
           ),
           phutil_escape_html('Related Commits'))
       );

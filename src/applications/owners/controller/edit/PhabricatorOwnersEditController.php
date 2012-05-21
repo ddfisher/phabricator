@@ -16,7 +16,8 @@
  * limitations under the License.
  */
 
-class PhabricatorOwnersEditController extends PhabricatorOwnersController {
+final class PhabricatorOwnersEditController
+  extends PhabricatorOwnersController {
 
   private $id;
 
@@ -40,17 +41,18 @@ class PhabricatorOwnersEditController extends PhabricatorOwnersController {
 
     $e_name = true;
     $e_primary = true;
-    $e_owners = true;
 
     $errors = array();
 
     if ($request->isFormPost()) {
       $package->setName($request->getStr('name'));
       $package->setDescription($request->getStr('description'));
+      $old_auditing_enabled = $package->getAuditingEnabled();
       $package->setAuditingEnabled($request->getStr('auditing') === 'enabled');
 
       $primary = $request->getArr('primary');
       $primary = reset($primary);
+      $old_primary = $package->getPrimaryOwnerPHID();
       $package->setPrimaryOwnerPHID($primary);
 
       $owners = $request->getArr('owners');
@@ -87,13 +89,6 @@ class PhabricatorOwnersEditController extends PhabricatorOwnersController {
         $e_primary = null;
       }
 
-      if (!$owners) {
-        $e_owners = 'Required';
-        $errors[] = 'Package must have at least one owner.';
-      } else {
-        $e_owners = null;
-      }
-
       if (!$path_refs) {
         $errors[] = 'Package must include at least one path.';
       }
@@ -101,6 +96,9 @@ class PhabricatorOwnersEditController extends PhabricatorOwnersController {
       if (!$errors) {
         $package->attachUnsavedOwners($owners);
         $package->attachUnsavedPaths($path_refs);
+        $package->attachOldAuditingEnabled($old_auditing_enabled);
+        $package->attachOldPrimaryOwnerPHID($old_primary);
+        $package->attachActorPHID($user->getPHID());
         try {
           $package->save();
           return id(new AphrontRedirectResponse())
@@ -202,7 +200,7 @@ class PhabricatorOwnersEditController extends PhabricatorOwnersController {
           ->setError($e_name))
       ->appendChild(
         id(new AphrontFormTokenizerControl())
-          ->setDatasource('/typeahead/common/users/')
+          ->setDatasource('/typeahead/common/usersorprojects/')
           ->setLabel('Primary Owner')
           ->setName('primary')
           ->setLimit(1)
@@ -210,11 +208,10 @@ class PhabricatorOwnersEditController extends PhabricatorOwnersController {
           ->setError($e_primary))
       ->appendChild(
         id(new AphrontFormTokenizerControl())
-          ->setDatasource('/typeahead/common/users/')
+          ->setDatasource('/typeahead/common/usersorprojects/')
           ->setLabel('Owners')
           ->setName('owners')
-          ->setValue($token_all_owners)
-          ->setError($e_owners))
+          ->setValue($token_all_owners))
       ->appendChild(
         id(new AphrontFormSelectControl())
           ->setName('auditing')
@@ -232,10 +229,10 @@ class PhabricatorOwnersEditController extends PhabricatorOwnersController {
               ? 'enabled'
               : 'disabled'))
       ->appendChild(
-        '<h1>Paths</h1>'.
-        '<div class="aphront-form-inset" id="path-editor">'.
-          '<div style="float: right;">'.
-            javelin_render_tag(
+        id(new AphrontFormInsetView())
+          ->setTitle('Paths')
+          ->addDivAttributes(array('id' => 'path-editor'))
+          ->setRightButton(javelin_render_tag(
               'a',
               array(
                 'href' => '#',
@@ -243,19 +240,16 @@ class PhabricatorOwnersEditController extends PhabricatorOwnersController {
                 'sigil' => 'addpath',
                 'mustcapture' => true,
               ),
-              'Add New Path').
-          '</div>'.
-          '<p>Specify the files and directories which comprise this '.
-          'package.</p>'.
-          '<div style="clear: both;"></div>'.
-          javelin_render_tag(
-            'table',
-            array(
-              'class' => 'owners-path-editor-table',
-              'sigil' => 'paths',
-            ),
-            '').
-        '</div>')
+              'Add New Path'))
+          ->setDescription('Specify the files and directories which comprise '.
+                           'this package.')
+          ->setContent(javelin_render_tag(
+              'table',
+              array(
+                'class' => 'owners-path-editor-table',
+                'sigil' => 'paths',
+              ),
+              '')))
       ->appendChild(
         id(new AphrontFormTextAreaControl())
           ->setLabel('Description')

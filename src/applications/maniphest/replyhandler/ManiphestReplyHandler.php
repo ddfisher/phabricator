@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
 /**
  * @group maniphest
  */
-class ManiphestReplyHandler extends PhabricatorMailReplyHandler {
+final class ManiphestReplyHandler extends PhabricatorMailReplyHandler {
 
   public function validateMailReceiver($mail_receiver) {
     if (!($mail_receiver instanceof ManiphestTask)) {
@@ -168,6 +168,17 @@ class ManiphestReplyHandler extends PhabricatorMailReplyHandler {
     $editor = new ManiphestTransactionEditor();
     $editor->setParentMessageID($mail->getMessageID());
     $editor->applyTransactions($task, $xactions);
+
+    $event = new PhabricatorEvent(
+      PhabricatorEventType::TYPE_MANIPHEST_DIDEDITTASK,
+      array(
+        'task'          => $task,
+        'new'           => $is_new_task,
+        'transactions'  => $xactions,
+      ));
+    $event->setUser($user);
+    PhutilEventEngine::dispatchEvent($event);
+
   }
 
 }

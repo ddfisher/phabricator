@@ -19,7 +19,15 @@
 /**
  * @group conduit
  */
-class ConduitAPI_differential_find_Method extends ConduitAPIMethod {
+final class ConduitAPI_differential_find_Method extends ConduitAPIMethod {
+
+  public function getMethodStatus() {
+    return self::METHOD_STATUS_DEPRECATED;
+  }
+
+  public function getMethodStatusDescription() {
+    return "Replaced by 'differential.query'.";
+  }
 
   public function getMethodDescription() {
     return "Query Differential revisions which match certain criteria.";

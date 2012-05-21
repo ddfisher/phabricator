@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-class PhabricatorUserEmailPreferenceSettingsPanelController
+final class PhabricatorUserEmailPreferenceSettingsPanelController
   extends PhabricatorUserSettingsPanelController {
 
   public function processRequest() {
@@ -26,23 +26,33 @@ class PhabricatorUserEmailPreferenceSettingsPanelController
     $preferences = $user->loadPreferences();
 
     $pref_re_prefix = PhabricatorUserPreferences::PREFERENCE_RE_PREFIX;
+    $pref_vary = PhabricatorUserPreferences::PREFERENCE_VARY_SUBJECT;
     $pref_no_self_mail = PhabricatorUserPreferences::PREFERENCE_NO_SELF_MAIL;
 
     $errors = array();
     if ($request->isFormPost()) {
 
-      if ($request->getStr($pref_re_prefix) == 'default') {
-        $preferences->unsetPreference($pref_re_prefix);
-      } else {
-        $preferences->setPreference(
-          $pref_re_prefix,
-          $request->getBool($pref_re_prefix));
+      if (PhabricatorMetaMTAMail::shouldMultiplexAllMail()) {
+        if ($request->getStr($pref_re_prefix) == 'default') {
+          $preferences->unsetPreference($pref_re_prefix);
+        } else {
+          $preferences->setPreference(
+            $pref_re_prefix,
+            $request->getBool($pref_re_prefix));
+        }
+
+        if ($request->getStr($pref_vary) == 'default') {
+          $preferences->unsetPreference($pref_vary);
+        } else {
+          $preferences->setPreference(
+            $pref_vary,
+            $request->getBool($pref_vary));
+        }
       }
 
       $preferences->setPreference(
         $pref_no_self_mail,
         $request->getStr($pref_no_self_mail));
-
 
       $new_tags = $request->getArr('mailtags');
       $mailtags = $preferences->getPreference('mailtags', array());
@@ -75,11 +85,24 @@ class PhabricatorUserEmailPreferenceSettingsPanelController
       ? 'Enabled'
       : 'Disabled';
 
+    $vary_default = PhabricatorEnv::getEnvConfig('metamta.vary-subjects')
+      ? 'Vary'
+      : 'Do Not Vary';
+
     $re_prefix_value = $preferences->getPreference($pref_re_prefix);
     if ($re_prefix_value === null) {
-      $re_prefix_value = 'defualt';
+      $re_prefix_value = 'default';
     } else {
       $re_prefix_value = $re_prefix_value
+        ? 'true'
+        : 'false';
+    }
+
+    $vary_value = $preferences->getPreference($pref_vary);
+    if ($vary_value === null) {
+      $vary_value = 'default';
+    } else {
+      $vary_value = $vary_value
         ? 'true'
         : 'false';
     }
@@ -97,21 +120,39 @@ class PhabricatorUserEmailPreferenceSettingsPanelController
               '1' => 'Do not send me an email when I take an action',
             ))
           ->setCaption('You can disable email about your own actions.')
-          ->setValue($preferences->getPreference($pref_no_self_mail, 0)))
-      ->appendChild(
-        id(new AphrontFormSelectControl())
-          ->setLabel('Add "Re:" Prefix')
-          ->setName($pref_re_prefix)
-          ->setCaption(
-            'Enable this option to fix threading in Mail.app on OS X Lion, '.
-            'or if you like "Re:" in your email subjects.')
-          ->setOptions(
-            array(
-              'default'   => 'Use Server Default ('.$re_prefix_default.')',
-              'true'      => 'Enable "Re:" prefix',
-              'false'     => 'Disable "Re:" prefix',
-            ))
-          ->setValue($re_prefix_value));
+          ->setValue($preferences->getPreference($pref_no_self_mail, 0)));
+
+    if (PhabricatorMetaMTAMail::shouldMultiplexAllMail()) {
+      $form
+        ->appendChild(
+          id(new AphrontFormSelectControl())
+            ->setLabel('Add "Re:" Prefix')
+            ->setName($pref_re_prefix)
+            ->setCaption(
+              'Enable this option to fix threading in Mail.app on OS X Lion, '.
+              'or if you like "Re:" in your email subjects.')
+            ->setOptions(
+              array(
+                'default'   => 'Use Server Default ('.$re_prefix_default.')',
+                'true'      => 'Enable "Re:" prefix',
+                'false'     => 'Disable "Re:" prefix',
+              ))
+            ->setValue($re_prefix_value))
+        ->appendChild(
+          id(new AphrontFormSelectControl())
+            ->setLabel('Vary Subjects')
+            ->setName($pref_vary)
+            ->setCaption(
+              'This option adds more information email subjects, but may '.
+              'break threading in some clients.')
+            ->setOptions(
+              array(
+                'default'   => 'Use Server Default ('.$vary_default.')',
+                'true'      => 'Vary Subjects',
+                'false'     => 'Do Not Vary Subjects',
+              ))
+            ->setValue($vary_value));
+    }
 
     $form
       ->appendChild(
@@ -163,8 +204,8 @@ class PhabricatorUserEmailPreferenceSettingsPanelController
     return array(
       MetaMTANotificationType::TYPE_DIFFERENTIAL_CC =>
         "Send me email when a revision's CCs change.",
-      MetaMTANotificationType::TYPE_DIFFERENTIAL_COMMITTED =>
-        "Send me email when a revision is committed.",
+      MetaMTANotificationType::TYPE_DIFFERENTIAL_CLOSED =>
+        "Send me email when a revision is closed.",
       MetaMTANotificationType::TYPE_MANIPHEST_PROJECTS =>
         "Send me email when a task's associated projects change.",
       MetaMTANotificationType::TYPE_MANIPHEST_PRIORITY =>
@@ -189,7 +230,7 @@ class PhabricatorUserEmailPreferenceSettingsPanelController
       $this->getMailTags(),
       array(
         MetaMTANotificationType::TYPE_DIFFERENTIAL_CC,
-        MetaMTANotificationType::TYPE_DIFFERENTIAL_COMMITTED,
+        MetaMTANotificationType::TYPE_DIFFERENTIAL_CLOSED,
       ));
   }
 

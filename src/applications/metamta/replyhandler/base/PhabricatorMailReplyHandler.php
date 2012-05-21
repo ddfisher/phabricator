@@ -75,25 +75,31 @@ abstract class PhabricatorMailReplyHandler {
     PhabricatorMetaMTAMail $mail_template,
     array $to_handles,
     array $cc_handles) {
+    assert_instances_of($to_handles, 'PhabricatorObjectHandle');
+    assert_instances_of($cc_handles, 'PhabricatorObjectHandle');
 
     $result = array();
 
-    // If private replies are not supported, simply send one email to all
-    // recipients and CCs. This covers cases where we have no reply handler,
-    // or we have a public reply handler.
-    if (!$this->supportsPrivateReplies()) {
-      $mail = clone $mail_template;
-      $mail->addTos(mpull($to_handles, 'getPHID'));
-      $mail->addCCs(mpull($cc_handles, 'getPHID'));
+    // If MetaMTA is configured to always multiplex, skip the single-email
+    // case.
+    if (!PhabricatorMetaMTAMail::shouldMultiplexAllMail()) {
+      // If private replies are not supported, simply send one email to all
+      // recipients and CCs. This covers cases where we have no reply handler,
+      // or we have a public reply handler.
+      if (!$this->supportsPrivateReplies()) {
+        $mail = clone $mail_template;
+        $mail->addTos(mpull($to_handles, 'getPHID'));
+        $mail->addCCs(mpull($cc_handles, 'getPHID'));
 
-      if ($this->supportsPublicReplies()) {
-        $reply_to = $this->getPublicReplyHandlerEmailAddress();
-        $mail->setReplyTo($reply_to);
+        if ($this->supportsPublicReplies()) {
+          $reply_to = $this->getPublicReplyHandlerEmailAddress();
+          $mail->setReplyTo($reply_to);
+        }
+
+        $result[] = $mail;
+
+        return $result;
       }
-
-      $result[] = $mail;
-
-      return $result;
     }
 
     // Merge all the recipients together. TODO: We could keep the CCs as real
@@ -101,14 +107,6 @@ abstract class PhabricatorMailReplyHandler {
     // for now.
     $recipients = mpull($to_handles, null, 'getPHID') +
                   mpull($cc_handles, null, 'getPHID');
-
-    // This grouping is just so we can use the public reply-to for any
-    // recipients without a private reply-to, e.g. mailing lists.
-    $groups = array();
-    foreach ($recipients as $recipient) {
-      $private = $this->getPrivateReplyHandlerEmailAddress($recipient);
-      $groups[$private][] = $recipient;
-    }
 
     // When multiplexing mail, explicitly include To/Cc information in the
     // message body and headers.
@@ -125,13 +123,18 @@ abstract class PhabricatorMailReplyHandler {
       $add_headers['X-Phabricator-Cc'] = $this->formatPHIDList($cc_handles);
     }
 
-    foreach ($groups as $reply_to => $group) {
+    foreach ($recipients as $recipient) {
       $mail = clone $mail_template;
-      $mail->addTos(mpull($group, 'getPHID'));
+      $mail->addTos(array($recipient->getPHID()));
 
       $mail->setBody($body);
       foreach ($add_headers as $header => $value) {
         $mail->addHeader($header, $value);
+      }
+
+      $reply_to = null;
+      if (!$reply_to && $this->supportsPrivateReplies()) {
+        $reply_to = $this->getPrivateReplyHandlerEmailAddress($recipient);
       }
 
       if (!$reply_to && $this->supportsPublicReplies()) {
@@ -149,6 +152,7 @@ abstract class PhabricatorMailReplyHandler {
   }
 
   protected function formatPHIDList(array $handles) {
+    assert_instances_of($handles, 'PhabricatorObjectHandle');
     $list = array();
     foreach ($handles as $handle) {
       $list[] = '<'.$handle->getPHID().'>';
