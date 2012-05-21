@@ -43,7 +43,7 @@ class ManiphestAction extends PhrictionConstants {
       self::ACTION_ASSIGN      => 'assigned',
       self::ACTION_REASSIGN      => 'reassigned',
       self::ACTION_COMMENT     => 'commented on',
-      self::ACTION_CC          => 'added cc\'s to',
+      self::ACTION_CC          => 'updated cc\'s of',
       self::ACTION_PRIORITY    => 'changed the priority of',
       self::ACTION_PROJECT     => 'modified projects of',
       self::ACTION_TITLE       => 'updated title of',
