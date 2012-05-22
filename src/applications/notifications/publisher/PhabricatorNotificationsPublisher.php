@@ -57,27 +57,25 @@ final class PhabricatorNotificationsPublisher {
   public function changeSubscribers($object_phid, $cc_phids) {
     $ref = new PhabricatorNotificationsSubscribed();
     $current_subscribers = $ref->loadAllWhere("objectPHID = %s", $object_phid);
-    foreach ($current_subscribers as $subscriber) {
-      $index = array_search($subscriber->getUserPHID(), $cc_phids);
-      if ($index) {
-        // this person is already subscribed
-        unset($cc_phids[$index]);
-      } else {
-        // this person is no longer subscribed, delete them
-        $subscriber->delete();
-      }
-    }
+    $current_phids = mpull($current_subscribers, 'getUserPHID');
 
     // TODO: make sure current notification is unread
     $chrono_key = $this->generateChronologicalKey();
 
-    // $ccPHIDs now contains only new subscribers
-    foreach ($cc_phids as $user_phid) {
-      $subscription = id(new PhabricatorNotificationsSubscribed())
-        ->setUserPHID($user_phid)
-        ->setObjectPHID($object_phid)
-        ->setLastViewed($chrono_key)
-        ->insert();
+    foreach ($cc_phids as $new_phid) {
+      if (!in_array($new_phid, $current_phids)) {
+        $subscription = id(new PhabricatorNotificationsSubscribed())
+          ->setUserPHID($new_phid)
+          ->setObjectPHID($object_phid)
+          ->setLastViewed($chrono_key)
+          ->insert();
+      }
+    }
+
+    foreach ($current_subscribers as $old_subscriber) {
+      if (!in_array($old_subscriber->getUserPHID(), $cc_phids)) {
+        $old_subscriber->delete();
+      }
     }
 
     return $this;
