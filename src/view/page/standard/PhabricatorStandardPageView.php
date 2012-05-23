@@ -357,37 +357,51 @@ final class PhabricatorStandardPageView extends AphrontPageView {
       $admin_class = 'phabricator-admin-page-view';
     }
 
-    // -------------------- EXPERIMENTAL NOTIFICATIONS STUFF --------------------
-    $aphlict_object_id = 'aphlictswfobject';
+    $notification_header = '';
+    $notification_dropdown = '';
+    if ($user->isLoggedIn()) {
+      $aphlict_object_id = 'aphlictswfobject';
 
-    $aphlict_content = phutil_render_tag(
-      'object',
-      array(
-        'classid' => 'clsid:d27cdb6e-ae6d-11cf-96b8-444553540000',
-      ),
-      '<param name="movie" value="/rsrc/swf/aphlict.swf" />'.
-      '<param name="allowScriptAccess" value="always" />'.
-      '<param name="wmode" value="opaque" />'.
-      '<embed src="/rsrc/swf/aphlict.swf" wmode="opaque" id="'.$aphlict_object_id.'"></embed>');
+      $aphlict_content = phutil_render_tag(
+        'object',
+        array(
+          'classid' => 'clsid:d27cdb6e-ae6d-11cf-96b8-444553540000',
+        ),
+        '<param name="movie" value="/rsrc/swf/aphlict.swf" />'.
+        '<param name="allowScriptAccess" value="always" />'.
+        '<param name="wmode" value="opaque" />'.
+        '<embed src="/rsrc/swf/aphlict.swf" wmode="opaque" id="'.
+        $aphlict_object_id.'"></embed>');
 
-    $server_uri = PhabricatorEnv::getURI('');
-    $matches = null;
-    preg_match('@^(?:http://|https://)?([^/]+)@i', $server_uri, $matches);
-    $server_domain = $matches[1];
+      $server_uri = PhabricatorEnv::getURI('');
+      $matches = null;
+      preg_match('@^(?:http://|https://)?([^/]+)@i', $server_uri, $matches);
+      $server_domain = $matches[1];
 
-    Javelin::initBehavior(
-      'aphlict-listen',
-      array(
-        'id'      => $aphlict_object_id,
-        'server'  => $server_domain,
-        'port'    => 2600,
-      ));
+      Javelin::initBehavior(
+        'aphlict-listen',
+        array(
+          'id'      => $aphlict_object_id,
+          'server'  => $server_domain,
+          'port'    => 2600,
+        ));
 
-    Javelin::initBehavior('aphlict-dropdown', array());
+      Javelin::initBehavior('aphlict-dropdown', array());
 
-    $notification_indicator = '-';
+      $notification_indicator = '-';
+      $notification_header =
+            '<td id="phabricator-notification-indicator">'.
+            $notification_indicator.
+            '</td>'.
+            '<td>'.
+                '<div style="height:1px; width:1px;">'.
+                  $aphlict_content.
+              '</div>'.
+            '</td>';
+      $notification_dropdown =
+        '<div id="phabricator-notification-dropdown"></div>';
+    }
 
-    // --------------------                                  --------------------
     $custom_logo = null;
     $with_custom = null;
     $custom_conf = PhabricatorEnv::getEnvConfig('phabricator.custom.logo');
@@ -431,20 +445,10 @@ final class PhabricatorStandardPageView extends AphrontPageView {
             '<td class="phabricator-login-details">'.
               $login_stuff.
             '</td>'.
-            '</td>'.
-            '<td id="phabricator-notification-indicator">'.
-              $notification_indicator.
-            '</td>'.
-            '<td>'.
-                /* '<div style="display: none; visibility: hidden;">'. */
-                '<div style="height:1px; width:1px;">'.
-                  $aphlict_content.
-              '</div>'.
-            '</td>'.
+            $notification_header.
           '</tr>'.
-          '</table>'.
-          '<div id="phabricator-notification-dropdown"></div>'.
-          '';
+        '</table>'.
+        $notification_dropdown;
       $footer_chrome =
         '<div class="phabricator-page-foot">'.
           $foot_links.
