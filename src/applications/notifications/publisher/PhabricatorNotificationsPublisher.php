@@ -82,6 +82,10 @@ final class PhabricatorNotificationsPublisher {
   }
 
   public function publish() {
+    if (!PhabricatorEnv::getEnvConfig('notification.enabled')) {
+      return null;
+    }
+
     if (!$this->objectPHID) {
       throw new Exception("There is no object PHID for this story!");
     }
@@ -106,6 +110,7 @@ final class PhabricatorNotificationsPublisher {
 
   public function sendAphlictNotification() {
     // send aphlict notification based on story type
+
     $type = $this->storyType;
     $event_data = $this->storyData;
     switch ($type) {
