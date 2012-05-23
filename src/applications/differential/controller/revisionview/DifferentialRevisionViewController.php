@@ -352,7 +352,7 @@ final class DifferentialRevisionViewController extends DifferentialController {
       $page_pane->appendChild($comment_form->render());
     }
 
-    id(new PhabricatorNotificationsSubscribed())
+    id(new PhabricatorNotificationSubscribed())
       ->updateLastViewed($user->getPHID(),
       $revision->getPHID(),
       $this->generateChronologicalKey());

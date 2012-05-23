@@ -176,7 +176,7 @@ final class PhabricatorObjectHandle {
    * for example, disabled users, archived projects, etc. These objects are
    * complete and exist, but should be excluded from some system interactions
    * (for instance, they usually should not appear in typeaheads, and should
-   * not have mail/notifications delivered to or about them).
+   * not have mail/notification delivered to or about them).
    *
    * @return bool True if the handle represents a disabled object.
    */

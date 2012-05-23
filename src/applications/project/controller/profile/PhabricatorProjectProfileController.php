@@ -143,7 +143,7 @@ final class PhabricatorProjectProfileController
 
     $header->appendChild($nav_view);
 
-    id(new PhabricatorNotificationsSubscribed())
+    id(new PhabricatorNotificationSubscribed())
       ->updateLastViewed($user->getPHID(),
       $project->getPHID(),
       $this->generateChronologicalKey());

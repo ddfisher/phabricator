@@ -192,7 +192,7 @@ final class PhrictionDocumentController
       // these float right so history_button which is right most goes first
       $buttons = $history_button.$edit_button;
 
-      id(new PhabricatorNotificationsSubscribed())
+      id(new PhabricatorNotificationSubscribed())
         ->updateLastViewed($user->getPHID(),
             $document->getPHID(),
             $this->generateChronologicalKey());

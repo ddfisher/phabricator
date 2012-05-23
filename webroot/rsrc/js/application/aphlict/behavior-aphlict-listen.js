@@ -5,7 +5,7 @@
  *           javelin-util
  *           javelin-stratcom
  *           javelin-behavior-aphlict-dropdown
- *           notifications-humane
+ *           notification-humane
  */
 
 JX.behavior('aphlict-listen', function(config) {

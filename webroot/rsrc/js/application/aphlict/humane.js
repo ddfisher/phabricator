@@ -6,7 +6,7 @@
  *   humane('hello world');
  * See more usage examples at: http://wavded.github.com/humane-js/
  *
- * @provides notifications-humane
+ * @provides notification-humane
  * @requries notification-theme
  */
 ;(function (win,doc) {

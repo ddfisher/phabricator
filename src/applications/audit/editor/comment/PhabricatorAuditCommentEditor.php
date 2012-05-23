@@ -300,11 +300,11 @@ final class PhabricatorAuditCommentEditor {
       $subscriberPHIDs[] = $other_comment->getActorPHID();
     }
     $subscriberPHIDs = array_unique($subscriberPHIDs);
-    id(new PhabricatorNotificationsPublisher())
+    id(new PhabricatorNotificationPublisher())
     ->changeSubscribers($commit->getPHID(), $subscriberPHIDs);
 
     $this->publishFeedStory($comment, array_keys($audit_phids));
-    $this->publishNotifications($comment);
+    $this->publishNotification($comment);
     PhabricatorSearchCommitIndexer::indexCommit($commit);
     $this->sendMail($comment, $other_comments, $inline_comments, $requests);
   }
@@ -373,7 +373,7 @@ final class PhabricatorAuditCommentEditor {
       ->publish();
   }
 
-  private function publishNotifications($comment) {
+  private function publishNotification($comment) {
     $commit = $this->commit;
     $user = $this->user;
     $event_data = array(
@@ -382,9 +382,9 @@ final class PhabricatorAuditCommentEditor {
         'content'       => $comment->getContent(),
         );
 
-    id(new PhabricatorNotificationsPublisher())
+    id(new PhabricatorNotificationPublisher())
       ->setStoryType(
-          PhabricatorNotificationsStoryTypeConstants::STORY_AUDIT)
+          PhabricatorNotificationStoryTypeConstants::STORY_AUDIT)
         ->setStoryData($event_data)
         ->setStoryTime(time())
         ->setStoryAuthorPHID($user->getPHID())

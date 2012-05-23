@@ -37,7 +37,7 @@ phutil_require_module('phabricator', 'applications/files/storage/file');
 phutil_require_module('phabricator', 'applications/flag/constants/color');
 phutil_require_module('phabricator', 'applications/flag/query/flag');
 phutil_require_module('phabricator', 'applications/markup/engine');
-phutil_require_module('phabricator', 'applications/notifications/storage/subscribed');
+phutil_require_module('phabricator', 'applications/notification/storage/subscribed');
 phutil_require_module('phabricator', 'applications/phid/handle/data');
 phutil_require_module('phabricator', 'applications/repository/constants/repositorytype');
 phutil_require_module('phabricator', 'applications/repository/storage/repository');

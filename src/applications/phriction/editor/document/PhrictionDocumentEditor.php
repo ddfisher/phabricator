@@ -236,9 +236,9 @@ final class PhrictionDocumentEditor {
         ))
       ->publish();
 
-    id(new PhabricatorNotificationsPublisher())
+    id(new PhabricatorNotificationPublisher())
       ->setStoryType(
-        PhabricatorNotificationsStoryTypeConstants::STORY_PHRICTION)
+        PhabricatorNotificationStoryTypeConstants::STORY_PHRICTION)
       ->setStoryData(
         array(
           'phid'    => $document->getPHID(),

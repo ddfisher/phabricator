@@ -203,11 +203,11 @@ final class ManiphestTransactionEditor {
 
     // TODO: notify people when they've been removed from CCs
 
-    id(new PhabricatorNotificationsPublisher())
+    id(new PhabricatorNotificationPublisher())
       ->changeSubscribers($task->getPHID(), $task->getCCPHIDs());
 
     $this->publishFeedStory($task, $transactions);
-    $this->publishNotifications($task, $transactions);
+    $this->publishNotification($task, $transactions);
 
     // TODO: Do this offline via timeline
     PhabricatorSearchManiphestIndexer::indexTask($task);
@@ -219,7 +219,7 @@ final class ManiphestTransactionEditor {
     return PhabricatorEnv::getEnvConfig('metamta.maniphest.subject-prefix');
   }
 
-  private function publishNotifications($task, $transactions) {
+  private function publishNotification($task, $transactions) {
     $comments = null;
 
     foreach ($transactions as $transaction) {
@@ -255,9 +255,9 @@ final class ManiphestTransactionEditor {
           'description'     => $task->getDescription(),
           'comments'        => $comments);
 
-      id(new PhabricatorNotificationsPublisher())
+      id(new PhabricatorNotificationPublisher())
         ->setStoryType(
-          PhabricatorNotificationsStoryTypeConstants::STORY_MANIPHEST)
+          PhabricatorNotificationStoryTypeConstants::STORY_MANIPHEST)
         ->setStoryData($event_data)
         ->setStoryTime(time())
         ->setStoryAuthorPHID($transaction->getAuthorPHID())

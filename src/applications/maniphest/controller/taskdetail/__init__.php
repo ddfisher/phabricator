@@ -20,7 +20,7 @@ phutil_require_module('phabricator', 'applications/maniphest/storage/task');
 phutil_require_module('phabricator', 'applications/maniphest/storage/transaction');
 phutil_require_module('phabricator', 'applications/maniphest/view/transactionlist');
 phutil_require_module('phabricator', 'applications/markup/engine');
-phutil_require_module('phabricator', 'applications/notifications/storage/subscribed');
+phutil_require_module('phabricator', 'applications/notification/storage/subscribed');
 phutil_require_module('phabricator', 'applications/phid/constants');
 phutil_require_module('phabricator', 'applications/phid/handle/data');
 phutil_require_module('phabricator', 'infrastructure/celerity/api');

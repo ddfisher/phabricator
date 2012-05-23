@@ -422,8 +422,8 @@ class AphrontDefaultApplicationConfiguration
       ),
 
       '/aphlict/' => 'PhabricatorAphlictTestPageController',
-      '/notifications/' => 'PhabricatorNotificationsTestPageController',
-      '/notifications/custom/' => 'PhabricatorCustomNotificationController',
+      '/notification/' => 'PhabricatorNotificationTestPageController',
+      '/notification/custom/' => 'PhabricatorCustomNotificationController',
 
       '/flag/' => array(
         '' => 'PhabricatorFlagListController',

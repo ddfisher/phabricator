@@ -28,7 +28,7 @@ JX.behavior('aphlict-dropdown', function(config) {
     }
 
     console.log("updating...");
-    request = new JX.Request('/notifications/', function(response) {
+    request = new JX.Request('/notification/', function(response) {
       indicator.textContent = '' + response.number;
       if (response.number == 0) {
           indicator.style.fontWeight = "";

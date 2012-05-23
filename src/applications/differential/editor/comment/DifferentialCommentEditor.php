@@ -580,12 +580,12 @@ final class DifferentialCommentEditor {
     $subscribers = array_merge(
       $revision->getCCPHIDs(), $revision->getReviewers());
     $subscribers[] = $revision->getAuthorPHID();
-    id(new PhabricatorNotificationsPublisher())
+    id(new PhabricatorNotificationPublisher())
       ->changeSubscribers($revision->getPHID(), $subscribers);
 
-    id(new PhabricatorNotificationsPublisher())
+    id(new PhabricatorNotificationPublisher())
       ->setStoryType(
-        PhabricatorNotificationsStoryTypeConstants::STORY_DIFFERENTIAL)
+        PhabricatorNotificationStoryTypeConstants::STORY_DIFFERENTIAL)
       ->setStoryData($event_data)
       ->setStoryTime(time())
       ->setStoryAuthorPHID($this->actorPHID)

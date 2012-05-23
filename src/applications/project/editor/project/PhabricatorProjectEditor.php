@@ -86,7 +86,7 @@ final class PhabricatorProjectEditor {
 
       $affils = $project->loadAffiliations();
       $member_phids = array_keys(mpull($affils, null, 'getUserPHID'));
-      id(new PhabricatorNotificationsPublisher())
+      id(new PhabricatorNotificationPublisher())
         ->changeSubscribers($project->getPHID(), $member_phids);
 
       foreach ($transactions as $xaction) {
@@ -109,7 +109,7 @@ final class PhabricatorProjectEditor {
   }
 
   /*
-   * Meant to help unify the code between feed and notifications
+   * Meant to help unify the code between feed and notification
    * and also make projects behave similar to other apps in
    * terms of these two.  It makes us have to grab some things
    * twice, but I'm assuming this won't be a bottlekneck..
@@ -171,9 +171,9 @@ final class PhabricatorProjectEditor {
       'new'           => $xaction->getNewValue(),
     );
 
-    id(new PhabricatorNotificationsPublisher())
+    id(new PhabricatorNotificationPublisher())
       ->setStoryType(
-        PhabricatorNotificationsStoryTypeConstants::STORY_PROJECT)
+        PhabricatorNotificationStoryTypeConstants::STORY_PROJECT)
       ->setStoryData($event_data)
       ->setStoryTime(time())
       ->setStoryAuthorPHID($this->user->getPHID())
