@@ -373,8 +373,8 @@ celerity_register_resource_map(array(
   ),
   '/rsrc/swf/aphlict.swf' =>
   array(
-    'hash' => 'dedb4f16560d2a52f53ec10ca86b1153',
-    'uri' => '/res/dedb4f16/rsrc/swf/aphlict.swf',
+    'hash' => '4b9a9d83bebaf254f3790e87b45c1f92',
+    'uri' => '/res/4b9a9d83/rsrc/swf/aphlict.swf',
     'disk' => '/rsrc/swf/aphlict.swf',
     'type' => 'swf',
   ),
