@@ -1690,7 +1690,7 @@ phutil_register_library_map(array(
     'PhabricatorNotificationStoryDifferential' => 'PhabricatorNotificationStory',
     'PhabricatorNotificationStoryManiphest' => 'PhabricatorNotificationStory',
     'PhabricatorNotificationStoryPhriction' => 'PhabricatorNotificationStory',
-    'PhabricatorNotificationStoryProject' => 'PhabricatorNotificationsStory',
+    'PhabricatorNotificationStoryProject' => 'PhabricatorNotificationStory',
     'PhabricatorNotificationStoryTypeConstants' => 'PhabricatorNotificationConstants',
     'PhabricatorNotificationStoryUnknown' => 'PhabricatorNotificationStory',
     'PhabricatorNotificationStoryView' => 'PhabricatorNotificationView',

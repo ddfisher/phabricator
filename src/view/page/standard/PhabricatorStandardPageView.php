@@ -359,7 +359,8 @@ final class PhabricatorStandardPageView extends AphrontPageView {
 
     $notification_header = '';
     $notification_dropdown = '';
-    if ($user->isLoggedIn()) {
+    if (PhabricatorEnv::getEnvConfig('notification.enabled') &&
+      $user->isLoggedIn()) {
       $aphlict_object_id = 'aphlictswfobject';
 
       $aphlict_content = phutil_render_tag(
