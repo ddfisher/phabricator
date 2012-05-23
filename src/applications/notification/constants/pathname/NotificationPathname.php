@@ -16,31 +16,9 @@
  * limitations under the License.
  */
 
+final class NotificationPathname
+  extends PhabricatorNotificationConstants {
 
+  const KEY = 'pathname';
 
-abstract class AphlictNotification {
-  const APHLICT_POST_URL = 'http://127.0.0.1:22281/push?';
-  const TIMEOUT = 5;
-
-  private $params;
-  protected $message;
-  protected $actor;
-  protected $pagePathname;
-
-  abstract public function push();
-
-  protected function sendPostRequest() {
-    $url = self::APHLICT_POST_URL.$this->dataStr;
-    $future = new HTTPFuture(self::APHLICT_POST_URL,
-      $this->params);
-    $future->setMethod('POST');
-    $future->resolve();
-  }
-
-  protected function setData($data) {
-    $this->params = $data;//http_build_query($data);
-  }
 }
-
-
-

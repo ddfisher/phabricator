@@ -31,12 +31,13 @@ final class PhabricatorProjectAction
 
   public static function getActionPastTenseVerb($action) {
     static $map = array(
+      self::ACTION_CREATE        => 'created',
       self::ACTION_MEMBERS       => 'updated members of',
       self::ACTION_STATUS        => 'updated status of',
       self::ACTION_RENAME        => 'changed name of',
       self::ACTION_JOIN          => 'joined',
       self::ACTION_LEAVE         => 'left',
-      self::ACTION_ADD_MEMBERS    => 'added members from',
+      self::ACTION_ADD_MEMBERS    => 'added members to',
       self::ACTION_REMOVE_MEMBERS => 'removed members from',
       self::ACTION_CHANGE_MEMBERS => 'changed members of',
     );

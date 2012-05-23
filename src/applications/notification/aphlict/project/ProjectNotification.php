@@ -16,12 +16,12 @@
  * limitations under the License.
  */
 
-final class DifferentialNotification extends AphlictNotification{
+final class ProjectNotification extends AphlictNotification{
 
-  private $revision;
+  private $project;
 
-  function __construct($revision_id, $action, $actor_phid, $pathname) {
-    $this->revision = id(new DifferentialRevision())->load($revision_id);
+  function __construct($project_id, $action, $actor_phid, $pathname) {
+    $this->project = id(new PhabricatorProject())->load($project_id);
     $this->pagePathname = $pathname;
     $this->actor = id(new PhabricatorUser())->loadOneWhere(
       'PHID = %s',
@@ -32,12 +32,12 @@ final class DifferentialNotification extends AphlictNotification{
 
   function messageForAction($action) {
     $username = $this->actor->getUserName();
-    $verb = DifferentialAction::getActionPastTenseVerb($action);
-    $revision_id = $this->revision->getID();
+    $verb = PhabricatorProjectAction::getActionPastTenseVerb($action);
+    $project_name = $this->project->getName();
     return sprintf("%s %s %s",
       $username,
       $verb,
-      'D'.$revision_id);
+      $project_name);
   }
 
   public function push() {

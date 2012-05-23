@@ -6,15 +6,15 @@
 
 
 
-phutil_require_module('phabricator', 'applications/maniphest/constants/action');
-phutil_require_module('phabricator', 'applications/maniphest/storage/task');
+phutil_require_module('phabricator', 'applications/audit/constants/action');
 phutil_require_module('phabricator', 'applications/notification/aphlict/base');
 phutil_require_module('phabricator', 'applications/notification/constants/message');
 phutil_require_module('phabricator', 'applications/notification/constants/pathname');
 phutil_require_module('phabricator', 'applications/notification/constants/type');
 phutil_require_module('phabricator', 'applications/people/storage/user');
+phutil_require_module('phabricator', 'applications/repository/storage/commit');
 
 phutil_require_module('phutil', 'utils');
 
 
-phutil_require_source('ManiphestNotification.php');
+phutil_require_source('AuditNotification.php');

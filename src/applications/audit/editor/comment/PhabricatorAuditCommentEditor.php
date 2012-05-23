@@ -377,6 +377,7 @@ final class PhabricatorAuditCommentEditor {
     $commit = $this->commit;
     $user = $this->user;
     $event_data = array(
+        'commitID'      => $commit->getID(),
         'commitPHID'    => $commit->getPHID(),
         'action'        => $comment->getAction(),
         'content'       => $comment->getContent(),

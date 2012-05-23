@@ -241,6 +241,7 @@ final class PhrictionDocumentEditor {
         PhabricatorNotificationStoryTypeConstants::STORY_PHRICTION)
       ->setStoryData(
         array(
+          'id'      => $document->getID(),
           'phid'    => $document->getPHID(),
           'action'  => $feed_action,
           'content' => phutil_utf8_shorten($new_content->getContent(), 140),

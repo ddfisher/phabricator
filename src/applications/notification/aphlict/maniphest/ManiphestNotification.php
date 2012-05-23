@@ -18,40 +18,33 @@
 
 final class ManiphestNotification extends AphlictNotification{
 
-  const PATHNAME = 'pathname';
-  private $message;
-  private $pagePathname;
+  private $task;
 
-  function __construct($task_phid, $transaction, $pathname) {
+  function __construct($task_id, $action, $actor_phid, $pathname) {
+    $this->task = id(new ManiphestTask())->load($task_id);
     $this->pagePathname = $pathname;
-    $this->message = $this->message_for_transaction($transaction);
+    $this->actor = id(new PhabricatorUser())->loadOneWhere(
+      'PHID = %s',
+      $actor_phid);
+    $this->message = $this->messageForAction($action);
     return $this;
   }
 
-  function message_for_transaction($transaction) {
-    $type = $transaction->getTransactionType();
-    $actor_phid = $transaction->getAuthorPHID();
-    $user = id(new PhabricatorUser())->loadOneWhere(
-           'phid = %s',
-           $actor_phid);
-    $username = $user->getUserName();
-    switch ($type) {
-    case ManiphestTransactionType::TYPE_NONE:
-      return sprintf("%s commented on by %s",
-        substr($this->pagePathname, 1),
-        $username);
-    default:
-      return "NO MESSAGE SET FOR TYPE:".$type;
-    }
-    return $actor_phid;
+  function messageForAction($action) {
+    $username = $this->actor->getUserName();
+    $verb = ManiphestAction::getActionPastTenseVerb($action);
+    $task_id = $this->task->getID();
+    return sprintf("%s %s %s",
+      $username,
+      $verb,
+      'T'.$task_id);
   }
 
   public function push() {
     $this->setData(array(NotificationType::KEY => NotificationType::GENERIC,
       NotificationMessage::KEY => $this->message,
-      self::PATHNAME => $this->pagePathname));
+      NotificationPathname::KEY => $this->pagePathname));
     $this->sendPostRequest();
     return $this;
   }
 }
-

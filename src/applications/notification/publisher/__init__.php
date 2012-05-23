@@ -7,10 +7,11 @@
 
 
 phutil_require_module('phabricator', 'applications/feed/storage/story');
-phutil_require_module('phabricator', 'applications/maniphest/storage/task');
-phutil_require_module('phabricator', 'applications/maniphest/storage/transaction');
+phutil_require_module('phabricator', 'applications/notification/aphlict/audit');
 phutil_require_module('phabricator', 'applications/notification/aphlict/differential');
 phutil_require_module('phabricator', 'applications/notification/aphlict/maniphest');
+phutil_require_module('phabricator', 'applications/notification/aphlict/phriction');
+phutil_require_module('phabricator', 'applications/notification/aphlict/project');
 phutil_require_module('phabricator', 'applications/notification/aphlict/refresh');
 phutil_require_module('phabricator', 'applications/notification/constants/story');
 phutil_require_module('phabricator', 'applications/notification/storage/storydata');

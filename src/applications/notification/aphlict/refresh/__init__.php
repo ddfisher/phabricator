@@ -8,6 +8,7 @@
 
 phutil_require_module('phabricator', 'applications/notification/aphlict/base');
 phutil_require_module('phabricator', 'applications/notification/constants/message');
+phutil_require_module('phabricator', 'applications/notification/constants/pathname');
 phutil_require_module('phabricator', 'applications/notification/constants/type');
 phutil_require_module('phabricator', 'applications/people/storage/user');
 

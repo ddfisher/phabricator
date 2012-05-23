@@ -18,9 +18,7 @@
 
 final class RefreshNotification extends AphlictNotification {
 
-  const PATHNAME = 'pathname';
   private $updaterPhid;
-  private $pagePathname;
 
   function __construct($actor_phid, $pathname) {
     $this->updaterPhid = $actor_phid;
@@ -35,9 +33,8 @@ final class RefreshNotification extends AphlictNotification {
     $username = $user->getUserName();
     $message = sprintf("Page updated by %s", $username);
     $this->setData(array(NotificationType::KEY => NotificationType::REFRESH,
-      //NotificationMessage::KEY => NotificationMessage::REFRESH,
       NotificationMessage::KEY => $message,
-      self::PATHNAME => $this->pagePathname));
+      NotificationPathname::KEY => $this->pagePathname));
     $this->sendPostRequest();
     return $this;
   }

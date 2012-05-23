@@ -113,6 +113,8 @@ final class PhabricatorNotificationPublisher {
 
     $type = $this->storyType;
     $event_data = $this->storyData;
+    $actor_phid = $this->storyAuthorPHID;
+    $pathname = null;
     switch ($type) {
       case PhabricatorNotificationStoryTypeConstants::STORY_UNKNOWN:
         break;
@@ -120,43 +122,44 @@ final class PhabricatorNotificationPublisher {
         break;
       case PhabricatorNotificationStoryTypeConstants::STORY_DIFFERENTIAL:
         $revision_id = $event_data['revision_id'];
-        $actor_phid = $event_data['actor_phid'];
         $action = $event_data['action'];
-        $pathname = '/D'.$event_data['revision_id'];
-        id(new DifferentialNotification($revision_id, $action, $actor_phid))
-          ->push();
+        $pathname  = '/D'.$revision_id;
+        id(new DifferentialNotification($revision_id, $action, $actor_phid,
+          $pathname))->push();
         break;
       case PhabricatorNotificationStoryTypeConstants::STORY_PHRICTION:
-        $document_phid = $event_data['documentPHID'];
-        $actor_phid = $event_data['actor_phid'];
+        $document_id = $event_data['id'];
         $action = $event_data['action'];
-        $pathname = PhrictionDocument::getSlugURI($event_data['slug']);
-        // TODO push PhrictionNotification
+        $document = id(new PhrictionDocument())->load($document_id);
+        $pathname = PhrictionDocument::getSlugURI($document->getSlug());
+        id(new PhrictionNotification($document_id, $action, $actor_phid,
+          $pathname))->push();
         break;
       case PhabricatorNotificationStoryTypeConstants::STORY_MANIPHEST:
-        $task = id(new ManiphestTask)->load($event_data['taskID']);
-        $transaction = id(new ManiphestTransaction)
-          ->load($event_data['transactionID']);
-        $pathname = '/T'.$event_data['taskID'];
-        id(new ManiphestNotification($task, $transaction, $pathname))->push();
+        $task_id = $event_data['taskID'];
+        $action = $event_data['type'];
+        $pathname = '/T'.$task_id;
+        id(new ManiphestNotification($task_id, $action, $actor_phid,
+          $pathname))->push();
         break;
       case PhabricatorNotificationStoryTypeConstants::STORY_PROJECT:
-        $project_phid = $event_data['projectPHID'];
-        $transaction_id = $event_data['transactionID'];
         $project_id = $event_data['projectID'];
+        $action = $event_data['action'];
         $pathname = '/project/view/'.$project_id.'/';
-        // TODO push ProjectNotification
+        id(new ProjectNotification($project_id, $action, $actor_phid,
+          $pathname))->push();
         break;
       case PhabricatorNotificationStoryTypeConstants::STORY_AUDIT:
-        $commit_phid = $event_data['commitPHID'];
+        $commit_id = $event_data['commitID'];
         $action = $event_data['action'];
-        // TODO find audit pathname
-        // TODO push AuditNotification
+        $pathname = '/'.$this->commit->getCommitIdentifier();
+        id(new AuditNotification($commit_id, $action, $actor_phid,
+          $pathname))->push();
         break;
       default:
         break;
     }
-    id(new RefreshNotification($this->storyAuthorPHID, $pathname))->push();
+    id(new RefreshNotification($actor_phid, $pathname))->push();
   }
 
   /**
