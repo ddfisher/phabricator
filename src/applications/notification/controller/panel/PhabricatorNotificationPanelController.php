@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-final class PhabricatorNotificationTestPageController
+final class PhabricatorNotificationPanelController
   extends PhabricatorNotificationController {
 
   public function processRequest() {
@@ -31,19 +31,19 @@ final class PhabricatorNotificationTestPageController
 
     $builder = new PhabricatorNotificationBuilder($stories);
     $builder->setUser($user);
-    $notification_view = $builder->buildView();
+    $notifications_view = $builder->buildView();
 
-    $num_unconsumed = array_sum(
-                        array_map(
-                          function($story) {
-                            return $story->getConsumed() ? 0 : 1;
-                          },
-                          $stories
-                        )
-                      );
+    $num_unconsumed = 0;
+
+    foreach ($stories as $story) {
+      if (!$story->getConsumed()) {
+        $num_unconsumed++;
+      }
+
+    }
 
     $json = array(
-      "content" => $notification_view->render(),
+      "content" => $notifications_view->render(),
       "number" => $num_unconsumed,
     );
 

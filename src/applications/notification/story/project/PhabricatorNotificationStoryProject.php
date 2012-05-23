@@ -16,7 +16,8 @@
  * limitations under the License.
  */
 
-class PhabricatorNotificationStoryProject extends PhabricatorNotificationStory {
+final class PhabricatorNotificationStoryProject
+  extends PhabricatorNotificationStory {
     public function getRequiredHandlePHIDs() {
       return array(
         $this->getStoryData()->getAuthorPHID(),

@@ -14,4 +14,4 @@ phutil_require_module('phabricator', 'applications/notification/query');
 phutil_require_module('phutil', 'utils');
 
 
-phutil_require_source('PhabricatorNotificationTestPageController.php');
+phutil_require_source('PhabricatorNotificationPanelController.php');
