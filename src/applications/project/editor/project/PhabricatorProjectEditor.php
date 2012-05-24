@@ -130,8 +130,8 @@ final class PhabricatorProjectEditor {
         }
         break;
       case PhabricatorProjectTransactionType::TYPE_STATUS:
-        //fallthrough
         $action = PhabricatorProjectAction::ACTION_STATUS;
+        break;
       case PhabricatorProjectTransactionType::TYPE_MEMBERS:
         $add = array_diff($new, $old);
         $rem = array_diff($old, $new);
