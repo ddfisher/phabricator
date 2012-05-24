@@ -851,6 +851,11 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
         'name'    => $this->getPatchPath('137.auditmetadata.sql'),
         'legacy'  => 137,
       ),
+      '138.notification.sql' => array(
+        'type'    => 'sql',
+        'name'    => $this->getPatchPath('138.notification.sql'),
+        'legacy'  => 138,
+      ),
       'holidays.sql' => array(
         'type'    => 'sql',
         'name'    => $this->getPatchPath('holidays.sql'),

@@ -21,17 +21,35 @@
  */
 final class ManiphestAction extends PhrictionConstants {
 
-  const ACTION_CREATE   = 'create';
-  const ACTION_CLOSE    = 'close';
-  const ACTION_UPDATE   = 'update';
-  const ACTION_ASSIGN   = 'assign';
+  const ACTION_CREATE      = 'create';
+  const ACTION_REOPEN      = 'reopen';
+  const ACTION_CLOSE       = 'close';
+  const ACTION_UPDATE      = 'update';
+  const ACTION_ASSIGN      = 'assign';
+  const ACTION_COMMENT     = 'comment';
+  const ACTION_CC          = 'ccs';
+  const ACTION_PRIORITY    = 'priority';
+  const ACTION_PROJECT     = 'projects';
+  const ACTION_TITLE       = 'title';
+  const ACTION_DESCRIPTION = 'description';
+  const ACTION_REASSIGN    = 'reassign';
+  const ACTION_ATTACH      = 'attach';
 
   public static function getActionPastTenseVerb($action) {
     static $map = array(
-      self::ACTION_CREATE   => 'created',
-      self::ACTION_CLOSE    => 'closed',
-      self::ACTION_UPDATE   => 'updated',
-      self::ACTION_ASSIGN   => 'assigned',
+      self::ACTION_CREATE      => 'created',
+      self::ACTION_CLOSE       => 'closed',
+      self::ACTION_UPDATE      => 'updated',
+      self::ACTION_ASSIGN      => 'assigned',
+      self::ACTION_REASSIGN      => 'reassigned',
+      self::ACTION_COMMENT     => 'commented on',
+      self::ACTION_CC          => 'updated cc\'s of',
+      self::ACTION_PRIORITY    => 'changed the priority of',
+      self::ACTION_PROJECT     => 'modified projects of',
+      self::ACTION_TITLE       => 'updated title of',
+      self::ACTION_DESCRIPTION => 'updated description of',
+      self::ACTION_ATTACH      => 'attached something to',
+      self::ACTION_REOPEN      => 'reopened',
     );
 
     return idx($map, $action, "brazenly {$action}'d");

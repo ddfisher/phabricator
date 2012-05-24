@@ -16,22 +16,31 @@
  * limitations under the License.
  */
 
-abstract class PhabricatorNotificationsController
-  extends PhabricatorController {
 
-  public function buildStandardPageResponse($view, array $data) {
 
-    $page = $this->buildStandardPageView();
+abstract class AphlictNotification {
+  const APHLICT_POST_URL = 'http://127.0.0.1:22281/push?';
+  const TIMEOUT = 5;
 
-    $page->setApplicationName('Notifications');
-    $page->setBaseURI('/notifications/');
-    $page->setTitle(idx($data, 'title'));
-    $page->setGlyph('!');
-    $page->appendChild($view);
+  private $params;
+  protected $message;
+  protected $actor;
+  protected $pagePathname;
 
-    $response = new AphrontWebpageResponse();
-    return $response->setContent($page->render());
+  abstract public function push();
 
+  protected function sendPostRequest() {
+    $url = self::APHLICT_POST_URL.$this->dataStr;
+    $future = new HTTPFuture(self::APHLICT_POST_URL,
+      $this->params);
+    $future->setMethod('POST');
+    $future->resolve();
   }
 
+  protected function setData($data) {
+    $this->params = $data;//http_build_query($data);
+  }
 }
+
+
+

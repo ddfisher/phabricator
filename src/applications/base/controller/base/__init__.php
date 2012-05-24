@@ -10,11 +10,13 @@ phutil_require_module('phabricator', 'aphront/console/core');
 phutil_require_module('phabricator', 'aphront/controller');
 phutil_require_module('phabricator', 'aphront/response/403');
 phutil_require_module('phabricator', 'aphront/response/webpage');
+phutil_require_module('phabricator', 'applications/feed/storage/story');
 phutil_require_module('phabricator', 'applications/people/storage/user');
 phutil_require_module('phabricator', 'infrastructure/env');
 phutil_require_module('phabricator', 'storage/queryfx');
 phutil_require_module('phabricator', 'view/page/standard');
 
+phutil_require_module('phutil', 'filesystem');
 phutil_require_module('phutil', 'utils');
 
 
