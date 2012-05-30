@@ -510,10 +510,10 @@ final class ManiphestTaskDetailController extends ManiphestController {
     $transaction_view->setAuxiliaryFields($aux_fields);
     $transaction_view->setMarkupEngine($engine);
 
-    id(new PhabricatorNotificationSubscribed())
-      ->updateLastViewed($user->getPHID(),
-      $task->getPHID(),
-      $this->generateChronologicalKey());
+    /* id(new PhabricatorNotificationSubscribed()) */
+    /*   ->updateLastViewed($user->getPHID(), */
+    /*   $task->getPHID(), */
+    /*   $this->generateChronologicalKey()); */
 
     return $this->buildStandardPageResponse(
       array(

@@ -94,29 +94,6 @@ abstract class PhabricatorNotificationStory {
     $this->viewer = $user;
   }
 
-  final public function loadLastViewed() {
-    if (!$this->viewer) {
-      throw new Exception('You must call setViewer first!');
-    }
-
-    $objects = id(new PhabricatorNotificationSubscribed())->loadAllWhere(
-      "userPHID = %s AND objectPHID = %s",
-      $this->viewer->getPHID(),
-      $this->data->getObjectPHID()
-      );
-
-
-    $newest_subscription = last(msort($objects, 'getLastViewed'));
-    $this->lastViewed = $newest_subscription->getLastViewed();
-
-  }
-
-  final public function getLastViewed() {
-    if (!$this->lastViewed) {
-      throw new Exception('You must call setLastViewed first!');
-    }
-    return $this->lastViewed;
-  }
 
   final protected function renderString($str) {
     return '<strong>'.phutil_escape_html($str).'</strong>';

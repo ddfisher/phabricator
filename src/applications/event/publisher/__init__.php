@@ -6,6 +6,9 @@
 
 
 
+phutil_require_module('phabricator', 'applications/event/storage/notification');
+phutil_require_module('phabricator', 'applications/event/storage/story');
+phutil_require_module('phabricator', 'applications/event/storage/storyreference');
 phutil_require_module('phabricator', 'applications/feed/storage/story');
 phutil_require_module('phabricator', 'applications/notification/aphlict/audit');
 phutil_require_module('phabricator', 'applications/notification/aphlict/differential');
@@ -14,14 +17,13 @@ phutil_require_module('phabricator', 'applications/notification/aphlict/phrictio
 phutil_require_module('phabricator', 'applications/notification/aphlict/project');
 phutil_require_module('phabricator', 'applications/notification/aphlict/refresh');
 phutil_require_module('phabricator', 'applications/notification/constants/story');
-phutil_require_module('phabricator', 'applications/notification/storage/storydata');
-phutil_require_module('phabricator', 'applications/notification/storage/subscribed');
 phutil_require_module('phabricator', 'applications/phriction/storage/document');
 phutil_require_module('phabricator', 'infrastructure/env');
+phutil_require_module('phabricator', 'storage/qsprintf');
 phutil_require_module('phabricator', 'storage/queryfx');
 
 phutil_require_module('phutil', 'filesystem');
 phutil_require_module('phutil', 'utils');
 
 
-phutil_require_source('PhabricatorNotificationPublisher.php');
+phutil_require_source('PhabricatorEventPublisher.php');

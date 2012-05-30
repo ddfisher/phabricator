@@ -9,4 +9,4 @@
 phutil_require_module('phabricator', 'applications/event/storage/base');
 
 
-phutil_require_source('PhabricatorEventStoryReference.php');
+phutil_require_source('PhabricatorEventNotification.php');

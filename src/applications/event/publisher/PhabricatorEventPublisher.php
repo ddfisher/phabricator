@@ -121,12 +121,12 @@ final class PhabricatorEventPublisher {
 
   private function updateEventNotification($chrono_key) {
     $notif = new PhabricatorEventNotification();
-    
+
     $sql = array();
     $conn = $notif->establishConnection('w');
-    
+
     $conn = $notif->establishConnection('w');
-    
+
     foreach (array_unique($this->subscribedPHIDs) as $user_phid) {
       $sql[] = qsprintf(
         $conn,

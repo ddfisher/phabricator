@@ -7,7 +7,7 @@
 
 
 phutil_require_module('phabricator', 'applications/audit/constants/action');
-phutil_require_module('phabricator', 'applications/notification/story/base');
+phutil_require_module('phabricator', 'applications/event/story/base');
 phutil_require_module('phabricator', 'applications/notification/view/story');
 
 

@@ -54,7 +54,7 @@ final class PhabricatorNotificationBuilder {
       $story->setViewer($user);
       $story->loadHasViewed();
       $story->setConsumed($story->getHasViewed());
-      
+
       $view = $story->renderView();
       $view->setViewer($user);
       $null_view->appendChild($view);

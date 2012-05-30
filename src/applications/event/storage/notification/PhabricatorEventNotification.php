@@ -16,13 +16,13 @@
  * limitations under the License.
  */
 
-final class PhabricatorEventStoryReference extends PhabricatorEventDAO {
+final class PhabricatorEventNotification extends PhabricatorEventDAO {
 
   protected $userPHID;
   protected $objectPHID;
   protected $chronologicalKey;
   protected $hasViewed;
-  
+
   public function getConfiguration() {
     return array(
       self::CONFIG_IDS          => self::IDS_MANUAL,

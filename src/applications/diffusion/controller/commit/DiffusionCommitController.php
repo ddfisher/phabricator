@@ -262,10 +262,10 @@ final class DiffusionCommitController extends DiffusionController {
 
     $content[] = $this->buildAddCommentView($commit, $audit_requests);
 
-    id(new PhabricatorNotificationSubscribed())
-      ->updateLastViewed($user->getPHID(),
-      $commit->getPHID(),
-      $this->generateChronologicalKey());
+    /* id(new PhabricatorNotificationSubscribed()) */
+    /*   ->updateLastViewed($user->getPHID(), */
+    /*   $commit->getPHID(), */
+    /*   $this->generateChronologicalKey()); */
 
 
     return $this->buildStandardPageResponse(

@@ -13,7 +13,6 @@ phutil_require_module('phabricator', 'applications/differential/storage/diff');
 phutil_require_module('phabricator', 'applications/differential/view/changesetlistview');
 phutil_require_module('phabricator', 'applications/differential/view/difftableofcontents');
 phutil_require_module('phabricator', 'applications/differential/view/primarypane');
-phutil_require_module('phabricator', 'applications/notification/storage/subscribed');
 phutil_require_module('phabricator', 'infrastructure/env');
 phutil_require_module('phabricator', 'view/form/base');
 phutil_require_module('phabricator', 'view/form/control/markup');

@@ -213,14 +213,14 @@ final class ManiphestTransactionEditor {
     return PhabricatorEnv::getEnvConfig('metamta.maniphest.subject-prefix');
   }
 
-  private function publishEventStory(ManiphestTask $task, 
+  private function publishEventStory(ManiphestTask $task,
     array $transactions) {
 
     assert_instances_of($transactions, 'ManiphestTransaction');
-    
+
     $actions = array(ManiphestAction::ACTION_UPDATE);
     $comments = null;
-    
+
     foreach ($transactions as $transaction) {
       if ($transaction->hasComments()) {
         $comments = $transaction->getComments();
@@ -261,7 +261,7 @@ final class ManiphestTransactionEditor {
       'comments'        => $comments);
 
     id(new PhabricatorEventStoryPublisher())
-      ->setStoryType(PhabricatorEventStoryTypeConstants::STORY_MANIPHEST)
+      ->setStoryType(PhabricatorNotificationStoryTypeConstants::STORY_MANIPHEST)
       ->setStoryData($event_data)
       ->setStoryTime(time())
       ->setStoryAuthorPHID($actor_phid)
@@ -273,8 +273,8 @@ final class ManiphestTransactionEditor {
               $owner_phid,
               $actor_phid
             )
-          )
-          $task->getCCPHIDs()));
+          ),
+          $task->getCCPHIDs()))
       ->setRelatedPHIDs(
         array_merge(
           array_filter(
