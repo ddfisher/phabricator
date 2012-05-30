@@ -52,13 +52,9 @@ final class PhabricatorNotificationBuilder {
     foreach ($stories as $story) {
       $story->setHandles($handles);
       $story->setViewer($user);
-      $story->loadLastViewed();
-
-      if ($story->getLastViewed() > $story->getChronologicalKey()) {
-        $story->setConsumed(true);
-      }
-
-      // $date = phabricator_date($story->getEpoch(), $user);
+      $story->loadHasViewed();
+      $story->setConsumed($story->getHasViewed());
+      
       $view = $story->renderView();
       $view->setViewer($user);
       $null_view->appendChild($view);

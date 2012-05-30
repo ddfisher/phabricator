@@ -39,24 +39,23 @@ final class PhabricatorNotificationQuery {
     }
 
     //TODO throw an exception if no user
-    $story_table = new PhabricatorNotificationStoryData();
-    $sub_table = new PhabricatorNotificationSubscribed();
+    $story_table = new PhabricatorEventStoryData();
+    $notification_table = new PhabricatorEventNotification();
 
     $conn = $story_table->establishConnection('r');
 
     $data = queryfx_all(
       $conn,
-      "SELECT story.* FROM %T sub
-         JOIN %T story ON sub.objectPHID = story.objectPHID
-         WHERE sub.userPHID = '%Q'
-           AND not story.authorPHID = '%Q'
+      "SELECT story.* FROM %T notif
+         JOIN %T story ON notif.chronologicalKey = story.chronologicalKey
+         WHERE notif.userPHID = '%s'
+           AND not story.authorPHID = '%s'
          ORDER BY story.chronologicalKey desc
          LIMIT %d",
-      $sub_table->getTableName(),
+      $notification_table->getTableName(),
       $story_table->getTableName(),
       $this->userPHID,
       $this->userPHID,
-      /* "", //XXX */
       $this->limit);
 
     $data = $story_table->loadAllFromArray($data);

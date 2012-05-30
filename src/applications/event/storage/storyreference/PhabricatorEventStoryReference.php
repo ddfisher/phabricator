@@ -16,8 +16,16 @@
  * limitations under the License.
  */
 
-abstract class PhabricatorNotificationDAO extends PhabricatorLiskDAO {
-  public function getApplicationName() {
-    return 'notification';
+final class PhabricatorEventStoryReference extends PhabricatorEventDAO {
+
+  protected $objectPHID;
+  protected $chronologicalKey;
+
+  public function getConfiguration() {
+    return array(
+      self::CONFIG_IDS          => self::IDS_MANUAL,
+      self::CONFIG_TIMESTAMPS   => false,
+    ) + parent::getConfiguration();
   }
+
 }

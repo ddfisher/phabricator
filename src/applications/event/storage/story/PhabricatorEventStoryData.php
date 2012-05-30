@@ -16,19 +16,14 @@
  * limitations under the License.
  */
 
-final class PhabricatorNotificationStoryData
-  extends PhabricatorNotificationDAO {
+final class PhabricatorEventStoryData extends PhabricatorEventDAO {
 
   protected $phid;
 
   protected $storyType;
   protected $storyData;
   protected $authorPHID;
-  protected $objectPHID;
   protected $chronologicalKey;
-
-  //note, this comes from diff table but stored in results of query
-
 
   public function getConfiguration() {
     return array(
@@ -41,7 +36,7 @@ final class PhabricatorNotificationStoryData
 
   public function generatePHID() {
     return PhabricatorPHID::generateNewPHID(
-      PhabricatorPHIDConstants::PHID_TYPE_NTFN);
+      PhabricatorPHIDConstants::PHID_TYPE_STRY);
   }
 
   public function getEpoch() {
@@ -49,7 +44,7 @@ final class PhabricatorNotificationStoryData
       // We're on a 32-bit machine.
       if (function_exists('bcadd')) {
         // Try to use the 'bc' extension.
-        return bcdiv($this->chronologicalKey, bcpow(2, 32));
+        return bcdiv($this->chronologicalKey, bcpow(2,32));
       } else {
         // Do the math in MySQL. TODO: If we formalize a bc dependency, get
         // rid of this.

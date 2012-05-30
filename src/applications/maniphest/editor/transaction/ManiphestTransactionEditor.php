@@ -57,7 +57,7 @@ final class ManiphestTransactionEditor {
           $old = null;
           break;
         case ManiphestTransactionType::TYPE_STATUS:
-          $old = $task->getStatus();
+          $olad = $task->getStatus();
           break;
         case ManiphestTransactionType::TYPE_OWNER:
           $old = $task->getOwnerPHID();
@@ -201,13 +201,7 @@ final class ManiphestTransactionEditor {
       $email_cc,
       $task->getCCPHIDs());
 
-    // TODO: notify people when they've been removed from CCs
-
-    id(new PhabricatorNotificationPublisher())
-      ->changeSubscribers($task->getPHID(), $task->getCCPHIDs());
-
-    $this->publishFeedStory($task, $transactions);
-    $this->publishNotification($task, $transactions);
+    $this->publishEventStory($task, $transactions);
 
     // TODO: Do this offline via timeline
     PhabricatorSearchManiphestIndexer::indexTask($task);
@@ -219,9 +213,14 @@ final class ManiphestTransactionEditor {
     return PhabricatorEnv::getEnvConfig('metamta.maniphest.subject-prefix');
   }
 
-  private function publishNotification($task, $transactions) {
-    $comments = null;
+  private function publishEventStory(ManiphestTask $task, 
+    array $transactions) {
 
+    assert_instances_of($transactions, 'ManiphestTransaction');
+    
+    $actions = array(ManiphestAction::ACTION_UPDATE);
+    $comments = null;
+    
     foreach ($transactions as $transaction) {
       if ($transaction->hasComments()) {
         $comments = $transaction->getComments();
@@ -245,25 +244,49 @@ final class ManiphestTransactionEditor {
           $action = $transaction->getTransactionType();
           break;
       }
-
-      $event_data = array(
-          'taskPHID'        => $task->getPHID(),
-          'transactionID'   => $transaction->getID(),
-          'ownerPHID'       => $task->getOwnerPHID(),
-          'taskID'          => $task->getID(),
-          'type'            => $action,
-          'description'     => $task->getDescription(),
-          'comments'        => $comments);
-
-      id(new PhabricatorNotificationPublisher())
-        ->setStoryType(
-          PhabricatorNotificationStoryTypeConstants::STORY_MANIPHEST)
-        ->setStoryData($event_data)
-        ->setStoryTime(time())
-        ->setStoryAuthorPHID($transaction->getAuthorPHID())
-        ->setObjectPHID($task->getPHID())
-        ->publish();
     }
+    ///TODO push notifications for all the actions
+    $action_type = ManiphestAction::selectStrongestAction($actions);
+    $owner_phid = $task->getOwnerPHID();
+    $actor_phid = head($transactions)->getAuthorPHID();
+    $author_phid = $task->getAuthorPHID();
+
+    $event_data = array(
+      'taskPHID'        => $task->getPHID(),
+      'transactionIDs'   => mpull($transactions, 'getID'),
+      'ownerPHID'       => $task->getOwnerPHID(),
+      'taskID'          => $task->getID(),
+      'action'          => $action,
+      'description'     => $task->getDescription(),
+      'comments'        => $comments);
+
+    id(new PhabricatorEventStoryPublisher())
+      ->setStoryType(PhabricatorEventStoryTypeConstants::STORY_MANIPHEST)
+      ->setStoryData($event_data)
+      ->setStoryTime(time())
+      ->setStoryAuthorPHID($actor_phid)
+      ->setSubscribedPHIDs(
+        array_merge(
+          array_filter(
+            array(
+              $author_phid,
+              $owner_phid,
+              $actor_phid
+            )
+          )
+          $task->getCCPHIDs()));
+      ->setRelatedPHIDs(
+        array_merge(
+          array_filter(
+            array(
+              $task->getPHID(),
+              $author_phid,
+              $actor_phid,
+              $owner_phid,
+            )),
+          $task->getProjectPHIDs()))
+      ->publish();
+
   }
 
   private function sendEmail($task, $transactions, $email_to, $email_cc) {
@@ -358,60 +381,6 @@ final class ManiphestTransactionEditor {
     return $handler_object;
   }
 
-  private function publishFeedStory(ManiphestTask $task, array $transactions) {
-    assert_instances_of($transactions, 'ManiphestTransaction');
-
-    $actions = array(ManiphestAction::ACTION_UPDATE);
-    $comments = null;
-    foreach ($transactions as $transaction) {
-      if ($transaction->hasComments()) {
-        $comments = $transaction->getComments();
-      }
-      switch ($transaction->getTransactionType()) {
-        case ManiphestTransactionType::TYPE_OWNER:
-          $actions[] = ManiphestAction::ACTION_ASSIGN;
-          break;
-        case ManiphestTransactionType::TYPE_STATUS:
-          if ($task->getStatus() != ManiphestTaskStatus::STATUS_OPEN) {
-            $actions[] = ManiphestAction::ACTION_CLOSE;
-          } else if ($this->isCreate($transactions)) {
-            $actions[] = ManiphestAction::ACTION_CREATE;
-          }
-          break;
-        default:
-          break;
-      }
-    }
-
-    $action_type = ManiphestAction::selectStrongestAction($actions);
-    $owner_phid = $task->getOwnerPHID();
-    $actor_phid = head($transactions)->getAuthorPHID();
-    $author_phid = $task->getAuthorPHID();
-
-    id(new PhabricatorFeedStoryPublisher())
-      ->setStoryType(PhabricatorFeedStoryTypeConstants::STORY_MANIPHEST)
-      ->setStoryData(array(
-        'taskPHID'        => $task->getPHID(),
-        'transactionIDs'  => mpull($transactions, 'getID'),
-        'ownerPHID'       => $owner_phid,
-        'action'          => $action_type,
-        'comments'        => $comments,
-        'description'     => $task->getDescription(),
-      ))
-      ->setStoryTime(time())
-      ->setStoryAuthorPHID($actor_phid)
-      ->setRelatedPHIDs(
-        array_merge(
-          array_filter(
-            array(
-              $task->getPHID(),
-              $author_phid,
-              $actor_phid,
-              $owner_phid,
-            )),
-          $task->getProjectPHIDs()))
-      ->publish();
-  }
 
   private function isCreate(array $transactions) {
     assert_instances_of($transactions, 'ManiphestTransaction');
