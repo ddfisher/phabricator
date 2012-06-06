@@ -7,7 +7,7 @@
 
 
 phutil_require_module('phabricator', 'applications/conduit/method/base');
-phutil_require_module('phabricator', 'applications/feed/publisher');
+phutil_require_module('phabricator', 'applications/feed/publisher/feed');
 
 
 phutil_require_source('ConduitAPI_feed_publish_Method.php');

@@ -6,6 +6,7 @@
 
 
 
+phutil_require_module('phabricator', 'applications/maniphest/constants/transactiontype');
 phutil_require_module('phabricator', 'applications/phriction/constants/base');
 
 phutil_require_module('phutil', 'utils');

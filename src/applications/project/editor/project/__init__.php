@@ -7,7 +7,7 @@
 
 
 phutil_require_module('phabricator', 'applications/feed/constants/story');
-phutil_require_module('phabricator', 'applications/feed/publisher');
+phutil_require_module('phabricator', 'applications/feed/publisher/feed');
 phutil_require_module('phabricator', 'applications/project/constants/transaction');
 phutil_require_module('phabricator', 'applications/project/exception/namecollison');
 phutil_require_module('phabricator', 'applications/project/storage/affiliation');

@@ -1,28 +1,11 @@
 <?php
 
-/*
- * Copyright 2011 Facebook, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+abstract class PhabricatorStoryPublisher {
 
-final class PhabricatorFeedStoryPublisher {
-
-  private $relatedPHIDs;
-  private $storyType;
-  private $storyData;
-  private $storyTime;
-  private $storyAuthorPHID;
+  protected $storyType;
+  protected $storyData;
+  protected $storyTime;
+  protected $storyAuthorPHID;
 
   public function setRelatedPHIDs(array $phids) {
     $this->relatedPHIDs = $phids;
@@ -49,44 +32,7 @@ final class PhabricatorFeedStoryPublisher {
     return $this;
   }
 
-  public function publish() {
-    if (!$this->relatedPHIDs) {
-      throw new Exception("There are no PHIDs related to this story!");
-    }
-
-    if (!$this->storyType) {
-      throw new Exception("Call setStoryType() before publishing!");
-    }
-
-    $chrono_key = $this->generateChronologicalKey();
-
-    $story = new PhabricatorFeedStoryData();
-    $story->setStoryType($this->storyType);
-    $story->setStoryData($this->storyData);
-    $story->setAuthorPHID($this->storyAuthorPHID);
-    $story->setChronologicalKey($chrono_key);
-    $story->save();
-
-    $ref = new PhabricatorFeedStoryReference();
-
-    $sql = array();
-    $conn = $ref->establishConnection('w');
-    foreach (array_unique($this->relatedPHIDs) as $phid) {
-      $sql[] = qsprintf(
-        $conn,
-        '(%s, %s)',
-        $phid,
-        $chrono_key);
-    }
-
-    queryfx(
-      $conn,
-      'INSERT INTO %T (objectPHID, chronologicalKey) VALUES %Q',
-      $ref->getTableName(),
-      implode(', ', $sql));
-
-    return $story;
-  }
+  abstract public function publish();
 
   /**
    * We generate a unique chronological key for each story type because we want
@@ -100,7 +46,7 @@ final class PhabricatorFeedStoryPublisher {
    *
    * @return string A unique, time-ordered key which identifies the story.
    */
-  private function generateChronologicalKey() {
+  protected function generateChronologicalKey() {
     // Use the epoch timestamp for the upper 32 bits of the key. Default to
     // the current time if the story doesn't have an explicit timestamp.
     $time = nonempty($this->storyTime, time());

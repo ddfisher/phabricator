@@ -6,7 +6,7 @@
 
 
 
-phutil_require_module('phabricator', 'applications/feed/story/base');
+phutil_require_module('phabricator', 'applications/feed/story/maniphest/base');
 phutil_require_module('phabricator', 'applications/feed/view/story');
 phutil_require_module('phabricator', 'applications/maniphest/constants/action');
 

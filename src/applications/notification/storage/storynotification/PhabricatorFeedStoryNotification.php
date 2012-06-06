@@ -16,13 +16,12 @@
  * limitations under the License.
  */
 
-final class PhabricatorNotificationSubscribed
-  extends PhabricatorNotificationDAO {
+final class PhabricatorFeedStoryNotification extends PhabricatorFeedDAO {
 
   protected $userPHID;
-  protected $objectPHID;
-  protected $lastViewed;
-
+  protected $primaryObjectPHID;
+  protected $chronologicalKey;
+  protected $hasViewed;
 
   public function getConfiguration() {
     return array(
@@ -31,16 +30,4 @@ final class PhabricatorNotificationSubscribed
     ) + parent::getConfiguration();
   }
 
-  public function updateLastViewed($userPHID, $objectPHID, $lastViewed) {
-    $unguarded = AphrontWriteGuard::beginScopedUnguardedWrites();
-    $sub = $this->loadOneWhere("userPHID = %s AND objectPHID = %s",
-      $userPHID,
-      $objectPHID);
-
-    if ($sub) {
-      $sub->setLastViewed($lastViewed)
-        ->update();
-    }
-    unset($unguarded);
-  }
 }

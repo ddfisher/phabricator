@@ -16,22 +16,38 @@
  * limitations under the License.
  */
 
-final class PhabricatorNotificationStoryManiphest
- extends PhabricatorStoryManiphest {
+final class PhabricatorFeedStoryManiphest 
+  extends PhabricatorStoryManiphest {
 
   public function renderView() {
     $data = $this->getStoryData();
 
-    $view = new PhabricatorNotificationStoryView();
+    $view = new PhabricatorFeedStoryView();
 
     $view->setEpoch($data->getEpoch());
-    $view->setOneLineStory(true);
-    $view->setConsumed($this->getConsumed());
 
-    $view->setTitle($this->lineForData($data));
+    $action = $this->getLineForData($data);
+    $view->setTitle($action);
     $view->setEpoch($data->getEpoch());
+
+    switch ($action) {
+      case ManiphestAction::ACTION_CREATE:
+        $full_size = true;
+        break;
+      default:
+        $full_size = false;
+        break;
+    }
+
+    if ($full_size) {
+      $view->setImage($this->getHandle($author_phid)->getImageURI());
+      $content = $this->renderSummary($data->getValue('description'));
+      $view->appendChild($content);
+    } else {
+      $view->setOneLineStory(true);
+    }
 
     return $view;
   }
-}
 
+}

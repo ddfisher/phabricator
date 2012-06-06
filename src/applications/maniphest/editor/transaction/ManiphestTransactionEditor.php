@@ -314,7 +314,8 @@ final class ManiphestTransactionEditor {
       if ($transaction->hasComments()) {
         $comments = $transaction->getComments();
       }
-      switch ($transaction->getTransactionType()) {
+      $type = $transaction->getTransactionType();
+      switch ($type) {
         case ManiphestTransactionType::TYPE_OWNER:
           $actions[] = ManiphestAction::ACTION_ASSIGN;
           break;
@@ -323,9 +324,15 @@ final class ManiphestTransactionEditor {
             $actions[] = ManiphestAction::ACTION_CLOSE;
           } else if ($this->isCreate($transactions)) {
             $actions[] = ManiphestAction::ACTION_CREATE;
+          } else {
+            $actions[] = ManiphestAction::ACTION_REOPEN;
           }
           break;
         default:
+          //not sure if this check is necessary
+          if ($type != ManiphestTransactionType::TYPE_AUXILIARY) {
+            $actions[] = $type;
+          }
           break;
       }
     }

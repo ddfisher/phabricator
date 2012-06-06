@@ -16,77 +16,23 @@
  * limitations under the License.
  */
 
-final class PhabricatorNotificationPublisher {
+final class PhabricatorNotificationStoryPublisher
+  extends PhabricatorStoryPublisher{
 
-  private $storyType;
-  private $storyData;
-  private $storyTime;
-  private $storyAuthorPHID;
-  private $objectPHID;
+  private $primaryObjectPHID;
 
-  public function setRelatedPHIDs(array $phids) {
-    $this->relatedPHIDs = $phids;
-    return $this;
-  }
 
-  public function setStoryType($story_type) {
-    $this->storyType = $story_type;
-    return $this;
-  }
-
-  public function setStoryData(array $data) {
-    $this->storyData = $data;
-    return $this;
-  }
-
-  public function setStoryTime($time) {
-    $this->storyTime = $time;
-    return $this;
-  }
-
-  public function setStoryAuthorPHID($phid) {
-    $this->storyAuthorPHID = $phid;
-    return $this;
-  }
-
-  public function setObjectPHID($phid) {
-    $this->objectPHID = $phid;
-    return $this;
-  }
-
-  public function changeSubscribers($object_phid, $cc_phids) {
-    $ref = new PhabricatorNotificationSubscribed();
-    $current_subscribers = $ref->loadAllWhere("objectPHID = %s", $object_phid);
-    $current_phids = mpull($current_subscribers, 'getUserPHID');
-
-    // TODO: make sure current notification is unread
-    $chrono_key = $this->generateChronologicalKey();
-
-    foreach ($cc_phids as $new_phid) {
-      if (!in_array($new_phid, $current_phids)) {
-        $subscription = id(new PhabricatorNotificationSubscribed())
-          ->setUserPHID($new_phid)
-          ->setObjectPHID($object_phid)
-          ->setLastViewed($chrono_key)
-          ->insert();
-      }
-    }
-
-    foreach ($current_subscribers as $old_subscriber) {
-      if (!in_array($old_subscriber->getUserPHID(), $cc_phids)) {
-        $old_subscriber->delete();
-      }
-    }
-
+  public function setPrimaryObjectPHID($phid) {
+    $this->primaryObjectPHID = $phid;
     return $this;
   }
 
   public function publish() {
     if (!PhabricatorEnv::getEnvConfig('notification.enabled')) {
-      return null;
+      return $this;
     }
 
-    if (!$this->objectPHID) {
+    if (!$this->primaryObjectPHID) {
       throw new Exception("There is no object PHID for this story!");
     }
 
@@ -96,17 +42,36 @@ final class PhabricatorNotificationPublisher {
 
     $chrono_key = $this->generateChronologicalKey();
 
-    $story = id(new PhabricatorNotificationStoryData())
-      ->setStoryType($this->storyType)
-      ->setStoryData($this->storyData)
-      ->setAuthorPHID($this->storyAuthorPHID)
-      ->setObjectPHID($this->objectPHID)
-      ->setChronologicalKey($chrono_key)
-      ->save();
 
+    $this->insertNotifications($chrono_key);
     $this->sendAphlictNotification();
-    return $story;
+    return $this;
   }
+
+  public function inserNotifications($chrono_key) {
+    $notif = new PhabricatorFeedStoryNotification();
+    $sql = array();
+    $conn = $notif->establishConnection('w');
+
+    foreach (array_unique($this->subscribedPHIDs) as $user_phid) {
+      $sql[] = qsprintf(
+        $conn,
+        '(%s, %s, %s, %d)',
+        $this->primaryObjectPHID,
+        $user_phid,
+        $chrono_key,
+        false);
+    }
+
+    queryfx(
+      $conn,
+      'INSERT INTO %T
+       (objectPHID, userPHID, chronologicalKey, hasViewed)
+       VALUES %Q',
+      $notif->getTableName(),
+      implode(', ', $sql));
+  }
+
 
   public function sendAphlictNotification() {
     // send aphlict notification based on story type

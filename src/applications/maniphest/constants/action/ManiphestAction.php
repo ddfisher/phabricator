@@ -20,20 +20,24 @@
  * @group maniphest
  */
 final class ManiphestAction extends PhrictionConstants {
-
+  /* These actions must be determined when the story
+     is generated and thus are new */
   const ACTION_CREATE      = 'create';
   const ACTION_REOPEN      = 'reopen';
   const ACTION_CLOSE       = 'close';
   const ACTION_UPDATE      = 'update';
   const ACTION_ASSIGN      = 'assign';
-  const ACTION_COMMENT     = 'comment';
-  const ACTION_CC          = 'ccs';
-  const ACTION_PRIORITY    = 'priority';
-  const ACTION_PROJECT     = 'projects';
-  const ACTION_TITLE       = 'title';
-  const ACTION_DESCRIPTION = 'description';
-  const ACTION_REASSIGN    = 'reassign';
-  const ACTION_ATTACH      = 'attach';
+
+  /* these actions are determined sufficiently by the transaction
+     type and thus we use them here*/
+  const ACTION_COMMENT     = ManiphestTransactionType::TYPE_NONE;
+  const ACTION_CC          = ManiphestTransactionType::TYPE_CCS;
+  const ACTION_PRIORITY    = ManiphestTransactionType::TYPE_PRIORITY;
+  const ACTION_PROJECT     = ManiphestTransactionType::TYPE_PROJECTS;
+  const ACTION_TITLE       = ManiphestTransactionType::TYPE_TITLE;
+  const ACTION_DESCRIPTION = ManiphestTransactionType::TYPE_DESCRIPTION;
+  const ACTION_REASSIGN    = ManiphestTransactionType::TYPE_OWNER;
+  const ACTION_ATTACH      = ManiphestTransactionType::TYPE_ATTACH;
 
   public static function getActionPastTenseVerb($action) {
     static $map = array(
@@ -63,10 +67,19 @@ final class ManiphestAction extends PhrictionConstants {
    */
   public static function selectStrongestAction(array $actions) {
     static $strengths = array(
-      self::ACTION_UPDATE => 0,
-      self::ACTION_ASSIGN => 1,
-      self::ACTION_CREATE => 2,
-      self::ACTION_CLOSE  => 3,
+      self::ACTION_UPDATE      => 0,
+      self::ACTION_CC          => 1,
+      self::ACTION_PROJECT     => 2,
+      self::ACTION_DESCRIPTION => 3,
+      self::ACTION_TITLE       => 4,
+      self::ACTION_ATTACH      => 5,
+      self::ACTION_COMMENT     => 6,
+      self::ACTION_PRIORITY    => 7,
+      self::ACTION_REASSIGN    => 8,
+      self::ACTION_ASSIGN      => 9,
+      self::ACTION_REOPEN      => 10,
+      self::ACTION_CREATE      => 11,
+      self::ACTION_CLOSE       => 12,
     );
 
     $strongest = null;

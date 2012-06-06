@@ -45,6 +45,9 @@ final class PhabricatorNotificationBuilder {
       $handle_phids = array_mergev(mpull($stories, 'getRequiredHandlePHIDs'));
       $handles = id(new PhabricatorObjectHandleData($handle_phids))
         ->loadHandles();
+      $has_vieweds = id(new PhabricatorFeedStoryNotification())
+        ->loadAllWhere('userPHID=%s', $user->getPHID());
+      $has_vieweds = mpull($has_vieweds, 'getChronologicalKey', 'getHasViewed');
     }
 
     $null_view = new AphrontNullView();
@@ -52,13 +55,7 @@ final class PhabricatorNotificationBuilder {
     foreach ($stories as $story) {
       $story->setHandles($handles);
       $story->setViewer($user);
-      $story->loadLastViewed();
-
-      if ($story->getLastViewed() > $story->getChronologicalKey()) {
-        $story->setConsumed(true);
-      }
-
-      // $date = phabricator_date($story->getEpoch(), $user);
+      $story->setHasViewed($has_vieweds[$story->getChronologicalKey()]);
       $view = $story->renderView();
       $view->setViewer($user);
       $null_view->appendChild($view);

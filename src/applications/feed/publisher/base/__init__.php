@@ -7,12 +7,10 @@
 
 
 phutil_require_module('phabricator', 'applications/feed/storage/story');
-phutil_require_module('phabricator', 'applications/feed/storage/storyreference');
-phutil_require_module('phabricator', 'storage/qsprintf');
 phutil_require_module('phabricator', 'storage/queryfx');
 
 phutil_require_module('phutil', 'filesystem');
 phutil_require_module('phutil', 'utils');
 
 
-phutil_require_source('PhabricatorFeedStoryPublisher.php');
+phutil_require_source('PhabricatorStoryPublisher.php');

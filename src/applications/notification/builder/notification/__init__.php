@@ -6,6 +6,7 @@
 
 
 
+phutil_require_module('phabricator', 'applications/notification/storage/storynotification');
 phutil_require_module('phabricator', 'applications/phid/handle/data');
 phutil_require_module('phabricator', 'view/null');
 

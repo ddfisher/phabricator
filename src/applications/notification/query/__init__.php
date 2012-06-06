@@ -6,8 +6,8 @@
 
 
 
-phutil_require_module('phabricator', 'applications/notification/storage/storydata');
-phutil_require_module('phabricator', 'applications/notification/storage/subscribed');
+phutil_require_module('phabricator', 'applications/feed/storage/story');
+phutil_require_module('phabricator', 'applications/notification/storage/storynotification');
 phutil_require_module('phabricator', 'storage/queryfx');
 
 phutil_require_module('phutil', 'utils');

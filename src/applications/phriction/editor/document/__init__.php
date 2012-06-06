@@ -7,7 +7,7 @@
 
 
 phutil_require_module('phabricator', 'applications/feed/constants/story');
-phutil_require_module('phabricator', 'applications/feed/publisher');
+phutil_require_module('phabricator', 'applications/feed/publisher/feed');
 phutil_require_module('phabricator', 'applications/phriction/constants/action');
 phutil_require_module('phabricator', 'applications/phriction/constants/changetype');
 phutil_require_module('phabricator', 'applications/phriction/constants/documentstatus');
