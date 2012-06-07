@@ -48,7 +48,7 @@ final class PhabricatorNotificationQuery {
       $conn,
       "SELECT story.* FROM %T notif
          JOIN %T story ON notif.chronologicalKey = story.chronologicalKey
-         WHERE notif.userPHID = '%s'
+         WHERE notif.userPHID = %s
          ORDER BY notif.chronologicalKey desc
          LIMIT %d",
       $notification_table->getTableName(),
@@ -62,10 +62,11 @@ final class PhabricatorNotificationQuery {
 
     foreach ($data as $story_data) {
       $class = $story_data->getStoryType();
-
+      $num_replacements = 1;
+      $class = str_replace('Feed', 'Notification', $class, $num_replacements);
       try {
         if (!class_exists($class) ||
-          !is_subclass_of($class, 'PhabricatorNotificationStory')) {
+          !is_subclass_of($class, 'PhabricatorFeedStory')) {
             $class = 'PhabricatorNotificationUnknown';
         }
       } catch (PhutilMissingSymbolException $ex) {

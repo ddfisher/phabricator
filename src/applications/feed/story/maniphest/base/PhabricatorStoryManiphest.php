@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-abstract class PhabricatorStoryManiphest 
+abstract class PhabricatorStoryManiphest
   extends PhabricatorFeedStory {
 
   public function getRequiredHandlePHIDs() {
@@ -36,9 +36,9 @@ abstract class PhabricatorStoryManiphest
   }
 
   /*
-    TODO: Have a better way of doing this.  We need to 
+    TODO: Have a better way of doing this.  We need to
     share the code between feed and notification.  This
-    is the simplest way to do it, but not really the most 
+    is the simplest way to do it, but not really the most
     sensical way.
   */
 

@@ -1,14 +1,37 @@
 <?php
 
+/*
+ * Copyright 2012 Facebook, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 abstract class PhabricatorStoryPublisher {
 
   protected $storyType;
   protected $storyData;
   protected $storyTime;
   protected $storyAuthorPHID;
+  protected $subscribedPHIDs;
+  protected $chronologicalKey;
 
   public function setRelatedPHIDs(array $phids) {
     $this->relatedPHIDs = $phids;
+    return $this;
+  }
+
+  public function setSubscribedPHIDs(array $phids) {
+    $this->subscribedPHIDs = $phids;
     return $this;
   }
 
@@ -32,6 +55,15 @@ abstract class PhabricatorStoryPublisher {
     return $this;
   }
 
+  /* not as nice as being able to generate it privately here,
+     but the notification and the feed item need to share the
+     same chronological key so it must be passed in by the editor
+  */
+  public function setChronologicalKey($chrono_key) {
+    $this->chronologicalKey = $chrono_key;
+    return $this;
+  }
+
   abstract public function publish();
 
   /**
@@ -46,10 +78,10 @@ abstract class PhabricatorStoryPublisher {
    *
    * @return string A unique, time-ordered key which identifies the story.
    */
-  protected function generateChronologicalKey() {
+  public static function generateChronologicalKey($story_time) {
     // Use the epoch timestamp for the upper 32 bits of the key. Default to
     // the current time if the story doesn't have an explicit timestamp.
-    $time = nonempty($this->storyTime, time());
+    $time = nonempty($story_time, time());
 
     // Generate a random number for the lower 32 bits of the key.
     $rand = head(unpack('L', Filesystem::readRandomBytes(4)));

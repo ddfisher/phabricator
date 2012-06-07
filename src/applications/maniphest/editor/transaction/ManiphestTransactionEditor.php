@@ -341,6 +341,9 @@ final class ManiphestTransactionEditor {
     $owner_phid = $task->getOwnerPHID();
     $actor_phid = head($transactions)->getAuthorPHID();
     $author_phid = $task->getAuthorPHID();
+    $story_time = time();
+
+    $chrono_key = PhabricatorStoryPublisher::generateChronologicalKey();
 
     id(new PhabricatorFeedStoryPublisher())
       ->setStoryType(PhabricatorFeedStoryTypeConstants::STORY_MANIPHEST)
@@ -352,7 +355,8 @@ final class ManiphestTransactionEditor {
         'comments'        => $comments,
         'description'     => $task->getDescription(),
       ))
-      ->setStoryTime(time())
+      ->setStoryTime($story_time)
+      ->setChronologicalKey($chrono_key)
       ->setStoryAuthorPHID($actor_phid)
       ->setRelatedPHIDs(
         array_merge(
@@ -364,6 +368,32 @@ final class ManiphestTransactionEditor {
               $owner_phid,
             )),
           $task->getProjectPHIDs()))
+      ->publish();
+
+    id(new PhabricatorNotificationStoryPublisher())
+      ->setStoryType(PhabricatorNotificationStoryTypeConstants::STORY_MANIPHEST)
+      ->setStoryData(array(
+        'taskPHID'        => $task->getPHID(),
+        'transactionIDs'  => mpull($transactions, 'getID'),
+        'ownerPHID'       => $owner_phid,
+        'action'          => $action_type,
+        'comments'        => $comments,
+        'description'     => $task->getDescription(),
+      ))
+      ->setStoryTime($story_time)
+      ->setStoryAuthorPHID($actor_phid)
+      ->setPrimaryObjectPHID($task->getPHID())
+      ->setChronologicalKey($chrono_key)
+      ->setSubscribedPHIDs(
+        array_merge(
+          array_filter(
+            array(
+              $author_phid,
+              $owner_phid,
+              $actor_phid
+            )
+          ),
+          $task->getCCPHIDs()))
       ->publish();
   }
 

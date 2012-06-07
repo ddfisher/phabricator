@@ -22,14 +22,7 @@ extends PhabricatorNotificationView {
   private $title;
   private $phid;
   private $epoch;
-  private $oneLine;
-  private $viewer;
   private $consumed;
-
-  public function setViewer(PhabricatorUser $viewer) {
-    $this->viewer = $viewer;
-    return $this;
-  }
 
   public function setTitle($title) {
     $this->title = $title;
@@ -41,16 +34,9 @@ extends PhabricatorNotificationView {
     return $this;
   }
 
-  public function setOneLineStory($one_line) {
-    $this->oneLine = $one_line;
-    return $this;
+  public function setConsumed($consumed) {
+    $this->consumed = $consumed;
   }
-
-  public function setConsumed($is_consumed) {
-    $this->consumed = $is_consumed;
-  }
-
-
 
   public function render() {
 

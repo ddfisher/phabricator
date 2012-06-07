@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-final class PhabricatorNotificationPanelController
+final class PhabricatorNotificationTestController
   extends PhabricatorNotificationController {
 
   public function processRequest() {
@@ -43,10 +43,12 @@ final class PhabricatorNotificationPanelController
     }
 
     $json = array(
-      "content" => $notifications_view->render(),
-      "number" => $num_unconsumed,
+      $notifications_view->render()
     );
 
-    return id(new AphrontAjaxResponse)->setContent($json);
+
+    return $this->buildStandardPageResponse(
+      $json, 
+      array('title' => 'Notification Test Page'));
   }
 }

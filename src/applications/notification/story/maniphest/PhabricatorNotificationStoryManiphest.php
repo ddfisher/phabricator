@@ -25,10 +25,7 @@ final class PhabricatorNotificationStoryManiphest
     $view = new PhabricatorNotificationStoryView();
 
     $view->setEpoch($data->getEpoch());
-    $view->setOneLineStory(true);
-    $view->setConsumed($this->getConsumed());
-
-    $view->setTitle($this->lineForData($data));
+    $view->setTitle($this->getLineForData($data));
     $view->setEpoch($data->getEpoch());
 
     return $view;

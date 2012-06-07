@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-final class PhabricatorFeedStoryManiphest 
+final class PhabricatorFeedStoryManiphest
   extends PhabricatorStoryManiphest {
 
   public function renderView() {
@@ -40,7 +40,7 @@ final class PhabricatorFeedStoryManiphest
     }
 
     if ($full_size) {
-      $view->setImage($this->getHandle($author_phid)->getImageURI());
+      $view->setImage($this->getHandle($this->getAuthoPHID())->getImageURI());
       $content = $this->renderSummary($data->getValue('description'));
       $view->appendChild($content);
     } else {

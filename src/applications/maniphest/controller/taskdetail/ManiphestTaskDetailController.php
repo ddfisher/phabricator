@@ -510,6 +510,8 @@ final class ManiphestTaskDetailController extends ManiphestController {
     $transaction_view->setAuxiliaryFields($aux_fields);
     $transaction_view->setMarkupEngine($engine);
 
+    $this->updateObjectNotificationViews($user, $task->getPHID());
+
     return $this->buildStandardPageResponse(
       array(
         $context_bar,

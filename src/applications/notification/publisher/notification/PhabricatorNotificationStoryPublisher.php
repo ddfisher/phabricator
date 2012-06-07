@@ -33,22 +33,20 @@ final class PhabricatorNotificationStoryPublisher
     }
 
     if (!$this->primaryObjectPHID) {
-      throw new Exception("There is no object PHID for this story!");
+      throw new Exception("Call setPrimaryObjectPHID() before publishing!");
     }
 
     if (!$this->storyType) {
       throw new Exception("Call setStoryType() before publishing!");
     }
 
-    $chrono_key = $this->generateChronologicalKey();
 
-
-    $this->insertNotifications($chrono_key);
-    $this->sendAphlictNotification();
+    $this->insertNotifications($this->chronologicalKey);
+    //$this->sendAphlictNotification();
     return $this;
   }
 
-  public function inserNotifications($chrono_key) {
+  private function insertNotifications($chrono_key) {
     $notif = new PhabricatorFeedStoryNotification();
     $sql = array();
     $conn = $notif->establishConnection('w');
@@ -60,13 +58,13 @@ final class PhabricatorNotificationStoryPublisher
         $this->primaryObjectPHID,
         $user_phid,
         $chrono_key,
-        false);
+        0);
     }
 
     queryfx(
       $conn,
       'INSERT INTO %T
-       (objectPHID, userPHID, chronologicalKey, hasViewed)
+       (primaryObjectPHID, userPHID, chronologicalKey, hasViewed)
        VALUES %Q',
       $notif->getTableName(),
       implode(', ', $sql));
@@ -125,49 +123,6 @@ final class PhabricatorNotificationStoryPublisher
         break;
     }
     id(new RefreshNotification($actor_phid, $pathname))->push();
-  }
-
-  /**
-   * We generate a unique chronological key for each story type because we want
-   * to be able to page through the stream with a cursor (i.e., select stories
-   * after ID = X) so we can efficiently perform filtering after selecting data,
-   * and multiple stories with the same ID make this cumbersome without putting
-   * a bunch of logic in the client. We could use the primary key, but that
-   * would prevent publishing stories which happened in the past. Since it's
-   * potentially useful to do that (e.g., if you're importing another data
-   * source) build a unique key for each story which has chronological ordering.
-   *
-   * @return string A unique, time-ordered key which identifies the story.
-   */
-  private function generateChronologicalKey() {
-    // Use the epoch timestamp for the upper 32 bits of the key. Default to
-    // the current time if the story doesn't have an explicit timestamp.
-    $time = nonempty($this->storyTime, time());
-
-    // Generate a random number for the lower 32 bits of the key.
-    $rand = head(unpack('L', Filesystem::readRandomBytes(4)));
-
-    // On 32-bit machines, we have to get creative.
-    if (PHP_INT_SIZE < 8) {
-      // We're on a 32-bit machine.
-      if (function_exists('bcadd')) {
-        // Try to use the 'bc' extension.
-        return bcadd(bcmul($time, bcpow(2, 32)), $rand);
-      } else {
-        // Do the math in MySQL. TODO: If we formalize a bc dependency, get
-        // rid of this.
-        $conn_r = id(new PhabricatorFeedStoryData())->establishConnection('r');
-        $result = queryfx_one(
-          $conn_r,
-          'SELECT (%d << 32) + %d as N',
-          $time,
-          $rand);
-        return $result['N'];
-      }
-    } else {
-      // This is a 64 bit machine, so we can just do the math.
-      return ($time << 32) + $rand;
-    }
   }
 }
 

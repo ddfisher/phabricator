@@ -39,7 +39,7 @@ abstract class PhabricatorFeedStory {
   }
 
   public function getHasViewed() {
-    return $this->hasViewed();
+    return $this->hasViewed;
   }
 
   public function getRequiredObjectPHIDs() {

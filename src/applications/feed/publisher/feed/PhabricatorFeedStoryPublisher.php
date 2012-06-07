@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright 2011 Facebook, Inc.
+ * Copyright 2012 Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-final class PhabricatorFeedStoryPublisher 
+final class PhabricatorFeedStoryPublisher
   extends PhabricatorStoryPublisher {
 
   private $relatedPHIDs;
@@ -35,13 +35,11 @@ final class PhabricatorFeedStoryPublisher
       throw new Exception("Call setStoryType() before publishing!");
     }
 
-    $chrono_key = $this->generateChronologicalKey();
-
     $story = new PhabricatorFeedStoryData();
     $story->setStoryType($this->storyType);
     $story->setStoryData($this->storyData);
     $story->setAuthorPHID($this->storyAuthorPHID);
-    $story->setChronologicalKey($chrono_key);
+    $story->setChronologicalKey($this->chronologicalKey);
     $story->save();
 
     $ref = new PhabricatorFeedStoryReference();
@@ -53,7 +51,7 @@ final class PhabricatorFeedStoryPublisher
         $conn,
         '(%s, %s)',
         $phid,
-        $chrono_key);
+        $this->chronologicalKey);
     }
 
     queryfx(

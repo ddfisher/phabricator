@@ -422,7 +422,7 @@ class AphrontDefaultApplicationConfiguration
       ),
 
       '/notification/' => 'PhabricatorNotificationPanelController',
-
+      '/notification/test/' => 'PhabricatorNotificationTestController',
       '/flag/' => array(
         '' => 'PhabricatorFlagListController',
         'view/(?P<view>[^/]+)/' => 'PhabricatorFlagListController',

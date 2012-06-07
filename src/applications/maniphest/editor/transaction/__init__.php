@@ -7,6 +7,7 @@
 
 
 phutil_require_module('phabricator', 'applications/feed/constants/story');
+phutil_require_module('phabricator', 'applications/feed/publisher/base');
 phutil_require_module('phabricator', 'applications/feed/publisher/feed');
 phutil_require_module('phabricator', 'applications/maniphest/constants/action');
 phutil_require_module('phabricator', 'applications/maniphest/constants/status');
@@ -15,6 +16,8 @@ phutil_require_module('phabricator', 'applications/maniphest/storage/task');
 phutil_require_module('phabricator', 'applications/maniphest/view/transactiondetail');
 phutil_require_module('phabricator', 'applications/metamta/constants/notificationtype');
 phutil_require_module('phabricator', 'applications/metamta/storage/mail');
+phutil_require_module('phabricator', 'applications/notification/constants/story');
+phutil_require_module('phabricator', 'applications/notification/publisher/notification');
 phutil_require_module('phabricator', 'applications/phid/handle/data');
 phutil_require_module('phabricator', 'applications/search/index/indexer/maniphest');
 phutil_require_module('phabricator', 'infrastructure/env');
